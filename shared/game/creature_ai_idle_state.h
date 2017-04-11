@@ -63,7 +63,7 @@ namespace wowpp
 	private:
 
 		std::unique_ptr<UnitWatcher> m_aggroWatcher;
-		boost::signals2::scoped_connection m_onThreatened, onTargetReached;
+		simple::scoped_connection m_onThreatened, onTargetReached;
 		Countdown m_nextMove;
 		GameTime m_nextUpdate;
 	};

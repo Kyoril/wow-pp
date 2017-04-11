@@ -23,6 +23,8 @@
 
 #include <QAbstractListModel>
 #include <QObject>
+#include <QMimeData>
+#include <QDataStream>
 #include <typeinfo>
 
 namespace wowpp
@@ -92,7 +94,43 @@ namespace wowpp
 				if (!index.isValid())
 					return Qt::ItemIsEnabled;
 
-				return QAbstractItemModel::flags(index) & ~Qt::ItemIsEditable;
+				return (QAbstractItemModel::flags(index) & ~Qt::ItemIsEditable) | Qt::ItemIsDragEnabled;
+			}
+
+			/*QStringList mimeTypes() const override
+			{
+				QStringList list;
+				list.append("application/unit_entry");
+				return list;
+			}*/
+
+			QMimeData *mimeData(const QModelIndexList &indexes) const override
+			{
+				if (indexes.isEmpty())
+					return nullptr;
+
+				const auto &firstIndex = indexes.first();
+				if (!firstIndex.isValid())
+					return nullptr;
+
+				if (firstIndex.row() >= m_entries.getTemplates().entry_size())
+					return nullptr;
+
+				QByteArray data;
+				QDataStream stream(&data, QIODevice::WriteOnly);
+
+				const auto &templates = m_entries.getTemplates();
+				const typename T::EntryType &tpl = templates.entry(firstIndex.row());
+				stream << tpl.id();
+
+				QMimeData * mimeData = new QMimeData;
+				mimeData->setData("application/unit_entry", data);
+				return mimeData;
+			}
+
+			QMimeData *mimeData()
+			{
+
 			}
 
 			bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole)

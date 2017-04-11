@@ -28,7 +28,7 @@ namespace wowpp
 	class GameUnit;
 
 	/// Represents a specific AI state of a creature (for example the idle state or the combat state).
-	class CreatureAIState
+	class CreatureAIState : public std::enable_shared_from_this<CreatureAIState>
 	{
 	public:
 
@@ -60,8 +60,12 @@ namespace wowpp
 		/// Executed when the controlled unit moved.
 		virtual void onControlledMoved();
 
+		/// Determines if this ai state is currently active.
+		bool isActive() const { return m_isActive; }
+
 	private:
 
 		CreatureAI &m_ai;
+		bool m_isActive;
 	};
 }

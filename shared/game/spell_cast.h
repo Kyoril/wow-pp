@@ -25,11 +25,12 @@
 #include "shared/proto_data/spells.pb.h"
 #include "spell_target_map.h"
 #include "common/timer_queue.h"
-#include "common/simple.hpp"
 
 namespace wowpp
 {
 	class GameUnit;
+
+	bool isSealSpell(const proto::SpellEntry &spell);
 
 	///
 	class SpellCasting final

@@ -23,7 +23,6 @@
 
 #include "tiled_unit_finder.h"
 #include "common/linear_set.h"
-#include "common/simple.hpp"
 
 namespace wowpp
 {

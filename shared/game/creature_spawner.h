@@ -77,6 +77,8 @@ namespace wowpp
 		void setState(bool active);
 		///
 		void setRespawn(bool enabled);
+		/// Gets a random movement point in the spawn radius.
+		const math::Vector3 &randomPoint();
 
 	private:
 
@@ -99,5 +101,8 @@ namespace wowpp
 		size_t m_currentlySpawned;
 		OwnedCreatures m_creatures;
 		Countdown m_respawnCountdown;
+		math::Vector3 m_location;
+		std::vector<math::Vector3> m_randomPoints;
+		Int8 m_lastPoint;
 	};
 }

@@ -28,8 +28,13 @@ namespace wowpp
 	class Realm;
 
 	/// Manages all connected players.
-	class RealmManager : public boost::noncopyable
+	class RealmManager final
 	{
+	private:
+
+		RealmManager(const RealmManager &Other) = delete;
+		RealmManager &operator=(const RealmManager &Other) = delete;
+
 	public:
 
 		typedef std::vector<std::unique_ptr<Realm>> Realms;

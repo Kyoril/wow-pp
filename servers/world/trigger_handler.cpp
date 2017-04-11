@@ -49,7 +49,7 @@ namespace wowpp
 	{
 	}
 
-	void TriggerHandler::executeTrigger(const proto::TriggerEntry &entry, game::TriggerContext context, UInt32 actionOffset)
+	void TriggerHandler::executeTrigger(const proto::TriggerEntry &entry, game::TriggerContext context, UInt32 actionOffset/* = 0*/, bool ignoreProbability/* = false*/)
 	{
 		// Keep owner alive if provided
 		std::shared_ptr<GameObject> strongOwner;
@@ -76,8 +76,29 @@ namespace wowpp
 			return;
 		}
 
+		// Run probability roll
+		if (!ignoreProbability && entry.probability() < 100)
+		{
+			// Never execute?
+			if (entry.probability() <= 0)
+				return;
+
+			// Roll!
+			std::uniform_int_distribution<UInt32> roll(0, 99);
+			if (roll(randomGenerator) > entry.probability())
+				return;	 // Didn't pass probability check
+		}
+
 		for (int i = actionOffset; i < entry.actions_size(); ++i)
 		{
+			// Abort trigger on owner death?
+			if (!checkOwnerAliveFlag(entry, strongOwner.get()))
+				return;
+
+			// Abort trigger if not in combat
+			if (!checkInCombatFlag(entry, strongOwner.get()))
+				return;
+
 			const auto &action = entry.actions(i);
 			switch (action.action())
 			{
@@ -103,6 +124,9 @@ namespace wowpp
 			WOWPP_HANDLE_TRIGGER_ACTION(SetSpellCooldown)
 			WOWPP_HANDLE_TRIGGER_ACTION(QuestKillCredit)
 			WOWPP_HANDLE_TRIGGER_ACTION(QuestEventOrExploration)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetVariable)
+			WOWPP_HANDLE_TRIGGER_ACTION(Dismount)
+			WOWPP_HANDLE_TRIGGER_ACTION(SetMount)
 #undef WOWPP_HANDLE_TRIGGER_ACTION
 
 				case trigger_actions::Delay:
@@ -133,7 +157,7 @@ namespace wowpp
 							oldOwner = nullptr;
 						}
 
-						executeTrigger(entry, context, i + 1);
+						executeTrigger(entry, context, i + 1, true);
 					});
 					delayCountdown->setEnd(getCurrentTime() + timeMS);
 					m_delays.emplace_back(std::move(delayCountdown));
@@ -203,7 +227,7 @@ namespace wowpp
 			game::chat_msg::MonsterSay,
 			game::language::Universal,
 			"",
-			0, 
+			0,			// TODO: Make parameter dependant
 			getActionText(action, 0), 
 			reinterpret_cast<GameUnit*>(target)
 			);
@@ -259,9 +283,9 @@ namespace wowpp
 		game::server_write::messageChat(
 			packet, 
 			game::chat_msg::MonsterYell, 
-			game::language::Universal, 
-			"", 
-			0, 
+			game::language::Universal,
+			"",
+			0,			// TODO: Make parameter dependant
 			getActionText(action, 0), 
 			reinterpret_cast<GameUnit*>(target)
 			);
@@ -456,15 +480,21 @@ namespace wowpp
 		}
 
 		auto &mover = reinterpret_cast<GameUnit*>(target)->getMover();
-		boost::signals2::connection reached = mover.targetReached.connect_extended([target](const boost::signals2::connection &conn) {
+		mover.targetReached.connect([target]() {
 			// Raise reached target trigger
 			reinterpret_cast<GameCreature*>(target)->raiseTrigger(trigger_event::OnReachedTriggeredTarget);
 
 			// This slot shall be executed only once
-			conn.disconnect();
+			simple::current_connection().disconnect();
 		});
+
 		mover.moveTo(
-			math::Vector3(static_cast<float>(getActionData(action, 0)), static_cast<float>(getActionData(action, 1)), static_cast<float>(getActionData(action, 2))));
+			math::Vector3(
+				static_cast<float>(getActionData(action, 0)), 
+				static_cast<float>(getActionData(action, 1)), 
+				static_cast<float>(getActionData(action, 2))
+			)
+		);
 	}
 
 	void TriggerHandler::handleSetCombatMovement(const proto::TriggerAction & action, game::TriggerContext & context)
@@ -676,6 +706,144 @@ namespace wowpp
 
 		UInt32 questId = getActionData(action, 0);
 		reinterpret_cast<GameCharacter*>(target)->completeQuest(questId);
+	}
+
+	void TriggerHandler::handleSetVariable(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_VARIABLE: No target found, action will be ignored");
+			return;
+		}
+
+		// Get variable
+		UInt32 entryId = getActionData(action, 0);
+		if (entryId == 0)
+		{
+			WLOG("TRIGGER_ACTION_SET_VARIABLE: Needs a valid variable entry - action ignored");
+			return;
+		}
+
+		const auto *entry = target->getProject().variables.getById(entryId);
+		if (!entry)
+		{
+			WLOG("TRIGGER_ACTION_SET_VARIABLE: Unknown variable id " << entryId << " - action ignored");
+			return;
+		}
+
+		// Determine variable type
+		switch (entry->data_case())
+		{
+			// TODO
+			case proto::VariableEntry::kIntvalue:
+			case proto::VariableEntry::kLongvalue:
+			case proto::VariableEntry::kFloatvalue:
+			{
+				target->setVariable(entryId, static_cast<Int64>(getActionData(action, 1)));
+				break;
+			}
+			case proto::VariableEntry::kStringvalue:
+			{
+				target->setVariable(entryId, getActionText(action, 0));
+				break;
+			}
+		}
+	}
+
+	void TriggerHandler::handleDismount(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_DISMOUNT: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameCharacter class
+		if (!target->isGameCharacter() && !target->isCreature())
+		{
+			WLOG("TRIGGER_ACTION_DISMOUNT: Needs a unit target - action ignored");
+			return;
+		}
+
+		target->setUInt32Value(unit_fields::MountDisplayId, 0);
+	}
+
+	void TriggerHandler::handleSetMount(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_SET_MOUNT: No target found, action will be ignored");
+			return;
+		}
+
+		// Verify that "target" extends GameCharacter class
+		if (!target->isGameCharacter() && !target->isCreature())
+		{
+			WLOG("TRIGGER_ACTION_SET_MOUNT: Needs a unit target - action ignored");
+			return;
+		}
+
+		UInt32 mountId = getActionData(action, 0);
+		if (!mountId)
+		{
+			WLOG("TRIGGER_ACTION_SET_MOUNT: Invalid mount id 0 used. If you want to dismount a unit, use the Dismount action!");
+			return;
+		}
+
+		target->setUInt32Value(unit_fields::MountDisplayId, mountId);
+	}
+
+	bool TriggerHandler::checkInCombatFlag(const proto::TriggerEntry & entry, const GameObject * owner)
+	{
+		if (entry.flags() & trigger_flags::OnlyInCombat)
+		{
+			if (owner)
+			{
+				if (owner->isCreature() || owner->isGameCharacter())
+				{
+					if (!reinterpret_cast<const GameUnit*>(owner)->isInCombat())
+					{
+						// Stop trigger execution here
+						return false;
+					}
+				}
+			}
+			else
+			{
+				// Stop trigger execution here
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	bool TriggerHandler::checkOwnerAliveFlag(const proto::TriggerEntry & entry, const GameObject * owner)
+	{
+		if (entry.flags() & trigger_flags::AbortOnOwnerDeath)
+		{
+			if (owner)
+			{
+				if (owner->isCreature() || owner->isGameCharacter())
+				{
+					if (!reinterpret_cast<const GameUnit*>(owner)->isAlive())
+					{
+						// Stop trigger execution here
+						return false;
+					}
+				}
+			}
+			else
+			{
+				// Stop trigger execution here
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	Int32 TriggerHandler::getActionData(const proto::TriggerAction &action, UInt32 index) const

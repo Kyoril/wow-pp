@@ -118,7 +118,7 @@ namespace wowpp
 		const MOGPChunk &getMOGPChunk() const { return m_groupHeader; }
 
 		const std::vector<math::Vector3> &getVertices() const { return m_vertices; }
-		const std::vector<UInt16> &getIndices() const { return m_indices; }
+		const std::vector<UInt32> &getIndices() const { return m_indices; }
 		const std::vector<std::unique_ptr<WMOFile>> &getGroups() const { return m_wmoGroups; }
 		const bool isCollisionTriangle(UInt32 triangleIndex) const;
 
@@ -130,7 +130,7 @@ namespace wowpp
 		bool m_isRoot;
 		std::vector<std::unique_ptr<WMOFile>> m_wmoGroups;
 		std::vector<math::Vector3> m_vertices;
-		std::vector<UInt16> m_indices;
+		std::vector<UInt32> m_indices;
 		std::vector<char> m_triangleProps;
 	};
 }

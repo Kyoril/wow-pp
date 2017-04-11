@@ -23,7 +23,6 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <boost/noncopyable.hpp>
 #include <boost/variant.hpp>
 
 #include "sql_connection.h"

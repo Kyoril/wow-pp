@@ -48,7 +48,7 @@ namespace wowpp
 
 		struct UnitRecord
 		{
-			boost::signals2::scoped_connection moved;
+			simple::scoped_connection moved;
 			Tile *lastTile;
 		};
 

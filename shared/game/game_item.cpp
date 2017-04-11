@@ -119,7 +119,7 @@ namespace wowpp
 		{
 			// TODO: make a way so we don't need loot recipients for game objects as this is completely crap
 			std::vector<GameCharacter *> lootRecipients;
-			m_loot = make_unique<LootInstance>(
+			m_loot = std::make_shared<LootInstance>(
 				getProject().items, getGuid(), lootEntry, m_entry.minlootgold(), m_entry.maxlootgold(), std::cref(lootRecipients));
 			if (m_loot)
 			{

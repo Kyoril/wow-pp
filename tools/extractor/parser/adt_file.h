@@ -337,6 +337,9 @@ namespace wowpp
 		/// @copydoc MPQFile::load
 		bool load() override;
 
+		/// Determines if the given square is flagged as a hole in this adt cell.
+		bool isHole(int square) const;
+
 		/// Gets a constant reference to the MVER chunk data of this ADT file.
 		/// This chunk only contains version information.
 		const MVERChunk &getMVERChunk() const { return m_versionChunk; }

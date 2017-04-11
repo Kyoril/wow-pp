@@ -200,7 +200,7 @@ namespace wowpp
 			WorldManager->addWorld(std::move(world));
 		};
 
-		const boost::signals2::scoped_connection worldConnected(worldServer->connected().connect(createWorld));
+		const simple::scoped_connection worldConnected(worldServer->connected().connect(createWorld));
 		worldServer->startAccept();
 
 		// Create the player server
@@ -275,7 +275,7 @@ namespace wowpp
 			PlayerManager->addPlayer(std::move(player));
 		};
 
-		const boost::signals2::scoped_connection playerConnected(playerServer->connected().connect(createPlayer));
+		const simple::scoped_connection playerConnected(playerServer->connected().connect(createPlayer));
 		playerServer->startAccept();
 
 		// Run IO service

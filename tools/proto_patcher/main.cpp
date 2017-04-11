@@ -1424,6 +1424,105 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSpellCritChance(proto::Project &project, MySQL::Connection &conn)
+	{
+		wowpp::MySQL::Select select(conn, "SELECT `field0` FROM `tbcdb`.`dbc_gtchancetospellcrit`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+
+			UInt32 id = 0;
+			float spellCritChance = 0;
+			std::array<float, 11> spellCritChanceBase =
+			{
+				0.0f,
+				0.033355f,
+				0.03602f,
+				0.0f,
+				0.012375f,
+				0.2f,
+				0.02201f,
+				0.009075f,
+				0.017f,
+				0.2f,
+				0.018515f
+			};
+
+			for (int i = 0; i < 11; ++i)
+			{
+				for (int j = 0; j < 100; ++j)
+				{
+					project.spellCritChance.getById(i * 100 + j)->set_basechanceperlevel(spellCritChanceBase[i]);
+				}
+			}
+
+			while (row)
+			{
+				// Get row data
+				row.getField(0, spellCritChance);
+
+				auto * spellCritChances = project.spellCritChance.getById(id);
+				if (spellCritChances)
+				{
+					spellCritChances->clear_chanceperlevel();
+					spellCritChances->set_chanceperlevel(spellCritChance);
+				}
+				else
+				{
+					WLOG("Unable to spellCritChance by id: " << id);
+				}
+
+				// Next row
+				id++;
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
+	static bool importDodgeChance(proto::Project &project)
+	{
+		std::array<float, 11> dodgeChanceBase =
+		{
+			0.0075f,   // Warrior
+			0.00652f,  // Paladin
+			-0.0545f,   // Hunter
+			-0.0059f,   // Rogue
+			0.03183f,  // Priest
+			0.0114f,   // DK
+			0.0167f,   // Shaman
+			0.034575f, // Mage
+			0.02011f,  // Warlock
+			0.0f,      // ??
+			-0.0187f    // Druid
+		};
+
+		std::array<float, 11> critToDodge =
+		{
+			1.1f,      // Warrior
+			1.0f,      // Paladin
+			1.6f,      // Hunter
+			2.0f,      // Rogue
+			1.0f,      // Priest
+			1.0f,      // DK?
+			1.0f,      // Shaman
+			1.0f,      // Mage
+			1.0f,      // Warlock
+			0.0f,      // ??
+			1.7f       // Druid
+		};
+
+		for (int i = 0; i < 11; ++i)
+		{
+			auto * dodgeChances = project.dodgeChance.getById(i);
+			dodgeChances->set_basedodge(dodgeChanceBase[i]);
+			dodgeChances->set_crittododge(critToDodge[i]);
+		}
+
+		return true;
+	}
+
 	static bool importCategories(proto::Project &project, MySQL::Connection &conn)
 	{
 		project.spellCategories.clear();
@@ -2246,7 +2345,6 @@ namespace wowpp
 		return true;
 	}
 
-
 	static bool importResistancePercentages(proto::Project &project, MySQL::Connection &conn)
 	{
 		wowpp::MySQL::Select select(conn, "SELECT `percentages_0`, `percentages_25`, `percentages_50`, `percentages_75`, `percentages_100` FROM `dbc`.`resistance_values`;");
@@ -2294,6 +2392,119 @@ namespace wowpp
 		return true;
 	}
 
+	static bool importSkillLines(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &skill : *project.skills.getTemplates().mutable_entry())
+		{
+			skill.clear_spells();
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `skill_line`, `spell`, `race_mask`, `class_mask`, `aquire_method`, `trivial_skill_line_high`, `trivial_skill_line_low` FROM `dbc`.`dbc_skilllineability`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt32 skillId = 0, spellId = 0, raceMask = 0, classMask = 0, aquire = 0, high = 0, low = 0;
+				row.getField(0, skillId);
+				row.getField(1, spellId);
+				row.getField(2, raceMask);
+				row.getField(3, classMask);
+				row.getField(4, aquire);
+				row.getField(5, high);
+				row.getField(6, low);
+
+				do
+				{
+					// Find spell and skill
+					auto *spell = project.spells.getById(spellId);
+					if (!spell)
+					{
+						WLOG("Unable to find spell " << spellId);
+						break;
+					}
+					auto *skill = project.skills.getById(skillId);
+					if (!skill)
+					{
+						WLOG("Unable to find skill " << skillId);
+						break;
+					}
+
+					spell->set_skill(skillId);
+					spell->set_trivialskilllow(low);
+					spell->set_trivialskillhigh(high);
+					spell->set_racemask(raceMask);
+					spell->set_classmask(classMask);
+
+					// Add spell to the list of spells to learn when getting this skill
+					if (aquire > 0)
+					{
+						skill->add_spells(spellId);
+					}
+				} while (false);
+
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
+	static bool importSpellReagents(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &spell : *project.spells.getTemplates().mutable_entry())
+		{
+			spell.clear_reagents();
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `id`, `Reagent1`, `ReagentCount1`, `Reagent2`, `ReagentCount2`, `Reagent3`, `ReagentCount3`"
+			", `Reagent4`, `ReagentCount4`, `Reagent5`, `ReagentCount5`, `Reagent6`, `ReagentCount6`, `Reagent7`, `ReagentCount7`, `Reagent8`, `ReagentCount8` FROM `dbc_8606`.`dbc_spell`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt32 spellId = 0;
+				Int32 reagent = 0, count = 0;
+				row.getField(0, spellId);
+
+				do
+				{
+					// Find spell and skill
+					auto *spell = project.spells.getById(spellId);
+					if (!spell)
+					{
+						WLOG("Unable to find spell " << spellId);
+						break;
+					}
+
+					Int32 fieldIndex = 1;
+					for (UInt32 i = 0; i < 8; ++i)
+					{
+						row.getField(fieldIndex++, reagent);
+						row.getField(fieldIndex++, count);
+						if (reagent > 0 && count > 0)
+						{
+							auto *added = spell->add_reagents();
+							if (!added)
+								continue;
+
+							added->set_item(reagent);
+							if (count > 1)
+							{
+								added->set_count(count);
+							}
+						}
+					}
+				} while (false);
+
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
 #if 0
 	static void fixTriggerEvents(proto::Project &project)
 	{
@@ -2308,6 +2519,283 @@ namespace wowpp
 		}
 	}
 #endif
+
+	static bool importSpellChain(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &spell : *project.spells.getTemplates().mutable_entry())
+		{
+			spell.clear_prevspell();
+			spell.clear_nextspell();
+			spell.clear_rank();
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `spell_id`, `prev_spell`, `first_spell`, `rank` FROM `tbcdb`.`spell_chain`;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt32 spellId = 0, prevSpellId = 0, baseSpellId = 0, rank = 0;
+				row.getField(0, spellId);
+				row.getField(1, prevSpellId);
+				row.getField(2, baseSpellId);
+				row.getField(3, rank);
+
+				do
+				{
+					// Find spell
+					auto *spell = project.spells.getById(spellId);
+					if (!spell)
+					{
+						WLOG("Unable to find spell " << spellId);
+						break;
+					}
+
+					auto *prevSpell = 
+						prevSpellId != 0 ?
+						project.spells.getById(prevSpellId) : nullptr;
+
+					spell->set_rank(rank);
+					spell->set_baseid(baseSpellId);
+					spell->set_prevspell(prevSpellId);
+					
+					if (prevSpell)
+					{
+						prevSpell->set_nextspell(spellId);
+					}
+				} while (false);
+
+				row = row.next(select);
+			}
+		}
+
+		wowpp::MySQL::Select select2(conn, "SELECT `spell`, `superseded_by_spell` FROM `dbc`.`dbc_skilllineability`;");
+		if (select2.success())
+		{
+			wowpp::MySQL::Row row(select2);
+			while (row)
+			{
+				UInt32 spellId = 0, nextSpellId = 0;
+				row.getField(0, spellId);
+				row.getField(1, nextSpellId);
+
+				do
+				{
+					// Find spell and skill
+					auto *spell = project.spells.getById(spellId);
+					if (!spell)
+					{
+						WLOG("Unable to find spell " << spellId);
+						break;
+					}
+					auto *nextSpell = project.spells.getById(nextSpellId);
+
+					// Enter next spell id
+					spell->set_nextspell(nextSpell ? nextSpellId : 0);
+
+					// Enter prev spell id of next spell (if any)
+					if (nextSpell) nextSpell->set_prevspell(spellId);
+
+					// Determine spell rank
+					if (spell->baseid() == spell->id())
+					{
+						spell->set_rank(1);
+					}
+					else
+					{
+						const auto *prevSpell = project.spells.getById(spell->prevspell());
+						if (prevSpell) spell->set_rank(prevSpell->rank() + 1);
+					}
+				} while (false);
+
+				row = row.next(select2);
+			}
+		}
+
+		return true;
+	}
+
+	static bool importKillCredits(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &unit : *project.units.getTemplates().mutable_entry())
+		{
+			unit.clear_killcredit();
+		}
+
+		wowpp::MySQL::Select select(conn, "SELECT `entry`, `KillCredit1` FROM `tbcdb`.`creature_template` WHERE KillCredit1 != 0;");
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt32 entryId = 0, killCredit = 0;
+				row.getField(0, entryId);
+				row.getField(1, killCredit);
+
+				do
+				{
+					// Find unit
+					auto *unit = project.units.getById(entryId);
+					if (!unit)
+					{
+						WLOG("Unable to find unit " << entryId);
+						break;
+					}
+
+					unit->set_killcredit(killCredit);
+				} while (false);
+
+				row = row.next(select);
+			}
+		}
+
+		return true;
+	}
+
+	static bool importLocales(proto::Project &project, MySQL::Connection &conn)
+	{
+		for (auto &unit : *project.units.getTemplates().mutable_entry())
+		{
+			unit.clear_name_loc();
+			unit.clear_subname_loc();
+
+			// Fill with default name / subname
+			for (int i = 0; i < 12; ++i)
+			{
+				unit.add_name_loc();
+				unit.add_subname_loc();
+			}
+		}
+
+		for (auto &item : *project.items.getTemplates().mutable_entry())
+		{
+			item.clear_name_loc();
+			item.clear_description_loc();
+
+			// Fill with default name / subname
+			for (int i = 0; i < 12; ++i)
+			{
+				item.add_name_loc();
+				item.add_description_loc();
+			}
+		}
+
+		for (auto &obj : *project.objects.getTemplates().mutable_entry())
+		{
+			obj.clear_name_loc();
+			obj.clear_caption_loc();
+
+			// Fill with default name / subname
+			for (int i = 0; i < 12; ++i)
+			{
+				obj.add_name_loc();
+				obj.add_caption_loc();
+			}
+		}
+
+		if (!conn.execute("SET NAMES 'UTF8';"))
+		{
+			ELOG("Database error: " << conn.getErrorMessage());
+		}
+
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `entry`, `name_loc3`, `subname_loc3` FROM `tbcdb`.`locales_creature` WHERE name_loc3 IS NOT NULL AND TRIM(name_loc3) <> '';");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					UInt32 entryId = 0;
+					String name_loc3, subname_loc3;
+					row.getField(0, entryId);
+					row.getField(1, name_loc3);
+					row.getField(2, subname_loc3);
+
+					do
+					{
+						// Find unit
+						auto *unit = project.units.getById(entryId);
+						if (!unit)
+						{
+							WLOG("Unable to find unit " << entryId);
+							break;
+						}
+
+						unit->set_name_loc(1, name_loc3);
+						if (!subname_loc3.empty()) unit->set_subname_loc(1, subname_loc3);
+					} while (false);
+
+					row = row.next(select);
+				}
+			}
+		}
+
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `entry`, `name_loc3`, `description_loc3` FROM `tbcdb`.`locales_item` WHERE name_loc3 IS NOT NULL AND TRIM(name_loc3) <> '';");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					UInt32 entryId = 0;
+					String name_loc3, description_loc3;
+					row.getField(0, entryId);
+					row.getField(1, name_loc3);
+					row.getField(2, description_loc3);
+
+					do
+					{
+						// Find item
+						auto *item = project.items.getById(entryId);
+						if (!item)
+						{
+							WLOG("Unable to find item " << entryId);
+							break;
+						}
+
+						item->set_name_loc(1, name_loc3);
+						if (!description_loc3.empty()) item->set_description_loc(1, description_loc3);
+					} while (false);
+
+					row = row.next(select);
+				}
+			}
+		}
+
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `entry`, `name_loc3`, `castbarcaption_loc3` FROM `tbcdb`.`locales_gameobject` WHERE name_loc3 IS NOT NULL AND TRIM(name_loc3) <> '';");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					UInt32 entryId = 0;
+					String name_loc3, caption_loc3;
+					row.getField(0, entryId);
+					row.getField(1, name_loc3);
+					row.getField(2, caption_loc3);
+
+					do
+					{
+						// Find object
+						auto *obj = project.objects.getById(entryId);
+						if (!obj)
+						{
+							WLOG("Unable to find object " << entryId);
+							break;
+						}
+
+						obj->set_name_loc(1, name_loc3);
+						if (!caption_loc3.empty()) obj->set_caption_loc(1, caption_loc3);
+					} while (false);
+
+					row = row.next(select);
+				}
+			}
+		}
+
+		return true;
+	}
 }
 
 /// Procedural entry point of the application.
@@ -2376,100 +2864,9 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 	
-#if 0
-	if (!importSpellFocus(protoProject, connection))
+	if (!importLocales(protoProject, connection))
 	{
-		ELOG("Failed to load spell focus object");
-		return 1;
-	}
-
-	if (!importTrainerLinks(protoProject, connection))
-	{
-		ELOG("Failed to import trainer links");
-		return 1;
-	}
-
-	if (!importSpellMultipliers(protoProject, connection))
-	{
-		ELOG("Failed to import spell damage multipliers");
-		return 1;
-	}
-
-	if (!importSpellFamilyFlags(protoProject, connection))
-	{
-		ELOG("Failed to import spell family flags multipliers");
-		return 1;
-	}
-
-	if (!importSpellFocus(protoProject, connection))
-	{
-		ELOG("Failed to import spell focus targets");
-		return 1;
-	}
-
-	if (!importSpellProcs(protoProject, connection))
-	{
-		ELOG("Failed to import spell proc events");
-		return 1;
-	}
-
-	if (!addSpellBaseId(protoProject))
-	{
-		WLOG("Could not set base id for spells");
-		return 1;
-	}
-
-	if (!importItemSockets(protoProject, connection))
-	{
-		WLOG("Could not import item sockets");
-		return 1;
-	}
-
-	if (!importSpellStackAmount(protoProject, connection))
-	{
-		WLOG("Could not import stack amount");
-		return 1;
-	}
-
-	if (!importAffectMask(protoProject, connection))
-	{
-		WLOG("Could not import affect masks");
-		return 1;
-	}
-
-	if (!addSpellLinks(protoProject))
-	{
-		ELOG("Failed to add spell links");
-		return 1;
-	}
-
-	if (!checkSpells(protoProject, connection))
-	{
-		WLOG("Could not check spells");
-		return 1;
-	}
-
-	if (!importResistancePercentages(protoProject, connection))
-	{
-		WLOG("Could not import resistance percentages");
-		return 1;
-	}
-
-	if (!importCombatRatings(protoProject, connection))
-	{
-		WLOG("Could not import combat ratings");
-		return 1;
-	}
-
-	if (!importMeleeCritChance(protoProject, connection))
-	{
-		WLOG("Could not import melee crit chance");
-		return 1;
-	}
-#endif
-	if (!addItemSkill(protoProject))
-	{
-		WLOG("Could not add item skill");
+		WLOG("Couldn't import locales");
 		return 1;
 	}
 

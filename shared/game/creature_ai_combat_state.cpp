@@ -39,34 +39,36 @@ namespace wowpp
 {
 	CreatureAICombatState::CreatureAICombatState(CreatureAI &ai, GameUnit &victim)
 		: CreatureAIState(ai)
+		, m_combatInitiator(&victim)
 		, m_lastThreatTime(0)
 		, m_nextActionCountdown(ai.getControlled().getTimers())
+		, m_lastSpellEntry(nullptr)
+		, m_lastSpell(nullptr)
+		, m_lastCastTime(0)
+		, m_customCooldown(0)
+		, m_lastCastResult(game::spell_cast_result::CastOkay)
 		, m_isCasting(false)
 		, m_entered(false)
 		, m_isRanged(false)
 	{
-		// Setup
-		m_lastSpellEntry = nullptr;
-		m_lastSpell = nullptr;
-		m_customCooldown = 0;
-		m_lastCastTime = 0;
-		m_lastCastResult = game::spell_cast_result::CastOkay;
-
-		// Add initial threat
-		addThreat(victim, 0.0f);
-		m_nextActionCountdown.ended.connect(
-		    std::bind(&CreatureAICombatState::chooseNextAction, this));
 	}
 
 	CreatureAICombatState::~CreatureAICombatState()
 	{
-		// Disconnect all connected slots
-		m_nextActionCountdown.ended.clear();
 	}
 
 	void CreatureAICombatState::onEnter()
 	{
+		CreatureAIState::onEnter();
+
+		// Add initial threat
+		addThreat(*m_combatInitiator, 0.0f);
+		m_combatInitiator = nullptr;
+
+		m_nextActionCountdown.ended.connect(this, &CreatureAICombatState::chooseNextAction);
+
 		auto &controlled = getControlled();
+		controlled.getMover().setTerrainMovement(true);
 
 		// Flag controlled unit for combat
 		controlled.addFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);
@@ -90,137 +92,55 @@ namespace wowpp
 		});
 		
 		// Reset AI eventually
-		m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]()
+		if (auto *world = controlled.getWorldInstance())
 		{
-			auto &homePos = getAI().getHome().position;
-			
-			const bool outOfRange = 
-				getControlled().getSquaredDistanceTo(homePos, false) >= 60.0f * 60.0f ||
-				getControlled().getSquaredDistanceTo(getControlled().getMover().getTarget(), true) >= 60.0f * 60.0f;
+			// Only reset if not in dungeon / raid map
+			const auto *map = controlled.getProject().maps.getById(world->getMapId());
+			if (map &&
+				map->instancetype() != proto::MapEntry_MapInstanceType_DUNGEON &&
+				map->instancetype() != proto::MapEntry_MapInstanceType_RAID)
+			{
+				m_onMoveTargetChanged = getControlled().getMover().targetChanged.connect([this]()
+				{
+					auto &homePos = getAI().getHome().position;
+					auto &controlled = getControlled();
 
-			if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
-				outOfRange)
-			{
-				getAI().reset();
-			}
-		});
-		m_onUnitStateChanged = getControlled().unitStateChanged.connect([this](UInt32 state, bool apply)
-		{
-			switch (state)
-			{
-				case unit_state::Feared:
+					auto *victim = controlled.getVictim();
+					if (victim)
 					{
-						// If we are no longer feared, update victim again
-						if (!apply)
+						// Target flying / swimming?
+						if (victim->getMovementInfo().moveFlags & (game::movement_flags::Flying | game::movement_flags::Flying2 | game::movement_flags::Swimming))
 						{
-							if (!getControlled().isCombatMovementEnabled())
-							{
-								// Try to continue last movement if we aren't there already
-								auto &mover = getControlled().getMover();
-								mover.moveTo(mover.getTarget());
+							// TODO: Check if controlled unit can swim
 
+							// Check if move target would be in hit 3d hit range
+							const float combatRangeSq =
+								::powf(controlled.getMeleeReach() + victim->getMeleeReach(), 2.0f);
+							const float distSq =
+								(controlled.getMover().getTarget() - victim->getLocation()).squared_length();
+							if (distSq > combatRangeSq)
+							{
+								getAI().reset();
 								return;
 							}
-
-							chooseNextAction();
-						}
-						else
-						{
-							// No longer attack unit if stunned
-							m_isCasting = false;
-							getControlled().cancelCast(game::spell_interrupt_flags::None);
-							getControlled().stopAttack();
-							getControlled().setVictim(nullptr);
-
-							m_customCooldown = 0;
-							m_lastSpellEntry = nullptr;
-							m_lastSpell = nullptr;
-							m_lastCastTime = 0;
 						}
 					}
-					break;
-				case unit_state::Confused:
+
+					const bool outOfRange =
+						controlled.getSquaredDistanceTo(homePos, false) >= 60.0f * 60.0f ||
+						controlled.getSquaredDistanceTo(controlled.getMover().getTarget(), true) >= 60.0f * 60.0f;
+
+					if (getCurrentTime() >= (m_lastThreatTime + constants::OneSecond * 10) &&
+						outOfRange)
 					{
-						if (!apply)
-						{
-							if (!getControlled().isCombatMovementEnabled())
-							{
-								// Try to continue last movement if we aren't there already
-								auto &mover = getControlled().getMover();
-								mover.moveTo(mover.getTarget());
-
-								return;
-							}
-
-							chooseNextAction();
-						}
-						else
-						{
-							// No longer attack unit if stunned
-							m_isCasting = false;
-							getControlled().cancelCast(game::spell_interrupt_flags::None);
-							getControlled().stopAttack();
-							getControlled().setVictim(nullptr);
-
-							m_customCooldown = 0;
-							m_lastSpellEntry = nullptr;
-							m_lastSpell = nullptr;
-							m_lastCastTime = 0;
-						}
+						getAI().reset();
 					}
-					break;
-				case unit_state::Stunned:
-					{
-						// If we are no longer stunned, update victim again
-						if (!apply)
-						{
-							if (!getControlled().isCombatMovementEnabled())
-							{
-								// Try to continue last movement if we aren't there already
-								auto &mover = getControlled().getMover();
-								mover.moveTo(mover.getTarget());
-
-								return;
-							}
-
-							chooseNextAction();
-						}
-						else
-						{
-							// No longer attack unit if stunned
-							m_isCasting = false;
-							getControlled().cancelCast(game::spell_interrupt_flags::None);
-							getControlled().stopAttack();
-							getControlled().setVictim(nullptr);
-
-							m_customCooldown = 0;
-							m_lastSpellEntry = nullptr;
-							m_lastSpell = nullptr;
-							m_lastCastTime = 0;
-						}
-					} 
-					break;
-				case unit_state::Rooted:
-					{
-						if (!apply)
-						{
-							if (!getControlled().isCombatMovementEnabled())
-							{
-								// Try to continue last movement if we aren't there already
-								auto &mover = getControlled().getMover();
-								mover.moveTo(mover.getTarget());
-
-								return;
-							}
-						}
-
-						chooseNextAction();
-					} 
-					break;
-				default:
-					break;
+				});
 			}
-		});
+		}
+
+		// React to unit state changes
+		m_onUnitStateChanged = getControlled().unitStateChanged.connect(this, &CreatureAICombatState::onUnitStateChanged);
 
 		// Process aggro event
 		TileIndex2D tile;
@@ -316,7 +236,11 @@ namespace wowpp
 		// All remaining threateners are no longer in combat with this unit
 		for (auto &pair : m_threat)
 		{
-			pair.second.threatener->removeAttackingUnit(getControlled());
+			auto threatener = pair.second.threatener.lock();
+			if (threatener)
+			{
+				threatener->removeAttackingUnit(getControlled());
+			}
 		}
 
 		// Unit is no longer flagged for combat
@@ -326,6 +250,8 @@ namespace wowpp
 		controlled.cancelCast(game::spell_interrupt_flags::None);
 		controlled.stopAttack();
 		controlled.setVictim(nullptr);
+
+		CreatureAIState::onLeave();
 	}
 
 	void CreatureAICombatState::addThreat(GameUnit &threatener, float amount)
@@ -353,7 +279,7 @@ namespace wowpp
 		if (it == m_threat.end())
 		{
 			// Insert new entry
-			it = m_threat.insert(m_threat.begin(), std::make_pair(guid, ThreatEntry(&threatener, 0.0f)));
+			it = m_threat.insert(m_threat.begin(), std::make_pair(guid, ThreatEntry(threatener, 0.0f)));
 
 			// Watch for unit killed signal
 			m_killedSignals[guid] = threatener.killed.connect([this, guid, &threatener](GameUnit * killer)
@@ -361,11 +287,34 @@ namespace wowpp
 				removeThreat(threatener);
 			});
 
+			auto strongThreatener = std::static_pointer_cast<GameUnit>(threatener.shared_from_this());
+			std::weak_ptr<GameUnit> weakThreatener(strongThreatener);
+
 			// Watch for unit despawned signal
-			m_despawnedSignals[guid] = threatener.despawned.connect([this, &threatener](GameObject & despawned)
-			{
-				removeThreat(threatener);
-			});
+			m_miscSignals[guid] +=
+				threatener.despawned.connect([this, strongThreatener](GameObject & despawned)
+				{
+					removeThreat(*strongThreatener);
+				});
+			m_miscSignals[guid] +=
+				threatener.healed.connect([this, weakThreatener](GameUnit *healer, UInt32 amount) {
+					if (healer && !this->getControlled().isFriendlyTo(*healer))
+					{
+						// Calculate base threat amount
+						float threat = static_cast<float>(amount) * 0.5f;
+
+						// Threat is equally shared between all attacking units
+						auto threatener = weakThreatener.lock();
+						if (threatener)
+						{
+							UInt32 attackerCount = std::max<UInt32>(1, threatener->attackingUnitCount());
+							threat /= static_cast<float>(attackerCount);
+						}
+						
+						// Add final threat amount
+						addThreat(*healer, threat);
+					}
+				});
 
 			// Add this unit to the list of attacking units
 			threatener.addAttackingUnit(getControlled());
@@ -396,10 +345,10 @@ namespace wowpp
 			m_killedSignals.erase(killedIt);
 		}
 
-		auto despawnedIt = m_despawnedSignals.find(guid);
-		if (despawnedIt != m_despawnedSignals.end())
+		auto despawnedIt = m_miscSignals.find(guid);
+		if (despawnedIt != m_miscSignals.end())
 		{
-			m_despawnedSignals.erase(despawnedIt);
+			m_miscSignals.erase(despawnedIt);
 		}
 
 		auto &controlled = getControlled();
@@ -447,8 +396,11 @@ namespace wowpp
 		{
 			if (entry.second.amount > highestThreat)
 			{
-				topThreatener = entry.second.threatener;
-				highestThreat = entry.second.amount;
+				topThreatener = entry.second.threatener.lock().get();
+				if (topThreatener)
+				{
+					highestThreat = entry.second.amount;
+				}
 			}
 		}
 		return topThreatener;
@@ -471,21 +423,27 @@ namespace wowpp
 		GameUnit *newVictim = nullptr;
 		for (auto &entry : m_threat)
 		{
+			auto threatener = entry.second.threatener.lock();
+			if (!threatener)
+			{
+				continue;
+			}
+
 			bool isInRange = true;
 
 			// If we are rooted, we need to check for nearby targets to start attacking them
 			if (rooted)
 			{
-				const float distSq = controlled.getSquaredDistanceTo(*entry.second.threatener, true);
+				const float distSq = controlled.getSquaredDistanceTo(*threatener.get(), true);
 				const float combatRangeSq =
-					::powf(entry.second.threatener->getMeleeReach() + controlled.getMeleeReach(), 2.0f);
+					::powf(threatener->getMeleeReach() + controlled.getMeleeReach(), 2.0f);
 
 				isInRange = (distSq <= combatRangeSq);
 			}
 
 			if (entry.second.amount > highestThreat && isInRange)
 			{
-				newVictim = entry.second.threatener;
+				newVictim = threatener.get();
 				highestThreat = entry.second.amount;
 			}
 		}
@@ -644,7 +602,8 @@ namespace wowpp
 					controlled.setOrientation(controlled.getAngle(*victim));
 
 					// Save some variables which are needed in CreatureAICombatState::onSpellCast method
-					m_lastCastTime = spellEntry->casttime();
+					GameTime castTime = spellEntry->casttime();
+					m_lastCastTime = (spellEntry->attributes(1) & game::spell_attributes_ex_a::Channeled_1) ? spellEntry->duration() : spellEntry->casttime();
 					m_lastSpellEntry = validSpellEntry;
 					m_lastSpell = spellEntry;
 					m_customCooldown = 0;
@@ -680,14 +639,29 @@ namespace wowpp
 					SpellTargetMap targetMap;
 					targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
 					targetMap.m_unitTarget = victim->getGuid();
+					targetMap.m_dstX = victim->getLocation().x;
+					targetMap.m_dstY = victim->getLocation().y;
+					targetMap.m_dstZ = victim->getLocation().z;
 					if (validSpellEntry->target() == 0)
 					{
 						targetMap.m_unitTarget = controlled.getGuid();
 					}
+					if (spellEntry->effects_size() > 0 &&
+						spellEntry->effects(0).type() == game::spell_effects::PersistentAreaAura)
+					{
+						targetMap.m_targetMap = game::spell_cast_target_flags::DestLocation;
+					}
 
 					m_isCasting = true;
-					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), { 0, 0, 0 }, m_lastCastTime, false, 0,
-						std::bind(&CreatureAICombatState::onSpellCast, this, std::placeholders::_1));
+
+					auto strongThis = std::static_pointer_cast<CreatureAICombatState>(shared_from_this());
+					controlled.castSpell(std::move(targetMap), validSpellEntry->spellid(), { 0, 0, 0 }, castTime, false, 0, [strongThis](game::SpellCastResult result) 
+					{
+						if (strongThis->isActive())
+						{
+							strongThis->onSpellCast(result);
+						}
+					});
 					return;
 				}
 			}
@@ -724,6 +698,10 @@ namespace wowpp
 
 	void CreatureAICombatState::onSpellCast(game::SpellCastResult result)
 	{
+		// State no longer active
+		if (!isActive())
+			return;
+
 		m_lastCastResult = result;
 		m_isCasting = false;
 		
@@ -776,6 +754,137 @@ namespace wowpp
 		m_lastSpellEntry = nullptr;
 		m_lastSpell = nullptr;
 		m_lastCastTime = 0;
+	}
+
+	void CreatureAICombatState::onUnitStateChanged(UInt32 state, bool apply)
+	{
+		if (!getControlled().isAlive())
+			return;
+
+		switch (state)
+		{
+			case unit_state::Feared:
+				onFearStateChanged(apply);
+				break;
+			case unit_state::Confused:
+				onConfuseStateChanged(apply);
+				break;
+			case unit_state::Stunned:
+				onStunStateChanged(apply);
+				break;
+			case unit_state::Rooted:
+				onRootStateChanged(apply);
+				break;
+		}
+	}
+
+	void CreatureAICombatState::onStunStateChanged(bool apply)
+	{
+		// If we are no longer stunned, update victim again
+		if (!apply)
+		{
+			if (!getControlled().isCombatMovementEnabled())
+			{
+				// Try to continue last movement if we aren't there already
+				auto &mover = getControlled().getMover();
+				mover.moveTo(mover.getTarget());
+
+				return;
+			}
+
+			chooseNextAction();
+		}
+		else
+		{
+			// No longer attack unit if stunned
+			m_isCasting = false;
+			getControlled().cancelCast(game::spell_interrupt_flags::None);
+			getControlled().stopAttack();
+			getControlled().setVictim(nullptr);
+
+			m_customCooldown = 0;
+			m_lastSpellEntry = nullptr;
+			m_lastSpell = nullptr;
+			m_lastCastTime = 0;
+		}
+	}
+
+	void CreatureAICombatState::onConfuseStateChanged(bool apply)
+	{
+		if (!apply)
+		{
+			if (!getControlled().isCombatMovementEnabled())
+			{
+				// Try to continue last movement if we aren't there already
+				auto &mover = getControlled().getMover();
+				mover.moveTo(mover.getTarget());
+
+				return;
+			}
+
+			chooseNextAction();
+		}
+		else
+		{
+			// No longer attack unit if stunned
+			m_isCasting = false;
+			getControlled().cancelCast(game::spell_interrupt_flags::None);
+			getControlled().stopAttack();
+			getControlled().setVictim(nullptr);
+
+			m_customCooldown = 0;
+			m_lastSpellEntry = nullptr;
+			m_lastSpell = nullptr;
+			m_lastCastTime = 0;
+		}
+	}
+
+	void CreatureAICombatState::onFearStateChanged(bool apply)
+	{
+		// If we are no longer feared, update victim again
+		if (!apply)
+		{
+			if (!getControlled().isCombatMovementEnabled())
+			{
+				// Try to continue last movement if we aren't there already
+				auto &mover = getControlled().getMover();
+				mover.moveTo(mover.getTarget());
+
+				return;
+			}
+
+			chooseNextAction();
+		}
+		else
+		{
+			// No longer attack unit if stunned
+			m_isCasting = false;
+			getControlled().cancelCast(game::spell_interrupt_flags::None);
+			getControlled().stopAttack();
+			getControlled().setVictim(nullptr);
+
+			m_customCooldown = 0;
+			m_lastSpellEntry = nullptr;
+			m_lastSpell = nullptr;
+			m_lastCastTime = 0;
+		}
+	}
+
+	void CreatureAICombatState::onRootStateChanged(bool apply)
+	{
+		if (!apply)
+		{
+			if (!getControlled().isCombatMovementEnabled())
+			{
+				// Try to continue last movement if we aren't there already
+				auto &mover = getControlled().getMover();
+				mover.moveTo(mover.getTarget());
+
+				return;
+			}
+		}
+
+		chooseNextAction();
 	}
 
 	void CreatureAICombatState::onDamage(GameUnit &attacker)

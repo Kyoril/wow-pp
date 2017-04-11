@@ -23,6 +23,22 @@
 
 namespace wowpp
 {
+	namespace trigger_flags
+	{
+		enum Type
+		{
+			/// No trigger flags set.
+			None				= 0x0000,
+			/// Trigger execution is cancelled as soon as the owner dies.
+			AbortOnOwnerDeath	= 0x0001,
+			/// Trigger is only executed while owner is in combat (and is aborted if owner leaves combat).
+			OnlyInCombat		= 0x0002,
+
+			/// Used for automatic enumeration.
+			Count_				= 2
+		};
+	}
+
 	namespace trigger_event
 	{
 		enum Type
@@ -76,6 +92,9 @@ namespace wowpp
 			/// Executed when a unit is target of a specific emote.
 			/// Data: <EMOTE-ID>;
 			OnEmote = 15,
+			/// Executed when a unit successfully casted a specific spell.
+			/// Data: <SPELL-ID>;
+			OnSpellCast = 16,
 
 			Invalid,
 			Count_ = Invalid
@@ -140,45 +159,15 @@ namespace wowpp
 			/// Sets spell cooldown for a unit.
 			/// Targets: PLAYER; Data: <QUEST-ID>; Texts: NONE;
 			QuestEventOrExploration = 17,
-
-			Invalid,
-			Count_ = Invalid
-		};
-	}
-
-	namespace trigger_variables
-	{
-		enum Type
-		{
-			/// Current creature AI phase. Defaults to 0 at combat beginning.
-			/// Will be reset automatically when combat ends.
-			Phase = 0,
-			/// Current health as absolute number.
-			Health = 1,
-			/// Current health as percentage (0-100).
-			HealthPct = 2,
-			/// Current mana as absolute number.
-			Mana = 3,
-			/// Current mana as percentage (0-100).
-			ManaPct = 4,
-			/// Whether the unit is in combat (0-1).
-			IsInCombat = 5,
-
-			Invalid,
-			Count_ = Invalid
-		};
-	}
-
-	namespace trigger_operator
-	{
-		enum Type
-		{
-			Equal = 0,
-			Not = 1,
-			Lesser = 2,
-			Greater = 3,
-			LesserEqual = 4,
-			GreaterEqual = 5,
+			/// Sets an object variable.
+			/// Targets: OBJECT; Data: <VARIABLE-ID>, [<NUMERIC-VALUE>]; Texts: [<STRING_VALUE>];
+			SetVariable = 18,
+			/// Dismounts a unit if mounted.
+			/// Targets: UNIT; Data: NONE; Texts: NONE;
+			Dismount = 19,
+			/// Sets the mount display id of a unit and makes it enter the mounted state.
+			/// Targets: UNIT; Data: <MOUNT-ID>; Texts: NONE;
+			SetMount = 20,
 
 			Invalid,
 			Count_ = Invalid

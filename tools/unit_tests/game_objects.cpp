@@ -28,6 +28,7 @@
 
 namespace wowpp
 {
+#if 0
 	inline proto::Project &getProject() 
 	{
 		static proto::Project project; 
@@ -68,4 +69,5 @@ namespace wowpp
 		testCharacter->initialize();
 		testCharacter.reset();
 	}
+#endif
 }

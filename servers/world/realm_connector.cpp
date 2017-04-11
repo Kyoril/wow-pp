@@ -124,7 +124,7 @@ namespace wowpp
 				break;
 			case pp::world_realm::realm_packet::SpellLearned:
 				handleSpellLearned(packet);
-				break;
+				break; 
 			default:
 				// Log about unknown or unhandled packet
 				const auto &realm = m_config.realms[m_realmEntryIndex];
@@ -322,7 +322,7 @@ namespace wowpp
 		}
 
 		// We really need an instance now
-		assert(instance);
+		ASSERT(instance);
 		
 		// Fire signal which should create a player instance for us
 		character->setWorldInstance(instance);	// This is required for spell auras
@@ -347,7 +347,7 @@ namespace wowpp
 			));
 
 		// Add character to the world
-		assert(instance);
+		ASSERT(instance);
 		instance->addGameObject(*character);
 
 		// Spawn objects
@@ -648,7 +648,6 @@ namespace wowpp
 			}
 
 			WOWPP_HANDLE_PACKET(NameQuery)
-			WOWPP_HANDLE_PACKET(CreatureQuery)
 			WOWPP_HANDLE_PACKET(LogoutRequest)
 			WOWPP_HANDLE_PACKET(LogoutCancel)
 			WOWPP_HANDLE_PACKET(SetSelection)
@@ -712,15 +711,20 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(InitateTrade)
 			WOWPP_HANDLE_PLAYER_PACKET(BeginTrade)
 			WOWPP_HANDLE_PLAYER_PACKET(AcceptTrade)
+			WOWPP_HANDLE_PLAYER_PACKET(UnacceptTrade)
+			WOWPP_HANDLE_PLAYER_PACKET(CancelTrade)
+			WOWPP_HANDLE_PLAYER_PACKET(ClearTradeItem)
 			WOWPP_HANDLE_PLAYER_PACKET(SetTradeGold)
 			WOWPP_HANDLE_PLAYER_PACKET(SetTradeItem)
 			WOWPP_HANDLE_PLAYER_PACKET(SetActionBarToggles)
 			WOWPP_HANDLE_PLAYER_PACKET(ToggleHelm)
 			WOWPP_HANDLE_PLAYER_PACKET(ToggleCloak)
 			WOWPP_HANDLE_PLAYER_PACKET(MailSend)
+			WOWPP_HANDLE_PLAYER_PACKET(MailGetList)
 			WOWPP_HANDLE_PLAYER_PACKET(ResurrectResponse)
 			WOWPP_HANDLE_PLAYER_PACKET(CancelChanneling)
 			WOWPP_HANDLE_PLAYER_PACKET(PlayedTime)
+			WOWPP_HANDLE_PLAYER_PACKET(ZoneUpdate)
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment
@@ -821,35 +825,6 @@ namespace wowpp
 			std::bind(pp::world_realm::world_write::teleportRequest, std::placeholders::_1, characterId, map, location, o));
 	}
 
-	void RealmConnector::handleCreatureQuery(Player &sender, game::Protocol::IncomingPacket &packet)
-	{
-		// Read the client packet
-		UInt32 creatureEntry;
-		UInt64 objectGuid;
-		if (!game::client_read::creatureQuery(packet, creatureEntry, objectGuid))
-		{
-			// Could not read packet
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		//TODO: Find creature object and check if it exists
-
-		// Find creature info by entry
-		const auto *unit = m_project.units.getById(creatureEntry);
-		if (unit)
-		{
-			// Write answer packet
-			sender.sendProxyPacket(
-				std::bind(game::server_write::creatureQueryResponse, std::placeholders::_1, std::cref(*unit)));
-		}
-		else
-		{
-			//TODO: Send resulting packet SMSG_CREATURE_QUERY_RESPONSE with only one uin32 value
-			//which is creatureEntry | 0x80000000
-		}
-	}
-
 	void RealmConnector::handleLogoutRequest(Player &sender, game::Protocol::IncomingPacket &packet)
 	{
 		// Read client packet
@@ -860,10 +835,6 @@ namespace wowpp
 		}
 
 		//TODO check if the player is allowed to log out (is in combat? is moving? is frozen by gm? etc.)
-
-		// Send answer and engage logout process
-		sender.sendProxyPacket(
-			std::bind(game::server_write::logoutResponse, std::placeholders::_1, true));
 
 		// Start logout countdown or something? ...
 		sender.logoutRequest();
@@ -1002,6 +973,12 @@ namespace wowpp
 			{
 				WLOG("Could not find requested character.");
 				return;
+			}
+
+			// Remove rest state on teleport as we don't know if the new location will be a rest area as well
+			if (reason == pp::world_realm::world_left_reason::Teleport)
+			{
+				player->getCharacter()->setRestType(rest_type::None, nullptr);
 			}
 
 			// Remove the character
@@ -1151,34 +1128,20 @@ namespace wowpp
 		const auto *trigger = m_project.areaTriggers.getById(triggerId);
 		if (!trigger)
 		{
+			WLOG("Unknown trigger " << trigger->id());
 			return;
 		}
 
 		// Check if the players character could really have triggered that trigger
 		auto character = sender.getCharacter();
-		if (trigger->map() != character->getMapId())
+		if (!character->isInAreaTrigger(*trigger, 5.0f))
 		{
+			WLOG("[CHEAT] Player is not in area trigger volume");
+			sender.kick();
 			return;
 		}
 
-		// Get player location for distance checks
-		math::Vector3 location(character->getLocation());
-		if (trigger->radius() > 0.0f)
-		{
-			const float dist = 
-				::sqrtf(((location.x - trigger->x()) * (location.x - trigger->x())) + ((location.y - trigger->y()) * (location.y - trigger->y())) + ((location.z - trigger->z()) * (location.z - trigger->z())));
-			if (dist > trigger->radius())
-			{
-				return;
-			}
-		}
-		else
-		{
-			// TODO: Box check
-		}
-
 		// Check if this is a teleport trigger
-
 		if (trigger->has_questid() && trigger->questid() > 0)
 		{
 			// Handle quest exploration
@@ -1188,6 +1151,8 @@ namespace wowpp
 		if (trigger->has_tavern() && trigger->tavern())
 		{
 			// Handle tavern
+			if (character->getRestType() != rest_type::City)
+				character->setRestType(rest_type::Tavern, trigger);
 		}
 
 		// TODO: Optimize this, create a trigger type
@@ -1424,11 +1389,15 @@ namespace wowpp
 			std::bind(pp::world_realm::world_write::characterSpawned, std::placeholders::_1, characterId));
 	}
 
-	void RealmConnector::sendMailDraft(game::MailData mailDraft, String sender, UInt32 cost, const std::vector<std::shared_ptr<GameItem>>& items)
+	void RealmConnector::sendMailDraft(Mail mail, String &receiver)
 	{
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::world_write::mailDraft, std::placeholders::_1, mailDraft.unk1, mailDraft.unk2, sender,
-				 mailDraft.receiver, mailDraft.subject, mailDraft.body, mailDraft.money, mailDraft.COD, cost, items));
+			std::bind(pp::world_realm::world_write::mailDraft, std::placeholders::_1, std::move(mail), std::move(receiver)));
 	}
 
+	void RealmConnector::sendGetMailList(DatabaseId characterId)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::world_write::mailGetList, std::placeholders::_1, characterId));
+	}
 }

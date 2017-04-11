@@ -43,6 +43,7 @@ namespace wowpp
 		virtual void connectionLost() = 0;
 		virtual void connectionMalformedPacket() = 0;
 		virtual void connectionPacketReceived(typename Protocol::IncomingPacket &packet) = 0;
+		virtual void connectionDataSent(size_t size) {};
 	};
 
 
@@ -83,9 +84,13 @@ namespace wowpp
 	template<class P, class MySocket = boost::asio::ip::tcp::socket>
 	class Connection
 		: public AbstractConnection<P>
-		, public boost::noncopyable
 		, public std::enable_shared_from_this<Connection<P, MySocket> >
 	{
+	private:
+
+		Connection<P, MySocket>(const Connection<P, MySocket> &Other) = delete;
+		Connection<P, MySocket> &operator=(const Connection<P, MySocket> &Other) = delete;
+
 	public:
 
 		typedef MySocket Socket;
@@ -154,8 +159,8 @@ namespace wowpp
 			m_sending = m_sendBuffer;
 			m_sendBuffer.clear();
 
-			assert(m_sendBuffer.empty());
-			assert(!m_sending.empty());
+			ASSERT(m_sendBuffer.empty());
+			ASSERT(!m_sending.empty());
 
 			beginSend();
 		}
@@ -221,7 +226,7 @@ namespace wowpp
 
 		void beginSend()
 		{
-			assert(!m_sending.empty());
+			ASSERT(!m_sending.empty());
 
 			boost::asio::async_write(
 			    *m_socket,
@@ -235,6 +240,11 @@ namespace wowpp
 			{
 				disconnected();
 				return;
+			}
+
+			if (m_listener)
+			{
+				m_listener->connectionDataSent(m_sending.size());
 			}
 
 			m_sending.clear();
@@ -256,7 +266,7 @@ namespace wowpp
 
 		void received(std::size_t size)
 		{
-			assert(size <= m_receiving.size());
+			ASSERT(size <= m_receiving.size());
 
 			if (size == 0)
 			{
@@ -329,7 +339,7 @@ namespace wowpp
 
 			if (parsedUntil)
 			{
-				assert(parsedUntil <= m_received.size());
+				ASSERT(parsedUntil <= m_received.size());
 
 				m_received.erase(
 				    m_received.begin(),

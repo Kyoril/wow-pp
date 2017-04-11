@@ -63,8 +63,8 @@ cmake_minimum_required(VERSION 2.8.11)
 	file(GLOB wndSrcFiles "windows/*.cpp")
 	file(GLOB worldSrcFiles "world/*.cpp" "world/*.h")
 	file(GLOB ogreSrcFiles "ogre_wrappers/*.cpp" "ogre_wrappers/*.h")
-	QT5_WRAP_CPP(MOC_SOURCES "${mocFiles}" OPTIONS "-bpch.h")
-	
+	QT5_WRAP_CPP(MOC_SOURCES "${mocFiles}" OPTIONS "-b" "pch.h")
+
 	# Include ui files
 	file(GLOB uiFiles "ui/*.ui")
 	
@@ -118,6 +118,7 @@ cmake_minimum_required(VERSION 2.8.11)
 	elseif(APPLE)
 		add_executable(editor MACOSX_BUNDLE ${srcFiles} ${UIS_HDRS} ${mocFiles} ${resourceSources} ${apple_bundle_sources} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles} ${MOC_SOURCES})
 	else()
+		SET(CMAKE_INSTALL_RPATH "./lib/")
 		add_executable(editor ${srcFiles} ${UIS_HDRS} ${resourceSources} ${mocFiles} ${wndSrcFiles} ${worldSrcFiles} ${ogreSrcFiles} ${MOC_SOURCES})
 	endif()
 	add_precompiled_header(editor "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")

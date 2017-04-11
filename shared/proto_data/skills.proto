@@ -27,6 +27,7 @@ message SkillEntry {
 	required string name = 2;
 	required int32 category = 3;
 	required uint32 cost = 4;
+	repeated uint32 spells = 5;
 }
 
 message Skills {

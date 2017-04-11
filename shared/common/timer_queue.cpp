@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "timer_queue.h"
+#include "macros.h"
 #include "clock.h"
 
 namespace wowpp
@@ -57,7 +58,7 @@ namespace wowpp
 
 			if (now >= next.time)
 			{
-				assert(getCurrentTime() >= next.time);
+				//ASSERT(getCurrentTime() >= next.time);
 				const auto callback = next.callback;
 				m_queue.pop();
 				callback();

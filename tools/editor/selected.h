@@ -31,9 +31,9 @@ namespace wowpp
 	{
 	public:
 
-		typedef boost::signals2::signal<void(const Selected &)> PositionChangedSignal;
-		typedef boost::signals2::signal<void(const Selected &)> RotationChangedSignal;
-		typedef boost::signals2::signal<void(const Selected &)> ScaleChangedSignal;
+		typedef simple::signal<void(const Selected &)> PositionChangedSignal;
+		typedef simple::signal<void(const Selected &)> RotationChangedSignal;
+		typedef simple::signal<void(const Selected &)> ScaleChangedSignal;
 
 		PositionChangedSignal positionChanged;
 		RotationChangedSignal rotationChanged;

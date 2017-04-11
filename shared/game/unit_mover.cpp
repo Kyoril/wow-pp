@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "unit_mover.h"
+#include "circle.h"
 #include "game_unit.h"
 #include "world_instance.h"
 #include "universe.h"
@@ -42,6 +43,7 @@ namespace wowpp
 		, m_moveEnd(0)
 		, m_customSpeed(false)
 		, m_debugOutputEnabled(false)
+		, m_canWalkOnTerrain(true)
 	{
 		m_moveUpdated.ended.connect([this]()
 		{
@@ -111,14 +113,14 @@ namespace wowpp
 		}
 	}
 
-	bool UnitMover::moveTo(const math::Vector3 &target)
+	bool UnitMover::moveTo(const math::Vector3 &target, const IShape *clipping/* = nullptr*/)
 	{
-		bool result = moveTo(target, m_unit.getSpeed(movement_type::Run));
+		bool result = moveTo(target, m_unit.getSpeed(movement_type::Run), clipping);
 		m_customSpeed = false;
 		return result;
 	}
 
-	bool UnitMover::moveTo(const math::Vector3 &target, float customSpeed)
+	bool UnitMover::moveTo(const math::Vector3 &target, float customSpeed, const IShape *clipping/* = nullptr*/)
 	{
 		auto &moved = getMoved();
 
@@ -140,13 +142,16 @@ namespace wowpp
 		m_start = currentLoc;
 
 		// Do we really need to move?
-		if (target == currentLoc)
+		if (target.isCloseTo(currentLoc, 0.1f))
 		{
-			m_target = target + math::Vector3(0.0f, 0.0f, 0.4f);
-			stopMovement();
+			m_target = target;
 
-			// Fire signal since we reached our target
-			targetReached();
+			if (isMoving())
+			{
+				// Fire signal since we reached our target
+				stopMovement();
+				targetReached();
+			}
 
 			return true;
 		}
@@ -187,29 +192,43 @@ namespace wowpp
 		
 		// Calculate path
 		std::vector<math::Vector3> path;
-		if (!map->calculatePath(currentLoc, target, path))
+		if (!map->calculatePath(currentLoc, target, path, m_canWalkOnTerrain, clipping))
 		{
 			return false;
 		}
 
-		assert(!path.empty());
-		
+		if (path.empty())
+			return false;
+
 		// Update timing
 		m_moveStart = getCurrentTime();
-		m_path.addPosition(m_moveStart, currentLoc);
+		//m_path.addPosition(m_moveStart, currentLoc);
 
 		GameTime moveTime = m_moveStart;
 		for (UInt32 i = 0; i < path.size(); ++i)
 		{
 			const float dist =
 				(i == 0) ? ((path[i] - currentLoc).length()) : (path[i] - path[i - 1]).length();
+
 			moveTime += (dist / customSpeed) * constants::OneSecond;
 			m_path.addPosition(moveTime, path[i]);
 		}
 
 		// Use new values
 		m_start = currentLoc;
-		m_target = path.back() + math::Vector3(0.0f, 0.0f, 0.4f);
+		m_target = path.back()/* + math::Vector3(0.0f, 0.0f, 0.4f)*/;
+		
+		// Check if target path is really close to current path
+		if (m_target.isCloseTo(currentLoc, 0.1f))
+		{
+			if (isMoving())
+			{
+				// Fire signal since we reached our target
+				stopMovement();
+				targetReached();
+			}
+			return true;
+		}
 
 		// Calculate time of arrival
 		m_moveEnd = moveTime;

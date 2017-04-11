@@ -213,7 +213,8 @@ namespace wowpp
 			{
 				// Create a new item instance (or maybe a bag if it is a bag)
 				std::shared_ptr<GameItem> item;
-				if (entry.itemclass() == game::item_class::Container)
+				if (entry.itemclass() == game::item_class::Container ||
+					entry.itemclass() == game::item_class::Quiver)
 				{
 					item = std::make_shared<GameBag>(m_owner.getProject(), entry);
 				}
@@ -225,7 +226,7 @@ namespace wowpp
 
 				// We need a valid world instance for this
 				auto *world = m_owner.getWorldInstance();
-				assert(world);
+				ASSERT(world);
 
 				// Determine slot
 				UInt8 bag = 0, subslot = 0;
@@ -279,6 +280,9 @@ namespace wowpp
 				if (bag == player_inventory_slots::Bag_0)
 				{
 					m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), item->getGuid());
+					if (isBagBarSlot(slot))
+						m_owner.applyItemStats(*item, true);
+
 					if (isEquipmentSlot(slot))
 					{
 						m_owner.setUInt32Value(character_fields::VisibleItem1_0 + (subslot * 16), item->getEntry().id());
@@ -305,7 +309,7 @@ namespace wowpp
 		}
 
 		// WARNING: There should never be any items left here!
-		assert(amountLeft == 0);
+		ASSERT(amountLeft == 0);
 		if (amountLeft > 0)
 		{
 			ELOG("Could not add all items, something went really wrong! " << __FUNCTION__);
@@ -314,6 +318,121 @@ namespace wowpp
 
 		// Quest check
 		m_owner.onQuestItemAddedCredit(entry, amount);
+
+		// Everything okay
+		return game::inventory_change_failure::Okay;
+	}
+	game::InventoryChangeFailure Inventory::addItem(std::shared_ptr<GameItem> item, UInt16 * out_slot)
+	{
+		ASSERT(item);
+		
+		const auto &entry = item->getEntry();
+
+		// Limit the total amount of items
+		const UInt16 itemCount = getItemCount(entry.id());
+		if (entry.maxcount() > 0 &&
+			UInt32(itemCount + item->getStackCount()) > entry.maxcount())
+		{
+			return game::inventory_change_failure::CantCarryMoreOfThis;
+		}
+
+		if (m_freeSlots < 1)
+		{
+			return game::inventory_change_failure::InventoryFull;
+		}
+
+		// Now check all bags for the next free slot
+		UInt16 targetSlot = 0;
+		forEachBag([this, &targetSlot](UInt8 bag, UInt8 slotStart, UInt8 slotEnd) -> bool
+		{
+			for (UInt8 slot = slotStart; slot < slotEnd; ++slot)
+			{
+				const UInt16 absoluteSlot = getAbsoluteSlot(bag, slot);
+
+				// Check if this slot is empty
+				auto it = m_itemsBySlot.find(absoluteSlot);
+				if (it == m_itemsBySlot.end())
+				{
+					// Slot is empty - use it!
+					targetSlot = absoluteSlot;
+					return false;
+				}
+			}
+
+			// Continue with the next bag
+			return true;
+		});
+
+		// Check if an empty slot was found
+		if (targetSlot == 0)
+		{
+			return game::inventory_change_failure::InventoryFull;
+		}
+
+		// Finally add the item
+		UInt8 bag = 0, subslot = 0;
+		getRelativeSlots(targetSlot, bag, subslot);
+
+		// Fix item properties like container guid and owner guid
+		if (isBagSlot(targetSlot))
+		{
+			auto bagInst = getBagAtSlot(targetSlot);
+			ASSERT(bagInst);
+			item->setUInt64Value(item_fields::Contained, bagInst ? bagInst->getGuid() : m_owner.getGuid());
+		}
+		else
+		{
+			item->setUInt64Value(item_fields::Contained, m_owner.getGuid());
+		}
+		item->setUInt64Value(item_fields::Owner, m_owner.getGuid());
+
+		// Bind this item
+		if (entry.bonding() == game::item_binding::BindWhenPickedUp)
+		{
+			item->addFlag(item_fields::Flags, game::item_flags::Bound);
+		}
+
+		// Increase cached counter
+		m_itemCounter[entry.id()] += item->getStackCount();
+		if (out_slot) {
+			*out_slot = targetSlot;
+		}
+
+		// Add this item to the inventory slot and reduce our free slot cache
+		m_itemsBySlot[targetSlot] = item;
+		m_freeSlots--;
+
+		// Watch for item despawn packet
+		m_itemDespawnSignals[item->getGuid()]
+			= item->despawned.connect(std::bind(&Inventory::onItemDespawned, this, std::placeholders::_1));
+
+		// Create the item instance
+		itemInstanceCreated(item, targetSlot);
+
+		// Update player fields
+		if (bag == player_inventory_slots::Bag_0)
+		{
+			m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), item->getGuid());
+			if (isBagBarSlot(targetSlot))
+				m_owner.applyItemStats(*item, true);
+
+			if (isEquipmentSlot(targetSlot))
+			{
+				m_owner.setUInt32Value(character_fields::VisibleItem1_0 + (subslot * 16), item->getEntry().id());
+				m_owner.setUInt64Value(character_fields::VisibleItem1_CREATOR + (subslot * 16), item->getUInt64Value(item_fields::Creator));
+				m_owner.applyItemStats(*item, true);
+			}
+		}
+		else if (isBagSlot(targetSlot))
+		{
+			auto packSlot = getAbsoluteSlot(player_inventory_slots::Bag_0, bag);
+			auto bagInst = getBagAtSlot(packSlot);
+			if (bagInst)
+			{
+				bagInst->setUInt64Value(bag_fields::Slot_1 + (subslot * 2), item->getGuid());
+				itemInstanceUpdated(bagInst, packSlot);
+			}
+		}
 
 		// Everything okay
 		return game::inventory_change_failure::Okay;
@@ -377,7 +496,7 @@ namespace wowpp
 				{
 					// Reduce stack count
 					it->second->setUInt32Value(item_fields::StackCount, stackCount - itemsToDelete);
-					m_itemCounter[entry.id()] -= (stackCount - itemsToDelete);
+					m_itemCounter[entry.id()] -= itemsToDelete;
 					itemsToDelete = 0;
 
 					// Notify client about this update
@@ -394,11 +513,8 @@ namespace wowpp
 		});
 
 		// WARNING: There should never be any items left here!
-		assert(itemsToDelete == 0);
-		if (itemsToDelete > 0)
-		{
-			ELOG("Could not remove all items, something went really wrong! " << __FUNCTION__);
-		}
+		ASSERT(itemsToDelete == 0);
+		ASSERT(m_itemCounter[entry.id()] == itemCount - amount);
 
 		return game::inventory_change_failure::Okay;
 	}
@@ -434,6 +550,9 @@ namespace wowpp
 			if (bag == player_inventory_slots::Bag_0)
 			{
 				m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), 0);
+				if (isBagBarSlot(absoluteSlot))
+					m_owner.applyItemStats(*item, false);
+
 				if (isEquipmentSlot(absoluteSlot))
 				{
 					m_owner.setUInt32Value(character_fields::VisibleItem1_0 + (subslot * 16), item->getEntry().id());
@@ -464,6 +583,16 @@ namespace wowpp
 		// Quest check
 		m_owner.onQuestItemRemovedCredit(item->getEntry(), stacks);
 		return game::inventory_change_failure::Okay;
+	}
+	game::InventoryChangeFailure Inventory::removeItemByGUID(UInt64 guid, UInt16 stacks)
+	{
+		UInt16 slot = 0;
+		if (!findItemByGUID(guid, slot))
+		{
+			return game::inventory_change_failure::InternalBagError;
+		}
+
+		return removeItem(slot, stacks);
 	}
 	game::InventoryChangeFailure Inventory::swapItems(UInt16 slotA, UInt16 slotB)
 	{
@@ -687,8 +816,26 @@ namespace wowpp
 			else if ((isInventorySlot(slotB) || isBagSlot(slotB)) &&
 			         !(isInventorySlot(slotA) || isBagSlot(slotA)))
 			{
-				assert(m_freeSlots >= 1);
+				ASSERT(m_freeSlots >= 1);
 				m_freeSlots--;
+			}
+		}
+
+		// Apply bag stats (mainly for quivers so far...)
+		if (isBagBarSlot(slotA))
+		{
+			m_owner.applyItemStats(*srcItem, false);
+			if (dstItem)
+			{
+				m_owner.applyItemStats(*dstItem, true);
+			}
+		}
+		if (isBagBarSlot(slotB))
+		{
+			m_owner.applyItemStats(*srcItem, true);
+			if (dstItem)
+			{
+				m_owner.applyItemStats(*dstItem, false);
 			}
 		}
 
@@ -1005,14 +1152,28 @@ namespace wowpp
 			{
 				return game::inventory_change_failure::ItemDoesNotGoToSlot;
 			}
+			
+			if (bag->getEntry().itemclass() == game::item_class::Quiver &&
+				entry.inventorytype() != game::inventory_type::Ammo)
+			{
+				return game::inventory_change_failure::OnlyAmmoCanGoHere;
+			}
 
 			return game::inventory_change_failure::Okay;
 		}
 		else if (isBagPackSlot(slot))
 		{
-			if (entry.itemclass() != game::item_class::Container)
+			if (entry.itemclass() != game::item_class::Container &&
+				entry.itemclass() != game::item_class::Quiver)
 			{
 				return game::inventory_change_failure::NotABag;
+			}
+
+			// Make sure that we have only up to one quiver equipped at a time
+			if (entry.itemclass() == game::item_class::Quiver)
+			{
+				if (hasEquippedQuiver())
+					return game::inventory_change_failure::CanEquipOnlyOneQuiver;
 			}
 
 			auto bagItem = getItemAtSlot(slot);
@@ -1025,7 +1186,7 @@ namespace wowpp
 				}
 
 				auto castedBag = std::static_pointer_cast<GameBag>(bagItem);
-				assert(castedBag);
+				ASSERT(castedBag);
 
 				if (!castedBag->isEmpty())
 				{
@@ -1069,6 +1230,17 @@ namespace wowpp
 	{
 		auto it = m_itemCounter.find(itemId);
 		return (it != m_itemCounter.end() ? it->second : 0);
+	}
+	bool Inventory::hasEquippedQuiver() const
+	{
+		for (UInt8 slot = player_inventory_slots::Start; slot < player_inventory_slots::End; ++slot)
+		{
+			auto testBag = getItemAtSlot(getAbsoluteSlot(player_inventory_slots::Bag_0, slot));
+			if (testBag && testBag->getEntry().itemclass() == game::item_class::Quiver)
+				return true;
+		}
+
+		return false;
 	}
 	UInt16 Inventory::getAbsoluteSlot(UInt8 bag, UInt8 slot)
 	{
@@ -1183,6 +1355,14 @@ namespace wowpp
 		           absoluteSlot >> 8 >= player_inventory_slots::Start &&
 		           absoluteSlot >> 8 < player_inventory_slots::End);
 	}
+	bool Inventory::isBagBarSlot(UInt16 absoluteSlot)
+	{
+		return (
+			absoluteSlot >> 8 == player_inventory_slots::Bag_0 &&
+			(absoluteSlot & 0xFF) >= player_inventory_slots::Start &&
+			(absoluteSlot & 0xFF) < player_inventory_slots::End
+			);
+	}
 	void Inventory::addRealmData(const ItemData &data)
 	{
 		m_realmData.push_back(data);
@@ -1214,7 +1394,8 @@ namespace wowpp
 
 				// Create a new item instance
 				std::shared_ptr<GameItem> item;
-				if (entry->itemclass() == game::item_class::Container)
+				if (entry->itemclass() == game::item_class::Container ||
+					entry->itemclass() == game::item_class::Quiver)
 				{
 					item = std::make_shared<GameBag>(m_owner.getProject(), *entry);
 				}
@@ -1242,6 +1423,9 @@ namespace wowpp
 				getRelativeSlots(data.slot, bag, subslot);
 				if (bag == player_inventory_slots::Bag_0)
 				{
+					if (isBagBarSlot(data.slot))
+						m_owner.applyItemStats(*item, true);
+
 					if (isEquipmentSlot(data.slot))
 					{
 						m_owner.setUInt64Value(character_fields::InvSlotHead + (subslot * 2), item->getGuid());

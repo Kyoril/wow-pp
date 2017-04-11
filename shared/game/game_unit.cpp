@@ -23,6 +23,7 @@
 #include "game_unit.h"
 #include "log/default_log_levels.h"
 #include "world_instance.h"
+#include "universe.h"
 #include "each_tile_in_sight.h"
 #include "binary_io/vector_sink.h"
 #include "game_protocol/game_protocol.h"
@@ -153,10 +154,10 @@ namespace wowpp
 	void GameUnit::raceUpdated()
 	{
 		m_raceEntry = getProject().races.getById(getRace());// m_getRace(getRace());
-		assert(m_raceEntry);
+		ASSERT(m_raceEntry);
 
 		const auto *factionTemplate = getProject().factionTemplates.getById(m_raceEntry->faction());
-		assert(factionTemplate);
+		ASSERT(factionTemplate);
 
 		setFactionTemplate(*factionTemplate);
 	}
@@ -164,7 +165,7 @@ namespace wowpp
 	void GameUnit::classUpdated()
 	{
 		m_classEntry = m_project.classes.getById(getClass());
-		assert(m_classEntry);
+		ASSERT(m_classEntry);
 
 		// Update power type
 		setByteValue(unit_fields::Bytes0, 3, m_classEntry->powertype());
@@ -380,6 +381,25 @@ namespace wowpp
 	bool GameUnit::isMoving() const
 	{
 		return (m_movementInfo.moveFlags & game::movement_flags::Moving) != 0 || m_mover->isMoving();
+	}
+
+	void GameUnit::modifyAuraState(game::AuraState state, bool apply)
+	{
+		const UInt32 flag = 1 << (state - 1);
+		if (apply)
+		{
+			if (!hasFlag(unit_fields::AuraState, flag))
+			{
+				addFlag(unit_fields::AuraState, flag);
+			}
+		}
+		else
+		{
+			if (hasFlag(unit_fields::AuraState, flag))
+			{
+				removeFlag(unit_fields::AuraState, flag);
+			}
+		}
 	}
 
 	void GameUnit::relocate(const math::Vector3 & position, float o, bool fire)
@@ -690,11 +710,11 @@ namespace wowpp
 			}
 
 			// Distance check
-			const float distanceSq = getSquaredDistanceTo(*victim, false);
+			const bool isFlyingOrSwimming = victim->getMovementInfo().moveFlags & (game::movement_flags::Flying | game::movement_flags::Flying2 | game::movement_flags::Swimming);
+			const float distanceSq = getSquaredDistanceTo(*victim, isFlyingOrSwimming || isGameCharacter());
 			const float combatRangeSq = 
 				::powf(getMeleeReach() + victim->getMeleeReach() + rangeBonus, 2.0f);
-			if (distanceSq > combatRangeSq || 
-				::fabsf(victim->getLocation().z - getLocation().z) >= 2.0f)
+			if (distanceSq > combatRangeSq)
 			{
 				autoAttackError(attack_swing_error::OutOfRange);
 
@@ -784,6 +804,7 @@ namespace wowpp
 					bool crit = false;
 					UInt32 resisted = 0;
 					UInt32 absorbed = 0;
+
 					if (victimStates[i] == game::victim_state::IsImmune)
 					{
 						totalDamage = 0;
@@ -931,11 +952,60 @@ namespace wowpp
 						setUInt32Value(unit_fields::Power2, currentRage);
 					}
 
+					//give rage when player get's damage
+					if (victim->isGameCharacter() && victim->getByteValue(unit_fields::Bytes0, 3) == game::power_type::Rage)
+					{
+						const UInt32 level = victim->getLevel();
+						//float addRage = (5 * totalDamage) / (2 * 274,7); //274,4 is the value for level 70 TODO: check the value for other levels
+						float addRage = (5 * totalDamage) / (2 * (3.9242f * level)); //??
+						UInt32 currentRage = victim->getUInt32Value(unit_fields::Power2);
+						UInt32 maxRage = victim->getUInt32Value(unit_fields::MaxPower2);
+						
+						if (currentRage + addRage > maxRage)
+						{
+							currentRage = maxRage;
+						}
+						else
+						{
+							currentRage += addRage;
+						}
+						victim->setUInt32Value(unit_fields::Power2, currentRage);
+					}
+
+
+
+                                        // Update skills in case of a hit
+					if (hitInfos[i] != game::hit_info::Miss && (victimStates[i] & game::victim_state::Normal | game::victim_state::Parry | game::victim_state::Blocks))
+					{
+						const bool victimIsCharacter = victim->isGameCharacter();
+						const bool attackerIsCharacter = isGameCharacter();
+
+						// Increase attackers weapon skill 
+						if (attackerIsCharacter && !victimIsCharacter)
+						{
+							// Get the respective weapon
+							auto weapon = reinterpret_cast<GameCharacter*>(this)->getInventory().getWeaponByAttackType(m_weaponAttack, true, true);
+
+							// Determine weapon skill
+							UInt32 weaponSkill = game::skill_type::Unarmed;	// No weapon
+							if (weapon)
+								weaponSkill = weapon->getEntry().skill();
+
+							// Increase weapon skill
+							reinterpret_cast<GameCharacter*>(this)->updateWeaponSkill(weaponSkill);
+						}
+
+						// Increase targets defense skill (only if not pvp)
+						if (victimIsCharacter && !attackerIsCharacter)
+						{
+							reinterpret_cast<GameCharacter*>(victim)->updateWeaponSkill(game::skill_type::Defense);
+						}
+					}
+
 					// Deal damage (Note: m_victim can become nullptr, if the target dies)
 					if (totalDamage > 0)
 					{
-
-						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), this, totalDamage - resisted - absorbed);
+						victim->dealDamage(totalDamage - resisted - absorbed, (1 << 0), game::DamageType::Direct, this, totalDamage - resisted - absorbed);
 					}
 					else
 					{
@@ -993,9 +1063,9 @@ namespace wowpp
 		}
 
 		// Do this only while not in combat
+		regenerateHealth();
 		if (!isInCombat())
 		{
-			regenerateHealth();
 			if (!m_auras.hasAura(game::aura_type::InterruptRegen))
 			{
 				regeneratePower(game::power_type::Rage);
@@ -1194,6 +1264,26 @@ namespace wowpp
 	}
 
 	void GameUnit::updateAllCritChances()
+	{
+		// Nothing to do here.
+	}
+
+	void GameUnit::updateSpellCritChance(game::SpellSchool spellSchool)
+	{
+		// Nothing to do here.
+	}
+
+	void GameUnit::updateAllSpellCritChances()
+	{
+		// Nothing to do here.
+	}
+
+	void GameUnit::updateDodgePercentage()
+	{
+		// Nothing to do here.
+	}
+
+	void GameUnit::updateParryPercentage()
 	{
 		// Nothing to do here.
 	}
@@ -1604,9 +1694,10 @@ namespace wowpp
 		const float basePct = getModifierValue(mod, unit_mod_type::BasePct);
 		const float totalVal = getModifierValue(mod, unit_mod_type::TotalValue);
 		const float totalPct = getModifierValue(mod, unit_mod_type::TotalPct);
-
+		
 		float value = ((baseVal * basePct) + totalVal) * totalPct;
 		setInt32Value(unit_fields::Stat0 + stat, Int32(value));
+
 		setInt32Value(unit_fields::PosStat0 + stat, totalVal > 0 ? Int32(totalVal) : 0);
 		setInt32Value(unit_fields::NegStat0 + stat, totalVal < 0 ? Int32(totalVal) : 0);
 
@@ -1619,6 +1710,7 @@ namespace wowpp
 		case unit_mods::StatAgility:
 			updateArmor();
 			updateDamage();
+			updateAllCritChances();
 			break;
 		case unit_mods::StatStamina:
 			updateMaxHealth();
@@ -1627,6 +1719,7 @@ namespace wowpp
 			updateMaxPower(game::power_type::Mana);
 			updateManaRegen();
 			updateArmor(); // Arcane Fortitude
+			updateAllSpellCritChances();
 			break;
 		case unit_mods::StatSpirit:
 			updateManaRegen();
@@ -1802,7 +1895,7 @@ namespace wowpp
 		}
 	}
 
-	bool GameUnit::dealDamage(UInt32 damage, UInt32 school, GameUnit *attacker, float threat)
+	bool GameUnit::dealDamage(UInt32 damage, UInt32 school, game::DamageType damageType, GameUnit *attacker, float threat)
 	{
 		UInt32 health = getUInt32Value(unit_fields::Health);
 		if (health < 1)
@@ -1829,7 +1922,7 @@ namespace wowpp
 		}
 
 		setUInt32Value(unit_fields::Health, health);
-		takenDamage(attacker, damage);
+		takenDamage(attacker, damage, damageType);
 
 		UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		float healthPct = float(health) / float(maxHealth);
@@ -1859,11 +1952,15 @@ namespace wowpp
 			return false;
 		}
 
+		UInt32 realAmount = amount;
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
-		if (health + amount >= maxHealth) {
+		if (health + amount >= maxHealth) 
+		{
+			realAmount = maxHealth - health;
 			health = maxHealth;
 		}
-		else {
+		else
+		{
 			health += amount;
 		}
 
@@ -1881,8 +1978,7 @@ namespace wowpp
 
 		if (healer && !noThreat)
 		{
-			// TODO: Add threat to all units who are in fight with the healed target, but only
-			// if the units are not friendly towards the healer!
+			healed(healer, realAmount);
 		}
 		return true;
 	}
@@ -2084,12 +2180,55 @@ namespace wowpp
 
 	float GameUnit::getDodgeChance(GameUnit &attacker)
 	{
-		return isStunned() ? 0.0f : 5.0f;
+		float dodgeChance = 5.0f;
+
+		if (isGameCharacter())
+		{
+			dodgeChance = getFloatValue(character_fields::DodgePercentage);
+		}
+
+		return isStunned() ? 0.0f : dodgeChance;
 	}
 
 	float GameUnit::getParryChance(GameUnit &attacker)
 	{
-		return isStunned() ? 0.0f : 5.0f;
+		float chance = 0.0f;
+
+		if (!isStunned())
+		{ 
+			if (isGameCharacter())
+			{
+				auto &character = reinterpret_cast<GameCharacter &>(*this);
+
+				if (character.canParry())
+				{
+					const auto &inventory = character.getInventory();
+					auto item = inventory.getWeaponByAttackType(game::weapon_attack::BaseAttack, true, true);
+
+					if (!item)
+					{
+						item = inventory.getWeaponByAttackType(game::weapon_attack::OffhandAttack, true, true);
+					}
+
+					if (item)
+					{
+						chance = getFloatValue(character_fields::ParryPercentage);
+					}
+				}
+			}
+			else if (isCreature())
+			{
+				if (reinterpret_cast<GameCreature &>(*this).getEntry().creaturetypeflags() == game::creature_type::Humanoid)
+				{
+					chance = 5.0f;
+
+					chance += getAuras().getTotalBasePoints(game::aura_type::ModParryPercent);
+				}
+			}
+		}
+
+
+		return chance < 0.0f ? 0.0f : chance;
 	}
 
 	float GameUnit::getGlancingChance(GameUnit &attacker)
@@ -2171,7 +2310,9 @@ namespace wowpp
 
 		resistChanceMod -= *std::max_element(mechanicResistance.begin(), mechanicResistance.end());
 
-		UInt32 resiOffset = static_cast<UInt32>(log2(school));
+		UInt32 resiOffset = static_cast<UInt32>(log2(school) - 1);
+		ASSERT(unit_fields::Resistances + resiOffset < unit_fields::ResistancesBuffModsPositive);
+
 		UInt32 baseResi = getUInt32Value(unit_fields::Resistances + resiOffset);
 		UInt32 casterLevel = attacker.getLevel();
 		UInt32 victimLevel = getLevel();
@@ -2258,7 +2399,7 @@ namespace wowpp
 				crit += attacker.getAuras().getTotalBasePoints(game::aura_type::ModCritPercent);
 			}
 
-			if (game::weapon_attack::RangedAttack)
+			if (attackType == game::weapon_attack::RangedAttack)
 			{
 				crit += m_auras.getTotalBasePoints(game::aura_type::ModAttackerRangedCritChance);
 			}
@@ -2269,7 +2410,8 @@ namespace wowpp
 
 			crit += m_auras.getTotalBasePoints(game::aura_type::ModAttackerSpellAndWeaponCritChance);
 
-			if (isGameCharacter())
+			const bool victimIsCharacter = isGameCharacter();
+			if (victimIsCharacter)
 			{
 				auto *character = reinterpret_cast<GameCharacter*>(this);
 
@@ -2283,7 +2425,9 @@ namespace wowpp
 				}
 			}
 
-			crit += (static_cast<Int32>(getMaxSkillValueForLevel(this)) - static_cast<Int32>(getDefenseSkillValue(&attacker))) * 0.04f;
+			const Int32 attackerWeaponSkill = attacker.getMaxWeaponSkillValueForLevel();
+			const Int32 victimDefenseSkill = getDefenseSkillValue(attacker);
+			crit += (attackerWeaponSkill - victimDefenseSkill) * 0.04f;
 
 			return crit < 0.0f ? 0.0f : crit;
 		}
@@ -2447,9 +2591,11 @@ namespace wowpp
 			return;
 
 		const float dist =
-			isFeared() ? 25.0f : 2.5f;
+			isFeared() ? 25.0f : 2.0f;
 		const math::Vector3 loc =
 			isFeared() ? getMover().getCurrentLocation() : m_confusedLoc;
+		
+		const Circle clipping(loc.x, loc.y, dist);
 
 		auto *world = getWorldInstance();
 		if (world)
@@ -2460,7 +2606,18 @@ namespace wowpp
 				math::Vector3 targetPoint;
 				if (mapData->getRandomPointOnGround(loc, dist, targetPoint))
 				{
-					getMover().moveTo(targetPoint);
+					if (!getMover().moveTo(targetPoint, getSpeed(isConfused() ? movement_type::Walk : movement_type::Run), &clipping))
+					{
+						// Try again next in next update cycle if possible
+						std::weak_ptr<GameObject> weakThis(shared_from_this());
+						world->getUniverse().post([weakThis]() {
+							auto strong = weakThis.lock();
+							if (strong)
+							{
+								std::static_pointer_cast<GameUnit>(strong)->triggerNextFearMove();
+							}
+						});
+					}
 					return;
 				}
 			}
@@ -2470,7 +2627,7 @@ namespace wowpp
 	void GameUnit::addDynamicObject(std::shared_ptr<DynObject> object)
 	{
 		// We need a valid object!
-		assert(object);
+		ASSERT(object);
 
 		// Save this pointer instance in the map (increase ref counter and thus prevent
 		// deletion of this object as long as this unit exists)
@@ -2531,7 +2688,7 @@ namespace wowpp
 
 	const proto::FactionTemplateEntry &GameUnit::getFactionTemplate() const
 	{
-		assert(m_factionTemplate);
+		ASSERT(m_factionTemplate);
 		return *m_factionTemplate;
 	}
 
@@ -2648,7 +2805,7 @@ namespace wowpp
 	void GameUnit::addAttackingUnit(GameUnit &attacker)
 	{
 		// Add attacking unit to the list of attackers
-		assert(!m_attackingUnits.contains(&attacker));
+		ASSERT(!m_attackingUnits.contains(&attacker));
 		m_attackingUnits.add(&attacker);
 
 		// If wasn't in combat, remove auras which should be removed when entering combat
@@ -2669,7 +2826,7 @@ namespace wowpp
 	void GameUnit::removeAttackingUnit(GameUnit &removed)
 	{
 		// Remove attacking unit
-		assert(m_attackingUnits.contains(&removed));
+		ASSERT(m_attackingUnits.contains(&removed));
 		m_attackingUnits.remove(&removed);
 
 		// Remove combat flag for player characters if no attacking unit is left
@@ -2690,6 +2847,11 @@ namespace wowpp
 	bool GameUnit::hasAttackingUnits() const
 	{
 		return !m_attackingUnits.empty();
+	}
+
+	UInt32 GameUnit::attackingUnitCount() const
+	{
+		return static_cast<UInt32>(m_attackingUnits.size());
 	}
 
 	io::Writer &operator<<(io::Writer &w, GameUnit const &object)
@@ -2820,12 +2982,11 @@ namespace wowpp
 
 		if (wasFeared && !isFeared)
 		{
-			unitStateChanged(unit_state::Feared, false);
-
 			// Stop movement in every case
 			getMover().stopMovement();
 			m_fearMoved.disconnect();
 
+			unitStateChanged(unit_state::Feared, false);
 		}
 		else if (!wasFeared && isFeared)
 		{
@@ -2860,11 +3021,11 @@ namespace wowpp
 
 		if (wasConfused && !isConfused)
 		{
-			unitStateChanged(unit_state::Confused, false);
-
 			// Stop movement in every case
 			getMover().stopMovement();
 			m_fearMoved.disconnect();
+
+			unitStateChanged(unit_state::Confused, false);
 		}
 		else if (!wasConfused && isConfused)
 		{
@@ -2931,7 +3092,7 @@ namespace wowpp
 			slow = slow < slowNonStack ? slow : slowNonStack;
 
 			// Slow has to be <= 0
-			assert(slow <= 0);
+			ASSERT(slow <= 0);
 			if (slow)
 			{
 				speed += (speed * static_cast<float>(slow) / 100.0f);

@@ -82,7 +82,7 @@ namespace wowpp
 						{
 							if (e.data_size() > 0)
 							{
-								takenDamage.connect([this, trigger, &e](GameUnit *, UInt32 damage) {
+								takenDamage.connect([this, trigger, &e](GameUnit *, UInt32 damage, game::DamageType type) {
 									const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 									const UInt32 health = getUInt32Value(unit_fields::Health);
 									
@@ -130,7 +130,7 @@ namespace wowpp
 
 		// TODO
 		const auto *faction = getProject().factionTemplates.getById(entry.alliancefaction());
-		assert(faction);
+		ASSERT(faction);
 		setFactionTemplate(*faction);
 
 		setLevel(creatureLevel);
@@ -187,11 +187,22 @@ namespace wowpp
 		// Apply resistances
 		for (UInt32 i = 0; i < 6; ++i)
 		{
+			if (entry.resistances(i) > 650)
+			{
+				WLOG("Creature " << entry.id() << " has a resistance value of " << entry.resistances(i) << " which seems wrong! Consider fixing it...");
+			}
+
 			setModifierValue(static_cast<UnitMods>(unit_mods::ResistanceStart + i), unit_mod_type::BaseValue, entry.resistances(i));
 		}
 
 		// Setup new entry
 		m_entry = &entry;
+
+		// Add all required variables
+		for (const auto &variable : m_entry->variables())
+		{
+			addVariable(variable);
+		}
 
 		// Emit signal
 		if (!isInitialize)
@@ -300,6 +311,9 @@ namespace wowpp
 
 	void GameCreature::regenerateHealth()
 	{
+		if (isInCombat())
+			return;
+
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 		const UInt32 addHealth = maxHealth / 3;
 		heal(addHealth, nullptr, false);
@@ -365,6 +379,7 @@ namespace wowpp
 					case trigger_event::OnSpellHit:
 					case trigger_event::OnSpellAuraRemoved:
 					case trigger_event::OnEmote:
+					case trigger_event::OnSpellCast:
 						if (triggerEvent.data(0) != 0)
 						{
 							if (data.empty() || data[0] != triggerEvent.data(0))
@@ -428,7 +443,9 @@ namespace wowpp
 			auto questStatus = character.getQuestStatus(quest);
 			if (questStatus == game::quest_status::Available)
 			{
-				return game::questgiver_status::Available;
+				const auto *entry = character.getProject().quests.getById(quest);
+				if (entry)
+					return game::questgiver_status::Available;
 			}
 		}
 		return result;
@@ -489,6 +506,15 @@ namespace wowpp
 	{
 		// TODO: Speed modifier setup in unit entry and/or unit spawn point settings
 		return GameUnit::getBaseSpeed(type) * (type == movement_type::Run ? 1.14286f : 1.0f);
+	}
+
+	void GameCreature::activateSkinningLoot()
+	{
+		if (getEntry().skinninglootentry())
+		{
+			// It can be skinned
+			addFlag(unit_fields::UnitFlags, game::unit_flags::Skinnable);
+		}
 	}
 
 	bool GameCreature::isEvading() const

@@ -118,6 +118,11 @@ namespace wowpp
 			return true;
 		}
 
+		void TeamConnector::connectionDataSent(size_t size)
+		{
+			dataSent(size);
+		}
+
 		bool TeamConnector::editorLoginRequest(const String &accountName, const SHA1Hash &password)
 		{
 			using namespace pp::editor_team;

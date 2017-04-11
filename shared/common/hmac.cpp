@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "hmac.h"
+#include "macros.h"
 #include "utilities.h"
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
@@ -39,9 +40,9 @@ namespace wowpp
 
 	std::streamsize OpenSSL_HMACHashSink::write(const char *data, std::streamsize length)
 	{
-		assert(data);
-		assert(length >= 0);
-		assert(static_cast<boost::uintmax_t>(length) <= std::numeric_limits<size_t>::max());
+		ASSERT(data);
+		ASSERT(length >= 0);
+		ASSERT(static_cast<boost::uintmax_t>(length) <= std::numeric_limits<size_t>::max());
 
 		if (!m_context)
 		{
@@ -63,7 +64,7 @@ namespace wowpp
 	HMACHash OpenSSL_HMACHashSink::finalizeHash()
 	{
 		HMACHash digest;
-		assert(digest.size() == 20);
+		ASSERT(digest.size() == 20);
 		unsigned int len = 0;
 
 #ifdef __APPLE__
@@ -74,7 +75,7 @@ namespace wowpp
 			throw std::runtime_error("HMAC_Final failed");
 		}
 #endif
-		assert(len == 20);
+		ASSERT(len == 20);
 
 		m_context.reset();
 		return digest;

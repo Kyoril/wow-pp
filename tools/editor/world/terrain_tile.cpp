@@ -97,7 +97,7 @@ namespace wowpp
 		const Ogre::Quaternion & TerrainTile::getWorldOrientation() const
 		{
 			Ogre::Node *n = getParentNode();
-			assert(n);
+			ASSERT(n);
 
 			return n->_getDerivedOrientation();
 		}
@@ -105,7 +105,7 @@ namespace wowpp
 		const Ogre::Vector3 & TerrainTile::getWorldPosition() const
 		{
 			Ogre::Node *n = getParentNode();
-			assert(n);
+			ASSERT(n);
 
 			return n->_getDerivedPosition();
 		}
@@ -113,7 +113,7 @@ namespace wowpp
 		Ogre::Real TerrainTile::getSquaredViewDepth(const Ogre::Camera *cam) const
 		{
 			Ogre::Node *n = getParentNode();
-			assert(n);
+			ASSERT(n);
 
 			return n->getSquaredViewDepth(cam);
 		}

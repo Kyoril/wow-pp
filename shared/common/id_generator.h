@@ -27,8 +27,13 @@ namespace wowpp
 {
 	/// This class is used to generate new ids by using an internal counter.
 	template<typename T>
-	class IdGenerator : private boost::noncopyable
+	class IdGenerator
 	{
+	private:
+
+		IdGenerator<T>(const IdGenerator<T> &Other) = delete;
+		IdGenerator<T> &operator=(const IdGenerator<T> &Other) = delete;
+
 	public:
 
 		/// Default constructor.

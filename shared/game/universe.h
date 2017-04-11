@@ -27,8 +27,13 @@
 namespace wowpp
 {
 	///
-	class Universe final : public boost::noncopyable
+	class Universe final
 	{
+	private:
+
+		Universe(const Universe &Other) = delete;
+		Universe &operator=(const Universe &Other) = delete;
+
 	public:
 
 		explicit Universe(boost::asio::io_service &ioService, TimerQueue &timers);

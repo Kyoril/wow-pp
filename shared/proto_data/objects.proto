@@ -26,6 +26,8 @@ message ObjectEntry {
 	required uint32 id = 1;
 	required string name = 2;
 	optional string caption = 3;
+	repeated string name_loc = 17;
+	repeated string caption_loc = 18;
 	optional uint32 mingold = 4;
 	optional uint32 maxgold = 5;
 	required uint32 type = 6;
@@ -38,6 +40,7 @@ message ObjectEntry {
 	repeated uint32 end_quests = 13;
 	optional uint32 objectlootentry = 14;
 	repeated uint32 triggers = 15;
+	repeated uint32 variables = 16;
 }
 
 message Objects {

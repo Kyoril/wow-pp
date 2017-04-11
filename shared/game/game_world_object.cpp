@@ -87,6 +87,12 @@ namespace wowpp
 				break;
 			}
 		}
+
+		// Add all required variables
+		for (const auto &variable : m_entry.variables())
+		{
+			addVariable(variable);
+		}
 	}
 
 	void WorldObject::writeCreateObjectBlocks(std::vector<std::vector<char>> &out_blocks, bool creation /*= true*/) const
@@ -141,7 +147,11 @@ namespace wowpp
 			auto questStatus = character.getQuestStatus(quest);
 			if (questStatus == game::quest_status::Available)
 			{
-				return game::questgiver_status::Available;
+				const auto *entry = character.getProject().quests.getById(quest);
+				if (entry && entry->method() == game::quest_method::AutoComplete)
+					return game::questgiver_status::RewardRep;
+				else
+					return game::questgiver_status::Available;
 			}
 		}
 		return result;
@@ -221,6 +231,8 @@ namespace wowpp
 				{
 					m_onLootCleared = m_objectLoot->cleared.connect([this]()
 					{
+						m_onLootClosed.disconnect();
+
 						// Remove this object from the world (despawn it)
 						// REMEMBER: THIS WILL MOST LIKELY DESTROY THIS INSTANCE
 						auto *world = getWorldInstance();
@@ -230,6 +242,15 @@ namespace wowpp
 							world->removeGameObject(*this);
 						}
 					});
+
+					// If this is a chest...
+					if (m_entry.type() == world_object_type::Chest)
+					{
+						m_onLootClosed = m_objectLoot->closed.connect([this](UInt64)
+						{
+							setUInt32Value(world_object_fields::State, 1);
+						});
+					}
 				}
 			}
 		}

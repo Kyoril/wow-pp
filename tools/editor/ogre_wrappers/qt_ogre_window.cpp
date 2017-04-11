@@ -28,6 +28,9 @@
 #include <QPainter>
 #include "log/default_log_levels.h"
 #include "world/terrain_tile.h"
+#include <QMimeData>
+#include <QModelIndex>
+#include <QDataStream>
 
 QtOgreWindow::QtOgreWindow(QWindow *parent /*= nullptr*/)
 	: QWindow(parent)
@@ -78,6 +81,10 @@ void QtOgreWindow::initialize()
 	m_ogreRoot = new Ogre::Root("plugins.cfg");
 
 	wowpp::editor::BLPCodec::startup();
+
+	// Enable anisotropic texture filtering
+	Ogre::MaterialManager::getSingleton().setDefaultTextureFiltering(Ogre::TFO_ANISOTROPIC);
+	Ogre::MaterialManager::getSingleton().setDefaultAnisotropy(16);
 
 	m_mpqArchives = OGRE_NEW wowpp::editor::MPQArchiveFactory();
 	Ogre::ArchiveManager::getSingleton().addArchiveFactory(m_mpqArchives);
@@ -141,6 +148,7 @@ void QtOgreWindow::initialize()
 	rs->setConfigOption("Video Mode", dimensions.toStdString());
 	rs->setConfigOption("Full Screen", "No");
 	rs->setConfigOption("VSync", "Yes");
+	rs->setConfigOption("FSAA", "8");
 	m_ogreRoot->setRenderSystem(rs);
 	m_ogreRoot->initialise(false);
 
@@ -285,6 +293,86 @@ bool QtOgreWindow::eventFilter(QObject *target, QEvent *e)
 				m_ogreWindow->resize(this->width(), this->height());
 			}
 		}
+		else if (e->type() == QEvent::FocusIn)
+		{
+			setAnimating(true);
+		}
+		else if (e->type() == QEvent::FocusOut)
+		{
+			setAnimating(false);
+		}
+		else if (e->type() == QEvent::DragEnter)
+		{
+			auto *dragEvent = reinterpret_cast<QDragEnterEvent*>(e);
+			if (!dragEvent->source() || !m_scene)
+			{
+				dragEvent->setDropAction(Qt::IgnoreAction);
+				dragEvent->ignore();
+			}
+			return true;
+		}
+		else if (e->type() == QEvent::Drop)
+		{
+			auto *dropEvent = reinterpret_cast<QDropEvent*>(e);
+			QByteArray data = dropEvent->mimeData()->data("application/unit_entry");
+			QDataStream stream(&data, QIODevice::ReadOnly);
+			
+			wowpp::UInt32 entry = 0;
+			stream >> entry;
+
+			QPointF pos = dropEvent->posF();
+			pos.setX(pos.x() / width());
+			pos.setY(pos.y() / height());
+
+			Ogre::Ray mouseRay = m_ogreCamera->getCameraToViewportRay((Ogre::Real)pos.x(), (Ogre::Real)pos.y());
+			Ogre::RaySceneQuery* pSceneQuery = m_ogreSceneMgr->createRayQuery(mouseRay);
+			pSceneQuery->setSortByDistance(true);
+
+			Ogre::Real closest_distance = -1.0f;
+			Ogre::RaySceneQueryResult vResult = pSceneQuery->execute();
+			for (size_t ui = 0; ui < vResult.size(); ui++)
+			{
+				if (vResult[ui].movable)
+				{
+					if (vResult[ui].movable->getMovableType().compare("WoW++ Terrain Tile") != 0)
+					{
+						continue;
+					}
+
+					wowpp::view::TerrainTile* tile = static_cast<wowpp::view::TerrainTile*>(vResult[ui].movable);
+					std::vector<Ogre::Vector3> verts;
+					std::vector<wowpp::UInt32> inds;
+					tile->getVertexData(verts, inds);
+
+					// test for hitting individual triangles on the mesh
+					for (int i = 0; i < static_cast<int>(inds.size()); i += 3)
+					{
+						// check for a hit against this triangle
+						std::pair<bool, Ogre::Real> hit = Ogre::Math::intersects(mouseRay, verts[inds[i]],
+							verts[inds[i + 1]], verts[inds[i + 2]], true, true);
+						if (hit.first)
+						{
+							if ((closest_distance < 0.0f) ||
+								(hit.second < closest_distance))
+							{
+								// this is the closest so far, save it off
+								closest_distance = hit.second;
+							}
+						}
+					}
+				}
+			}
+			
+			if (closest_distance > 533.3333f)
+				closest_distance = -1.0f;
+
+			if (m_scene)
+				m_scene->onAddUnitSpawn(entry, mouseRay.getPoint(closest_distance < 0.0f ? 5.0f : closest_distance));
+			m_ogreSceneMgr->destroyQuery(pSceneQuery);
+
+			renderNow();
+			return true;
+		}
 	}
 
 	return false;
@@ -411,6 +499,7 @@ void QtOgreWindow::mouseReleaseEvent(QMouseEvent *e)
 		{
 			if (vResult[ui].movable)
 			{
+#if 0
 				if (vResult[ui].movable->getMovableType().compare("WoW++ Terrain Tile") != 0)
 				{
 					continue;
@@ -448,7 +537,8 @@ void QtOgreWindow::mouseReleaseEvent(QMouseEvent *e)
 					break;
 				}
 
-				/*
+#else
+
 				if (vResult[ui].movable->getMovableType().compare("Entity") == 0)
 				{
 					if (!vResult[ui].movable->getUserAny().isEmpty())
@@ -457,7 +547,8 @@ void QtOgreWindow::mouseReleaseEvent(QMouseEvent *e)
 						break;
 					}
 				}
-				*/
+
+#endif
 			}
 		}
 		m_ogreSceneMgr->destroyQuery(pSceneQuery);

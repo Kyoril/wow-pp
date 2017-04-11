@@ -23,7 +23,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 	add_lib(common)
-	target_link_libraries(common ${OPENSSL_LIBRARIES})
+	target_link_libraries(common log ${OPENSSL_LIBRARIES})
 
 	# Solution folder
 	if(MSVC)

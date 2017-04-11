@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "page_neighborhood.h"
+#include "common/macros.h"
 
 namespace wowpp
 {
@@ -35,7 +36,7 @@ namespace wowpp
 		void PageNeighborhood::setPageByRelativePosition(const PagePosition &position, Page *page)
 		{
 			std::size_t index = toIndex(position);
-			assert(index < m_pages.size() && "Index out of range");
+			ASSERT(index < m_pages.size() && "Index out of range");
 
 			m_pages[index] = page;
 		}

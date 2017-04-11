@@ -30,8 +30,13 @@ namespace wowpp
 	class TimerQueue;
 
 	/// Manages all connected players.
-	class PlayerManager : public boost::noncopyable
+	class PlayerManager final
 	{
+	private:
+
+		PlayerManager(const PlayerManager &Other) = delete;
+		PlayerManager &operator=(const PlayerManager &Other) = delete;
+
 	public:
 
 		typedef std::vector<std::unique_ptr<Player>> Players;
@@ -60,11 +65,11 @@ namespace wowpp
 		void addPlayer(std::unique_ptr<Player> added);
 		/// Gets a player by his account name.
 		Player *getPlayerByAccountName(const String &accountName);
-		/// Gets a player by his account name.
+		/// Gets a player by his character database id.
 		Player *getPlayerByCharacterId(DatabaseId id);
-		/// Gets a player by his account name.
+		/// Gets a player by his character guid.
 		Player *getPlayerByCharacterGuid(UInt64 id);
-		/// 
+		/// Gets a player by his character name.
 		Player *getPlayerByCharacterName(const String &name);
 		/// 
 		TimerQueue &getTimers() { return m_timers; }

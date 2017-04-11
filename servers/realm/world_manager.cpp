@@ -45,7 +45,7 @@ namespace wowpp
 		{
 			return (&world == w.get());
 		});
-		assert(w != m_worlds.end());
+		ASSERT(w != m_worlds.end());
 		m_worlds.erase(w);
 	}
 
@@ -61,7 +61,7 @@ namespace wowpp
 
 	void WorldManager::addWorld(std::unique_ptr<World> added)
 	{
-		assert(added);
+		ASSERT(added);
 		m_worlds.push_back(std::move(added));
 	}
 

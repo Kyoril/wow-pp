@@ -24,6 +24,7 @@
 #include "log/default_log_levels.h"
 #include "log/log_std_stream.h"
 #include "common/constants.h"
+#include "common/crash_handler.h"
 
 using namespace std;
 
@@ -34,6 +35,17 @@ int main(int argc, char* argv[])
 	wowpp::g_DefaultLog.signal().connect(std::bind(
 		wowpp::printLogEntry,
 		std::ref(std::cout), std::placeholders::_1, wowpp::g_DefaultConsoleLogOptions));
+
+	//constructor enables error handling
+	wowpp::CrashHandler::get().enableDumpFile("LoginCrash.dmp");
+
+	//when the application terminates unexpectedly
+	const auto crashFlushConnection =
+		wowpp::CrashHandler::get().onCrash.connect(
+			[]()
+	{
+		ELOG("Application crashed...");
+	});
 
 	// Triggers if the program should be restarted
 	bool shouldRestartProgram = false;

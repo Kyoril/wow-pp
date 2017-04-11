@@ -72,7 +72,7 @@ namespace wowpp
 		m_instances.push_back(std::move(instance));
 
 		// Return result
-		assert(!m_instances.empty());
+		ASSERT(!m_instances.empty());
 		return m_instances.back().get();
 	}
 

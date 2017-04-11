@@ -165,7 +165,7 @@ namespace wowpp
 			RealmManager->addRealm(std::move(realm));
 		};
 
-		const boost::signals2::scoped_connection realmConnected(realmServer->connected().connect(createRealm));
+		const simple::scoped_connection realmConnected(realmServer->connected().connect(createRealm));
 		realmServer->startAccept();
 
 		auto const createTeamServer = [&TeamServerManager, &Database](std::shared_ptr<wowpp::TeamServer::Client> connection)
@@ -190,7 +190,7 @@ namespace wowpp
 			TeamServerManager->addTeamServer(std::move(teamServer));
 		};
 
-		const boost::signals2::scoped_connection teamServerConnected(teamServer->connected().connect(createTeamServer));
+		const simple::scoped_connection teamServerConnected(teamServer->connected().connect(createTeamServer));
 		teamServer->startAccept();
 
 		// Create the player server
@@ -232,7 +232,7 @@ namespace wowpp
 			PlayerManager->addPlayer(std::move(player));
 		};
 
-		const boost::signals2::scoped_connection playerConnected(playerServer->connected().connect(createPlayer));
+		const simple::scoped_connection playerConnected(playerServer->connected().connect(createPlayer));
 		playerServer->startAccept();
 
 		std::unique_ptr<WebService> webService;

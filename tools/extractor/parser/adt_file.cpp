@@ -261,6 +261,22 @@ namespace wowpp
 		return true;
 	}
 
+	static const UInt16 holetab_h[4] = { 0x1111, 0x2222, 0x4444, 0x8888 };
+	static const UInt16 holetab_v[4] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
+
+	bool ADTFile::isHole(int square) const
+	{
+		int row = square / 128;
+		int col = square % 128;
+		int cellRow = row / 8;     // 8 squares per cell
+		int cellCol = col / 8;
+		int holeRow = row % 8 / 2;
+		int holeCol = (square - (row * 128 + cellCol * 8)) / 2;
+
+		const UInt16 &hole = getMCNKChunk(cellRow + cellCol * 16).holes;
+		return (hole & holetab_v[holeCol] & holetab_h[holeRow]) != 0;
+	}
+
 	const String ADTFile::getWMO(UInt32 index) const
 	{
 		if (index > getWMOCount())

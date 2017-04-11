@@ -51,15 +51,23 @@ namespace wowpp
 			}
 		};
 
-		struct ITriggerHandler : boost::noncopyable
+		struct ITriggerHandler
 		{
+		private:
+
+			ITriggerHandler(const ITriggerHandler &Other) = delete;
+			ITriggerHandler &operator=(const ITriggerHandler &) = delete;
+
+		public:
+
+			ITriggerHandler() {};
 			virtual ~ITriggerHandler() {};
 
 			/// Executes a unit trigger.
 			/// @param entry The trigger to execute.
 			/// @param actionOffset The action to execute.
 			/// @param owner The executing owner. TODO: Replace by context object
-			virtual void executeTrigger(const proto::TriggerEntry &entry, TriggerContext context, UInt32 actionOffset = 0) = 0;
+			virtual void executeTrigger(const proto::TriggerEntry &entry, TriggerContext context, UInt32 actionOffset = 0, bool ignoreProbability = false) = 0;
 		};
 	}
 }

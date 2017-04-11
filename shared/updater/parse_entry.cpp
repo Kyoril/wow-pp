@@ -38,6 +38,7 @@ namespace wowpp
 			    const UpdateListProperties &listProperties,
 			    const sff::read::tree::Table<std::string::const_iterator> &entryDescription,
 			    const std::string &source,
+				const std::string &parseDir,
 			    const std::string &destination,
 			    IFileEntryHandler &handler)
 			{
@@ -58,6 +59,7 @@ namespace wowpp
 				           listProperties,
 				           *value,
 				           source,
+							parseDir,
 				           destination,
 				           handler
 				       );
@@ -70,6 +72,7 @@ namespace wowpp
 		    const UpdateListProperties &listProperties,
 		    const sff::read::tree::Table<std::string::const_iterator> &entryDescription,
 		    const std::string &source,
+			const std::string &parseDir,
 		    const std::string &destination,
 		    IFileEntryHandler &handler
 		)
@@ -82,6 +85,7 @@ namespace wowpp
 				           listProperties,
 				           entryDescription,
 				           source,
+							parseDir,
 				           destination,
 				           handler);
 			}
@@ -92,6 +96,7 @@ namespace wowpp
 			    virtual_dir::joinPaths(source,
 			        entryDescription.tryGetString("compressedName", compressedName) ? compressedName : name);
 			const auto subDestination = virtual_dir::joinPaths(destination, name);
+			const auto subParse = virtual_dir::joinPaths(parseDir, name);
 
 			if (const auto *const entries = entryDescription.getArray("entries"))
 			{
@@ -101,6 +106,7 @@ namespace wowpp
 				           *entries,
 				           type,
 				           subSource,
+						   subParse,
 				           subDestination
 				       );
 			}
@@ -146,7 +152,8 @@ namespace wowpp
 				           parameters,
 				           entryDescription,
 				           subSource,
-				           subDestination + ".tmp",
+					       subParse,
+				           subDestination,
 				           newSize,
 				           newSHA1,
 				           compression,

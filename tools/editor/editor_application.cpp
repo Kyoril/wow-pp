@@ -24,6 +24,7 @@
 #include "windows/main_window.h"
 #include "windows/object_editor.h"
 #include "windows/trigger_editor.h"
+#include "windows/variable_editor.h"
 #include "windows/login_dialog.h"
 #include "windows/update_dialog.h"
 #include "team_connector.h"
@@ -31,7 +32,10 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QMessageBox>
+#include <QVBoxLayout>
+#include <QProgressBar>
 #include <cassert>
+#include "editor_config.h"
 
 namespace wowpp
 {
@@ -142,6 +146,7 @@ namespace wowpp
             , m_mainWindow(nullptr)
             , m_objectEditor(nullptr)
             , m_triggerEditor(nullptr)
+			, m_variableEditor(nullptr)
 			, m_transformTool(transform_tool::Select)
 		{
 			m_pollTimer = new QTimer(this);
@@ -151,6 +156,7 @@ namespace wowpp
 
         EditorApplication::~EditorApplication()
         {
+			delete m_variableEditor;
             delete m_triggerEditor;
             delete m_objectEditor;
             delete m_mainWindow;
@@ -171,15 +177,14 @@ namespace wowpp
 				return false;
 			}
 
-/*
+#if WOWPP_EDITOR_WITH_PATCH == CMAKE_ON
 			// Load update window
 			UpdateDialog updateDialog(*this);
 			if (updateDialog.exec() != QDialog::Accepted)
 			{
-				// TODO
 				return false;
 			}
-*/
+#endif
 
 			// Setup team connector
 			m_teamConnector = make_unique<TeamConnector>(m_ioService, m_configuration, m_project, m_timers);
@@ -208,10 +213,12 @@ namespace wowpp
 			m_mapListModel.reset(new MapListModel(m_project.maps));
 			m_unitListModel.reset(new UnitListModel(m_project.units));
 			m_spellListModel.reset(new SpellListModel(m_project.spells));
+			m_skillListModel.reset(new SkillListModel(m_project.skills));
 			m_itemListModel.reset(new ItemListModel(m_project.items));
 			m_triggerListModel.reset(new TriggerListModel(m_project.triggers));
 			m_questListModel.reset(new QuestListModel(m_project.quests));
 			m_objectListModel.reset(new ObjectListModel(m_project.objects));
+			m_variableListModel.reset(new VariableListModel(m_project.variables));
 
 			// Show the main window (will be deleted when this class is deleted by QT)
 			m_mainWindow = new MainWindow(*this);
@@ -231,13 +238,16 @@ namespace wowpp
 
 			// Setup the trigger editor
 			m_triggerEditor = new TriggerEditor(*this);
+
+			// Create variable editor
+			m_variableEditor = new VariableEditor(*this);
 			
 			return true;
 		}
 
 		void EditorApplication::showObjectEditor()
 		{
-			assert(m_objectEditor);
+			ASSERT(m_objectEditor);
 
 			m_objectEditor->show();
 			m_objectEditor->activateWindow();
@@ -251,9 +261,19 @@ namespace wowpp
 			transformToolChanged(tool);
 		}
 
+		void EditorApplication::showVariableEditor()
+		{
+			ASSERT(m_variableEditor);
+
+			m_variableEditor->show();
+			m_variableEditor->activateWindow();
+
+			emit variableEditorShown();
+		}
+
 		void EditorApplication::showTriggerEditor()
 		{
-			assert(m_triggerEditor);
+			ASSERT(m_triggerEditor);
 
 			m_triggerEditor->show();
 			m_triggerEditor->activateWindow();
@@ -325,10 +345,40 @@ namespace wowpp
 				}
 				else
 				{
-					// Entry was either removed or modified. In both cases, we simply override...
-					typeMap[entry] = changeType;
+					// If item was removed before but a new item was added now, convert this into a modify-packet
+					if (it->second == pp::editor_team::data_entry_change_type::Removed &&
+						changeType != pp::editor_team::data_entry_change_type::Removed)
+					{
+						typeMap[entry] = pp::editor_team::data_entry_change_type::Modified;
+					}
+					else
+					{
+						// Entry was either removed or modified. In both cases, we simply override...
+						typeMap[entry] = changeType;
+					}
 				}
 			}
+		}
+
+		static std::shared_ptr<QDialog> showUploadDialog(QWidget *parent)
+		{
+			// Create dialog via code as it is a minor dialog
+			auto dialog = std::make_shared<QDialog>(parent);
+			dialog->setWindowTitle("Uploading");
+
+			// Create label
+			QLabel *label = new QLabel("Uploading data...");
+
+			// Create progress bar
+			QProgressBar *progressBar = new QProgressBar(dialog.get());
+			progressBar->setRange(0, 0);
+
+			// Create dialog layout
+			QVBoxLayout *dialogLayout = new QVBoxLayout(dialog.get());
+			dialogLayout->addWidget(label);
+			dialogLayout->addWidget(progressBar);
+			dialog->setLayout(dialogLayout);
+			return dialog;
 		}
 
 		void EditorApplication::saveUnsavedChanges()
@@ -348,9 +398,22 @@ namespace wowpp
 			// Eventually send changes to the server
 			if (!m_changes.empty())
 			{
+				// Display dialog
+				auto dialog = showUploadDialog(m_mainWindow);
+				dialog->setModal(true);
+				dialog->show();
+
 				// Send changes to the team server
 				if (m_teamConnector)
 				{
+					m_teamConnector->dataSent.connect([dialog](size_t) {
+						// Close dialog
+						dialog->close();
+
+						// Disconnect this connection slot
+						simple::current_connection().disconnect();
+					});
+
 					m_teamConnector->sendEntryChanges(m_changes);
 				}
 

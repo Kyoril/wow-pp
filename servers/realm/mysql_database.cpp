@@ -760,6 +760,43 @@ namespace wowpp
 					}
 				}
 
+				// Load skills
+				wowpp::MySQL::Select skillSelect(m_connection, fmt::format(
+					//       0     
+					"SELECT `skill`,`current`,`max` FROM `character_skills` WHERE `guid`={0}"
+					, characterId));
+				if (skillSelect.success())
+				{
+					wowpp::MySQL::Row skillRow(skillSelect);
+					while (skillRow)
+					{
+						UInt32 skillId = 0;
+						skillRow.getField(0, skillId);
+						UInt16 current = 1, max = 1;
+						skillRow.getField(1, current);
+						skillRow.getField(2, max);
+
+						// Try to find that spell
+						const auto *skill = m_project.skills.getById(skillId);
+						if (!skill)
+						{
+							// Could not find skill
+							WLOG("Unknown skill found: " << skillId << " - skill will be ignored!");
+						}
+						else
+						{
+							// Our character knows that skill now
+							out_character.addSkill(*skill);
+							out_character.setSkillValue(skillId, current, max);
+						}
+
+
+						// Next row
+						skillRow = skillRow.next(skillSelect);
+					}
+				}
+
+
 				return true;
 			}
 			else
@@ -830,6 +867,7 @@ namespace wowpp
 			return false;
 		}
 
+		// Delete character items
 		if (!m_connection.execute(fmt::format(
 			"DELETE FROM `character_items` WHERE `owner`={0};"
 			, lowerGuid					// 0
@@ -840,16 +878,7 @@ namespace wowpp
 			return false;
 		}
 
-		if (!m_connection.execute(fmt::format(
-			"DELETE FROM `character_spells` WHERE `guid`={0};"
-			, lowerGuid					// 0
-			)))
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
-		}
-
+		// Save character items
 		if (!items.empty())
 		{
 			std::ostringstream strm;
@@ -883,7 +912,19 @@ namespace wowpp
 				return false;
 			}
 		}
+		
+		// Save character spells
+		if (!m_connection.execute(fmt::format(
+			"DELETE FROM `character_spells` WHERE `guid`={0};"
+			, lowerGuid					// 0
+		)))
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
 
+		// Save character spells
 		if (!character.getSpells().empty())
 		{
 			std::ostringstream strm;
@@ -909,6 +950,63 @@ namespace wowpp
 			}
 		}
 		
+		// Delete character skills
+		if (!m_connection.execute(fmt::format(
+			"DELETE FROM `character_skills` WHERE `guid`={0};"
+			, lowerGuid					// 0
+		)))
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		// Gather character skills (TODO: Cache this somehow?)
+		std::vector<UInt32> skillIds;
+		for (UInt32 i = 0; i < 127; i++)
+		{
+			const UInt32 skillIndex = character_fields::SkillInfo1_1 + (i * 3);
+			UInt32 skillId = character.getUInt32Value(skillIndex);
+			if (skillId != 0)
+			{
+				skillIds.push_back(skillId);
+			}
+		}
+
+		// If there are any skills at all...
+		if (skillIds.size() > 0)
+		{
+			std::ostringstream strm;
+			strm << "INSERT INTO `character_skills` (`guid`, `skill`, `current`, `max`) VALUES ";
+			bool isFirstItem = true;
+			for (const auto &skillId : skillIds)
+			{
+				UInt16 current = 1, max = 1;
+				if (!character.getSkillValue(skillId, current, max))
+				{
+					WLOG("Could not get skill values of skill " << skillId << " for saving");
+					continue;
+				}
+
+				if (!isFirstItem) strm << ",";
+				else
+				{
+					isFirstItem = false;
+				}
+				
+				strm << "(" << lowerGuid << "," << skillId << "," << current << "," << max << ")";
+			}
+			strm << ";";
+
+			if (!m_connection.execute(strm.str()))
+			{
+				// There was an error
+				printDatabaseError();
+				return false;
+			}
+		}
+
+
 		transaction.commit();
 		GameTime end = getCurrentTime();
 		DLOG("Saved character data in " << (end - start) << " ms");
@@ -918,7 +1016,7 @@ namespace wowpp
 	void MySQLDatabase::printDatabaseError()
 	{
 		ELOG("Realm database error: " << m_connection.getErrorMessage());
-		assert(false);
+		ASSERT(false);
 	}
 
 	bool MySQLDatabase::getCharacterById(DatabaseId id, game::CharEntry &out_character)

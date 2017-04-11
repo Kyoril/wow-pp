@@ -29,6 +29,7 @@
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "game/game_character.h"
 #include "common/timer_queue.h"
+#include "game/mail.h"
 
 namespace wowpp
 {
@@ -44,11 +45,17 @@ namespace wowpp
 	}
 
 	/// This class manages the connection to the realm server.
-	class RealmConnector : public pp::IConnectorListener, boost::noncopyable
+	class RealmConnector final
+		: public pp::IConnectorListener
 	{
+	private:
+
+		RealmConnector(const RealmConnector &Other) = delete;
+		RealmConnector &operator=(const RealmConnector &Other) = delete;
+
 	public:
 
-		boost::signals2::signal<void (RealmConnector &connector, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)> worldInstanceEntered;
+		simple::signal<void (RealmConnector &connector, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)> worldInstanceEntered;
 
 	public:
 
@@ -98,7 +105,9 @@ namespace wowpp
 		/// 
 		void sendCharacterSpawnNotification(UInt64 characterId);
 		///
-		void sendMailDraft(game::MailData mailDraft, String sender, UInt32 cost, const std::vector<std::shared_ptr<GameItem>> &items);
+		void sendMailDraft(Mail mail, String &receiver);
+		///
+		void sendGetMailList(DatabaseId characterId);
 
 
 	private:
@@ -129,7 +138,6 @@ namespace wowpp
 
 		// Proxy packet handlers
 		void handleNameQuery(Player &sender, game::Protocol::IncomingPacket &packet);
-		void handleCreatureQuery(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleLogoutRequest(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleLogoutCancel(Player &sender, game::Protocol::IncomingPacket &packet);
 		void handleSetSelection(Player &sender, game::Protocol::IncomingPacket &packet);

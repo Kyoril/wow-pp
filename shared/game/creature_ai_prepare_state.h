@@ -48,7 +48,7 @@ namespace wowpp
 
 	private:
 
-		boost::signals2::scoped_connection m_onThreatened;
+		simple::scoped_connection m_onThreatened;
 		Countdown m_preparation;
 	};
 }

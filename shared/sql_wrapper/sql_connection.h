@@ -222,8 +222,13 @@ namespace wowpp
 		/// The Transaction struct begins a transaction on construction
 		/// and guarantees to either commit or rollback the transaction before
 		/// it is destroyed.
-		class Transaction final : private boost::noncopyable
+		class Transaction final
 		{
+		private:
+
+			Transaction(const Transaction &Other) = delete;
+			Transaction &operator=(const Transaction &Other) = delete;
+
 		public:
 
 			/// Transaction Begins a transaction.
@@ -254,8 +259,12 @@ namespace wowpp
 		template <class Base, class Handle>
 		class Owner
 			: public Base
-			, private boost::noncopyable
 		{
+		private:
+
+			Owner<Base, Handle>(const Owner<Base, Handle> &Other) = delete;
+			Owner<Base, Handle> &operator=(const Owner<Base, Handle> &Other) = delete;
+
 		public:
 
 			Owner()

@@ -22,18 +22,14 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include "bounding_box.h"
 #include "vector3.h"
+#include <cmath>
 
 namespace wowpp
 {
 	namespace math
 	{
-		struct BoundingBox final
-		{
-			Vector3 min;
-			Vector3 max;
-		};
-
 		/// Represents a ray, which is used to determine line of sight collision or blink.
 		struct Ray final
 		{
@@ -43,6 +39,8 @@ namespace wowpp
 			Vector3 destination;
 			/// Normalized direction of the ray.
 			Vector3 direction;
+			/// Perctual hit distance or 1.0f if nothing was hit.
+			float hitDistance = 1.0f;
 
 			/// Initializes the ray by providing a start point and an end point. This
 			/// will automatically calculate the direction of the ray.
@@ -69,6 +67,16 @@ namespace wowpp
 				assert(direction.length() >= 0.9999f && direction.length() <= 1.0001f);
 				destination = origin + (direction * maxDistance);
 			}
+			/// Gets the vector representation of this ray.
+			/// @returns Vector representation of this ray.
+			Vector3 getVector() const {
+				return destination - origin;
+			}
+			/// Gets the maximum length of the vector (so distance between origin and destination).
+			/// @returns Maximum length of the ray in world units.
+			float getLength() const {
+				return getVector().length();
+			}
 
 			/// Checks whether this ray intersects with a triangle.
 			/// @param a The first vertex of the triangle.
@@ -76,220 +84,103 @@ namespace wowpp
 			/// @param c The third vertex of the triangle.
 			/// @returns A pair of true and the hit distance, if the ray intersects. Otherwise,
 			///          a pair of false and 0 is returned.
-			std::pair<bool, float> intersectsTriangle(const Vector3 &a, const Vector3 &b, const Vector3 &c)
+			std::pair<bool, float> intersectsTriangle(const Vector3 &a, const Vector3 &b, const Vector3 &c, bool ignoreBackface = false)
 			{
-				Vector3 normal = (b - a).cross(c - a);
+				const float upscaleFactor = 100.0f;
 
-				// Calculate intersection with plane.
-				float t;
-				{
-					float denom = normal.dot(direction);
+				Vector3 rayDir = direction * upscaleFactor;
+				Vector3 v0 = a * upscaleFactor;
+				Vector3 v1 = b * upscaleFactor - v0;
+				Vector3 v2 = c * upscaleFactor - v0;
 
-					// Check intersect side
-					if (denom > +std::numeric_limits<float>::epsilon())
-					{
-						// Back face hit
-						//return std::pair<bool, float>(false, 0.0f);
-					}
-					else if (denom < -std::numeric_limits<float>::epsilon())
-					{
-						// Front face hit
-					}
-					else
-					{
-						// Parallel or triangle area is close to zero when
-						// the plane normal not normalised.
-						return std::pair<bool, float>(false, 0.0f);
-					}
+				Vector3 p = rayDir.cross(v2);
+				float det = v1.dot(p);
 
-					t = normal.dot(a - origin) / denom;
-					if (t < 0)
-					{
-						// Intersection is behind origin
-						return std::pair<bool, float>(false, 0.0f);
-					}
+				if ((ignoreBackface && det < 1e-5) || ::abs(det) < 1e-5)
+					return { false, 0.0f };
+
+				Vector3 t = origin * upscaleFactor - v0;
+				float e1 = t.dot(p) / det;
+
+				if (e1 < 0.0f || e1 > 1.0f) {
+					return{ false, 0.0f };
 				}
 
-				// Calculate the largest area projection plane in X, Y or Z.
-				size_t i0, i1;
-				{
-					float n0 = ::fabs(normal.x);
-					float n1 = ::fabs(normal.y);
-					float n2 = ::fabs(normal.z);
+				Vector3 q = t.cross(v1);
+				float e2 = rayDir.dot(q) / det;
 
-					i0 = 1;
-					i1 = 2;
-					if (n1 > n2)
-					{
-						if (n1 > n0) {
-							i0 = 0;
-						}
-					}
-					else
-					{
-						if (n2 > n0) {
-							i1 = 0;
-						}
-					}
+				if (e2 < 0.0f || (e1 + e2) > 1.0f) {
+					return{ false, 0.0f };
 				}
 
-				// Check the intersection point is inside the triangle.
-				{
-					float u1 = b[i0] - a[i0];
-					float v1 = b[i1] - a[i1];
-					float u2 = c[i0] - a[i0];
-					float v2 = c[i1] - a[i1];
-					float u0 = t * direction[i0] + origin[i0] - a[i0];
-					float v0 = t * direction[i1] + origin[i1] - a[i1];
-
-					float alpha = u0 * v2 - u2 * v0;
-					float beta = u1 * v0 - u0 * v1;
-					float area = u1 * v2 - u2 * v1;
-
-					// epsilon to avoid float precision error
-					const float EPSILON = 1e-6f;
-					float tolerance = -EPSILON * area;
-
-					if (area > 0)
-					{
-						if (alpha < tolerance || beta < tolerance || alpha + beta > area - tolerance) {
-							return std::pair<bool, float>(false, 0.0f);
-						}
-					}
-					else
-					{
-						if (alpha > tolerance || beta > tolerance || alpha + beta < area - tolerance) {
-							return std::pair<bool, float>(false, 0.0f);
-						}
-					}
+				float d = v2.dot(q) / det;
+				if (d < 1e-5) {
+					return{ false, 0.0f };
 				}
 
-				return std::pair<bool, float>(true, t);
+				return { true, d / getLength() };
 			}
 
 			/// Checks whether this ray intersects with a bounding box.
 			/// @param box The bounding box to check.
 			/// @returns First paramater is true if ray cast intersects. Second parameter returns the
 			///          hit distance, which can be used to calculate the hit point (if first parameter is true).
-			std::pair<bool, float> intersectsAABB(const BoundingBox &box)
+			std::pair<bool, float> intersectsAABB(const BoundingBox &box) const
 			{
-				// Check if origin is inside the bounding box
-				if (origin > box.min && origin < box.max)
-				{
-					return std::pair<bool, float>(true, 0.0f);
+				const Vector3 invDir{
+					1.0f / direction.x,
+					1.0f / direction.y,
+					1.0f / direction.z
+				};
+				
+				float t1 = (box.min.x - origin.x) * invDir.x;
+				float t2 = (box.max.x - origin.x) * invDir.x;
+				float t3 = (box.min.y - origin.y) * invDir.y;
+				float t4 = (box.max.y - origin.y) * invDir.y;
+				float t5 = (box.min.z - origin.z) * invDir.z;
+				float t6 = (box.max.z - origin.z) * invDir.z;
+
+				float tmin = std::max(std::max(std::min(t1, t2), std::min(t3, t4)), std::min(t5, t6));
+				float tmax = std::min(std::min(std::max(t1, t2), std::max(t3, t4)), std::max(t5, t6));
+
+				// if tmax < 0, ray (line) is intersecting AABB, but whole AABB is behind us
+				if (tmax < 0) {
+					return std::make_pair(false, 0.0f);
 				}
 
-				float lowt = 0.0f;
-				float t = 0.0f;
-				bool hit = false;
-				Vector3 hitpoint;
-
-				// Check each face in turn, only check closest 3
-				// Min x
-				if (origin.x <= box.min.x && direction.x > 0)
-				{
-					t = (box.min.x - origin.x) / direction.x;
-					if (t >= 0)
-					{
-						// Substitute t back into ray and check bounds and dist
-						hitpoint = origin + direction * t;
-						if (hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
-						        hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
-						        (!hit || t < lowt))
-						{
-							hit = true;
-							lowt = t;
-						}
-					}
-				}
-				// Max x
-				if (origin.x >= box.max.x && direction.x < 0)
-				{
-					t = (box.max.x - origin.x) / direction.x;
-					if (t >= 0)
-					{
-						// Substitute t back into ray and check bounds and dist
-						hitpoint = origin + direction * t;
-						if (hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
-						        hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
-						        (!hit || t < lowt))
-						{
-							hit = true;
-							lowt = t;
-						}
-					}
-				}
-				// Min y
-				if (origin.y <= box.min.y && direction.y > 0)
-				{
-					t = (box.min.y - origin.y) / direction.y;
-					if (t >= 0)
-					{
-						// Substitute t back into ray and check bounds and dist
-						hitpoint = origin + direction * t;
-						if (hitpoint.x >= box.min.x && hitpoint.x <= box.max.x &&
-						        hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
-						        (!hit || t < lowt))
-						{
-							hit = true;
-							lowt = t;
-						}
-					}
-				}
-				// Max y
-				if (origin.y >= box.max.y && direction.y < 0)
-				{
-					t = (box.max.y - origin.y) / direction.y;
-					if (t >= 0)
-					{
-						// Substitute t back into ray and check bounds and dist
-						hitpoint = origin + direction * t;
-						if (hitpoint.x >= box.min.x && hitpoint.x <= box.max.x &&
-						        hitpoint.z >= box.min.z && hitpoint.z <= box.max.z &&
-						        (!hit || t < lowt))
-						{
-							hit = true;
-							lowt = t;
-						}
-					}
-				}
-				// Min z
-				if (origin.z <= box.min.z && direction.z > 0)
-				{
-					t = (box.min.z - origin.z) / direction.z;
-					if (t >= 0)
-					{
-						// Substitute t back into ray and check bounds and dist
-						hitpoint = origin + direction * t;
-						if (hitpoint.x >= box.min.x && hitpoint.x <= box.max.x &&
-						        hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
-						        (!hit || t < lowt))
-						{
-							hit = true;
-							lowt = t;
-						}
-					}
-				}
-				// Max z
-				if (origin.z >= box.max.z && direction.z < 0)
-				{
-					t = (box.max.z - origin.z) / direction.z;
-					if (t >= 0)
-					{
-						// Substitute t back into ray and check bounds and dist
-						hitpoint = origin + direction * t;
-						if (hitpoint.x >= box.min.x && hitpoint.x <= box.max.x &&
-						        hitpoint.y >= box.min.y && hitpoint.y <= box.max.y &&
-						        (!hit || t < lowt))
-						{
-							hit = true;
-							lowt = t;
-						}
-					}
+				// if tmin > tmax, ray doesn't intersect AABB
+				if (tmin > tmax) {
+					return std::make_pair(false, 0.0f);
 				}
 
-				return std::pair<bool, float>(hit, lowt);
+				return std::make_pair(true, tmin / getLength());
 			}
 		};
+
+		/// Enumerates all tiles that a ray crosses.
+		template<typename Callback>
+		void forEachTileInRayXY(const Ray &ray, float cellSize, Callback callback)
+		{
+			Int32 x1 = floor(ray.origin.x / cellSize);
+			Int32 y1 = floor(ray.origin.y / cellSize);
+			Int32 x2 = floor(ray.destination.x / cellSize);
+			Int32 y2 = floor(ray.destination.y / cellSize);
+
+			Int32 dx = ::abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
+			Int32 dy = -::abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
+			Int32 e = dx + dy, e2;
+
+			while (true)
+			{
+				if (!callback(x1, y1))
+					return;
+
+				if (x1 == x2 && y1 == y2)
+					break;
+				e2 = 2 * e;
+				if (e2 > dy) { e += dy; x1 += sx; }
+				if (e2 < dx) { e += dx; y1 += sy; }
+			}
+		}
 	}
 }

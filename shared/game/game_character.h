@@ -648,6 +648,21 @@ namespace wowpp
 	/// Stores spell modifiers by it's operation.
 	typedef std::map<SpellModOp, SpellModList> SpellModsByOp;
 
+	namespace rest_type
+	{
+		enum Type
+		{
+			/// Player is not resting.
+			None		= 0,
+			/// Player is resting in a tavern.
+			Tavern		= 1,
+			/// Player is resting in a city.
+			City		= 2
+		};
+	}
+
+	typedef rest_type::Type RestType;
+
 	/// Represents a players character in the world.
 	class GameCharacter : public GameUnit
 	{
@@ -661,31 +676,31 @@ namespace wowpp
 		// Signals
 
 		/// Fired when a proficiency was changes (weapon & armor prof.)
-		boost::signals2::signal<void(Int32, UInt32)> proficiencyChanged;
+		simple::signal<void(Int32, UInt32)> proficiencyChanged;
 		/// Fired when an inventory error occurred. Used to send a packet to the owning players client.
-		boost::signals2::signal<void(game::InventoryChangeFailure, GameItem *, GameItem *)> inventoryChangeFailure;
+		simple::signal<void(game::InventoryChangeFailure, GameItem *, GameItem *)> inventoryChangeFailure;
 		/// Fired when an item was added to the inventory that the players client needs to notified of.
-		boost::signals2::signal<void(UInt16, UInt16, bool, bool)> itemAdded;
+		simple::signal<void(UInt16, UInt16, bool, bool)> itemAdded;
 		/// Fired when the characters combo points changes. Used to send a packet to the owning players client.
-		boost::signals2::signal<void()> comboPointsChanged;
+		simple::signal<void()> comboPointsChanged;
 		/// Fired when the character gained some experience points. Used to send a packet to the owning players client.
-		boost::signals2::signal<void(UInt64, UInt32, UInt32)> experienceGained;
+		simple::signal<void(UInt64, UInt32, UInt32)> experienceGained;
 		/// Fired when the characters home changed. Used to send a packet to the owning players client.
-		boost::signals2::signal<void()> homeChanged;
+		simple::signal<void()> homeChanged;
 		/// Fired when a quest status changed. Used to save quest status at the realm.
-		boost::signals2::signal<void(UInt32 questId, const QuestStatusData & data)> questDataChanged;
+		simple::signal<void(UInt32 questId, const QuestStatusData & data)> questDataChanged;
 		/// Fired when a kill credit for a specific quest was made. Used to send a packet to the owning players client.
-		boost::signals2::signal<void(const proto::QuestEntry &, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total)> questKillCredit;
+		simple::signal<void(const proto::QuestEntry &, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total)> questKillCredit;
 		/// Fired when the character want to inspect loot of an object. Used to send packets to the owning players client.
-		boost::signals2::signal<void(LootInstance &)> lootinspect;
+		simple::signal<void(std::shared_ptr<LootInstance>)> lootinspect;
 		/// Fired when a spell mod was applied or misapplied on the character. Used to send packets to the owning players client.
-		boost::signals2::signal<void(SpellModType, UInt8, SpellModOp, Int32)> spellModChanged;
+		simple::signal<void(SpellModType, UInt8, SpellModOp, Int32)> spellModChanged;
 		/// Fired when the character interacts with a game object.
-		boost::signals2::signal<void(WorldObject &)> objectInteraction;
+		simple::signal<void(WorldObject &)> objectInteraction;
 		/// Fired when a new spell was learned.
-		boost::signals2::signal<void(const proto::SpellEntry &)> spellLearned;
+		simple::signal<void(const proto::SpellEntry &)> spellLearned;
 		/// Fired when resurrection is requested by a spell. Used to send a packet to the owning players client.
-		boost::signals2::signal<void(UInt64, const String&, UInt8)> resurrectRequested;
+		simple::signal<void(UInt64, const String&, UInt8)> resurrectRequested;
 
 	public:
 
@@ -714,19 +729,25 @@ namespace wowpp
 		// GameUnit overrides
 
 		/// @copydoc GameUnit::hasMainHandWeapon
-		bool hasMainHandWeapon() const override;
+		virtual bool hasMainHandWeapon() const override;
 		/// @copydoc GameUnit::hasOffHandWeapon
-		bool hasOffHandWeapon() const override;
+		virtual bool hasOffHandWeapon() const override;
+		/// @copydoc GameUnit::getMainHandWeapon
+		virtual std::shared_ptr<GameItem> getMainHandWeapon() const override;
+		/// @copydoc GameUnit::getOffHandWeapon
+		virtual std::shared_ptr<GameItem> getOffHandWeapon() const override;
 		/// @copydoc GameUnit::canBlock
-		bool canBlock() const override;
+		virtual bool canBlock() const override;
 		/// @copydoc GameUnit::canParry
-		bool canParry() const override;
+		virtual bool canParry() const override;
 		/// @copydoc GameUnit::canDodge
-		bool canDodge() const override;
+		virtual bool canDodge() const override;
 		/// @copydoc GameUnit::canDualWield
-		bool canDualWield() const override;
+		virtual bool canDualWield() const override;
 		/// @copydoc GameUnit::rewardExperience()
-		void rewardExperience(GameUnit *victim, UInt32 experience) override;
+		virtual void rewardExperience(GameUnit *victim, UInt32 experience) override;
+		/// @copydoc GameUnit::rewardExperience()
+		virtual bool canDetectStealth(GameUnit &target) const override;
 
 	protected:
 
@@ -746,6 +767,14 @@ namespace wowpp
 		virtual void updateCritChance(game::WeaponAttack attackType) override;
 		/// @copydoc GameUnit::updateAllCritChances
 		virtual void updateAllCritChances() override;
+		/// @copydoc GameUnit::updateSpellCritChance
+		virtual void updateSpellCritChance(game::SpellSchool spellSchool) override;
+		/// @copydoc GameUnit::updateAllSpellCritChances()
+		virtual void updateAllSpellCritChances() override;
+		/// @coypdoc GameUnit::updateDodgePerecentage
+		virtual void updateDodgePercentage() override;
+		/// @copydoc GameUnit::updateParryPercentage
+		virtual void updateParryPercentage() override;
 		/// @copydoc GameUnit::regenerateHealth
 		virtual void regenerateHealth() override;
 		/// @copydoc GameUnit::onThreaten
@@ -753,9 +782,9 @@ namespace wowpp
 		/// @copydoc GameUnit::onRegeneration
 		virtual void onRegeneration() override;
 		/// @copydoc GameUnit::getWeaponSkillValue
-		virtual UInt32 getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit *target = nullptr) override;
+		virtual UInt32 getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit &target) const override;
 		/// @copydoc GameUnit::getDefenseSkillValue
-		virtual UInt32 getDefenseSkillValue(const GameUnit *target = nullptr) override;
+		virtual UInt32 getDefenseSkillValue(const GameUnit &attacker) const override;
 
 	private:
 
@@ -779,7 +808,7 @@ namespace wowpp
 		void setName(const String &name);
 		/// Updates the zone where this character is. This variable is used by
 		/// the friend list and the /who list.
-		void setZone(UInt32 zoneIndex) { m_zoneIndex = zoneIndex; }
+		void setZone(UInt32 zoneIndex);
 		/// Gets the zone index where this character is.
 		UInt32 getZone() const { return m_zoneIndex; }
 		/// Gets a list of all known spells of this character.
@@ -816,6 +845,11 @@ namespace wowpp
 		void addSkill(const proto::SkillEntry &skill);
 		/// Removes a skill from the list of known skills.
 		void removeSkill(UInt32 skillId);
+		/// Updates a weapon skill. This method should be called once per auto attack / weapon skill and also
+		/// for the defense skill - so when a target gets hit by a melee attack / melee spell to eventually
+		/// increase it's defense skill value.
+		/// @param skillId Id of the weapon skill.
+		void updateWeaponSkill(UInt32 skillId);
 		/// Updates the skill values for a given skill of this character.
 		void setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum);
 		/// Gets the current skill value and max value of a given spell.
@@ -964,6 +998,29 @@ namespace wowpp
 			return m_playedTime[index];
 		}
 
+		/// Updates the players rest type.
+		void setRestType(RestType type, const class proto::AreaTriggerEntry *trigger);
+		/// Gets the players rest type.
+		RestType getRestType() const { return m_restType; }
+		/// Determines if this character is still inside it's rest area trigger.
+		bool isInRestAreaTrigger() const;
+		/// Determines if this character is inside an area trigger.
+		bool isInAreaTrigger(const class proto::AreaTriggerEntry &entry, float delta) const;
+
+	public:
+
+		// Reputation
+
+		/// Gets the default faction flags of the given faction.
+		/// @param faction Faction id.
+		game::FactionFlags getBaseFlags(UInt32 faction) const;
+		/// Gets the default reputation value for the specific faction.
+		/// @param faction Faction id.
+		Int32 getBaseReputation(UInt32 faction) const;
+		/// Gets the characters reputation value for the specific faction.
+		/// @param faction Faction id.
+		Int32 getReputation(UInt32 faction) const;
+
 	public:
 
 		/// @copydoc GameUnit::onKilled(GameUnit*)
@@ -987,6 +1044,12 @@ namespace wowpp
 		/// Updates nearby game objects after a quest change happened (some game objects are only
 		/// lootable and/or shining when certain quests are incomplete).
 		void updateNearbyQuestObjects();
+		/// Returns melee crit value from agility
+		float getMeleeCritFromAgility();
+		/// Returns dodge value from agility
+		float getDodgeFromAgility();
+		/// Returns spell crit value from intellect
+		float getSpellCritFromIntellect();
 
 	private:
 
@@ -1014,7 +1077,7 @@ namespace wowpp
 		UInt32 m_homeMap;
 		math::Vector3 m_homePos;
 		float m_homeRotation;
-		boost::signals2::scoped_connection m_doneMeleeAttack;
+		simple::scoped_connection m_doneMeleeAttack;
 		std::map<UInt32, QuestStatusData> m_quests;
 		Inventory m_inventory;
 		/// We use a map here since multiple quests could require the same item and thus,
@@ -1032,7 +1095,14 @@ namespace wowpp
 		CombatRatingsArray m_combatRatings;
 		BaseCRModArray m_baseCRMod;
 		std::array<UInt32, player_time_index::Count_> m_playedTime;
+		RestType m_restType;
+		const class proto::AreaTriggerEntry *m_restTrigger;
 	};
+
+	/// Determines whether a given spell can exist with different ranks in the players
+	/// spell book (most likely spells that consume health and mana to let the player 
+	/// decide which spell rank to use to eventually save some mana)
+	bool canStackSpellRanksInSpellBook(const class proto::SpellEntry &spell);
 
 	/// Serializes a GameCharacter to an io::Writer object for the wow++ protocol.
 	/// @param w The writer used to write to.

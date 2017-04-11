@@ -164,7 +164,7 @@ namespace wowpp
 	public:
 
 		/// Fired when a world object trigger should be executed.
-		boost::signals2::signal<void(const proto::TriggerEntry &, WorldObject &)> objectTrigger;
+		simple::signal<void(const proto::TriggerEntry &, WorldObject &)> objectTrigger;
 
 	public:
 
@@ -194,8 +194,8 @@ namespace wowpp
 		/// Determines whether this object is needed by a quest.
 		bool isQuestObject(const GameCharacter &character) const;
 		///
-		LootInstance *getObjectLoot() {
-			return m_objectLoot.get();
+		std::shared_ptr<LootInstance> getObjectLoot() {
+			return m_objectLoot;
 		}
 
 		void raiseTrigger(trigger_event::Type e);
@@ -213,8 +213,9 @@ namespace wowpp
 
 		TimerQueue &m_timers;
 		const proto::ObjectEntry &m_entry;
-		std::unique_ptr<LootInstance> m_objectLoot;
-		boost::signals2::scoped_connection m_onLootCleared;
+		std::shared_ptr<LootInstance> m_objectLoot;
+		simple::scoped_connection m_onLootCleared;
+		simple::scoped_connection m_onLootClosed;
 	};
 
 	io::Writer &operator << (io::Writer &w, WorldObject const &object);

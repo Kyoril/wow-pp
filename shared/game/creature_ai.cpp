@@ -32,7 +32,6 @@
 #include "universe.h"
 #include "unit_finder.h"
 #include "unit_watcher.h"
-#include "common/make_unique.h"
 #include "unit_mover.h"
 
 namespace wowpp
@@ -46,8 +45,7 @@ namespace wowpp
 		, m_home(home)
 	{
 		// Connect to spawn event
-		m_onSpawned = m_controlled.spawned.connect(
-		                  std::bind(&CreatureAI::onSpawned, this));
+		m_onSpawned = m_controlled.spawned.connect(this, &CreatureAI::onSpawned);
 	}
 
 	CreatureAI::~CreatureAI()
@@ -58,10 +56,10 @@ namespace wowpp
 	{
 		m_onKilled = m_controlled.killed.connect([this](GameUnit * killer)
 		{
-			auto state = make_unique<CreatureAIDeathState>(*this);
+			auto state = std::make_shared<CreatureAIDeathState>(*this);
 			setState(std::move(state));
 		});
-		m_onDamaged = m_controlled.takenDamage.connect([this](GameUnit * attacker, UInt32 damage) {
+		m_onDamaged = m_controlled.takenDamage.connect([this](GameUnit * attacker, UInt32 damage, game::DamageType type) {
 			if (attacker) {
 				m_state->onDamage(*attacker);
 			}
@@ -72,17 +70,17 @@ namespace wowpp
 		mover.moveTo(mover.getCurrentLocation());
 
 		// Enter the preparation state
-		auto state = make_unique<CreatureAIPrepareState>(*this);
+		auto state = std::make_shared<CreatureAIPrepareState>(*this);
 		setState(std::move(state));
 	}
 
 	void CreatureAI::idle()
 	{
-		auto state = make_unique<CreatureAIIdleState>(*this);
+		auto state = std::make_shared<CreatureAIIdleState>(*this);
 		setState(std::move(state));
 	}
 
-	void CreatureAI::setState(std::unique_ptr<CreatureAIState> state)
+	void CreatureAI::setState(CreatureAI::CreatureAIStatePtr state)
 	{
 		if (m_state)
 		{
@@ -92,7 +90,7 @@ namespace wowpp
 		// Every state change causes the creature to leave evade mode
 		m_evading = false;
 
-		assert(state.get());
+		ASSERT(state.get());
 		m_state = std::move(state);
 		m_state->onEnter();
 	}
@@ -109,13 +107,13 @@ namespace wowpp
 
 	void CreatureAI::enterCombat(GameUnit &victim)
 	{
-		auto state = make_unique<CreatureAICombatState>(*this, victim);
+		auto state = std::make_shared<CreatureAICombatState>(*this, victim);
 		setState(std::move(state));
 	}
 
 	void CreatureAI::reset()
 	{
-		auto state = make_unique<CreatureAIResetState>(*this);
+		auto state = std::make_shared<CreatureAIResetState>(*this);
 		setState(std::move(state));
 
 		// We are now evading
@@ -160,7 +158,7 @@ namespace wowpp
 		}
 
 		auto *worldInstance = controlled.getWorldInstance();
-		assert(worldInstance);
+		ASSERT(worldInstance);
 
 		// Check if we are hostile against this unit
 		const auto &unitFaction = threat.getFactionTemplate();

@@ -27,7 +27,8 @@
 #include "binary_io/reader.h"
 #include "game/game_character.h"
 #include "game/defines.h"
-
+#include "game/mail.h"
+ 
 namespace wowpp
 {
 	namespace pp
@@ -91,7 +92,9 @@ namespace wowpp
 					/// Sent by the world server if a player character successfully spawned in a world instance.
 					CharacterSpawned,
 					/// Sent by the world server when a player sends a mail.
-					MailDraft
+					MailDraft,
+					/// Sent by the world server when a player requests its mails.
+					MailGetList
 				};
 			}
 
@@ -125,9 +128,7 @@ namespace wowpp
 					/// One or more items have been deleted. Only slots are specified here.
 					ItemsRemoved,
 					/// The player character has learned a new spell. This is currently only sent using the WebAPI.
-					SpellLearned,
-					/// Response to the world server about the mail received
-					MailDraftResult
+					SpellLearned
 				};
 			}
 
@@ -269,16 +270,13 @@ namespace wowpp
 
 				void mailDraft(
 					pp::OutgoingPacket &out_packet,
-					UInt32 unk1,
-					UInt32 unk2,
-					String sender,
-					String receiver,
-					String subject,
-					String body,
-					UInt32 money,
-					UInt32 COD,
-					UInt32 cost,
-					const std::vector<std::shared_ptr<GameItem>> &items
+					Mail mail,
+					String receiver
+				);
+
+				void mailGetList(
+					pp::OutgoingPacket &out_packet,
+					DatabaseId characterId
 				);
 			}
 
@@ -365,7 +363,7 @@ namespace wowpp
 					pp::OutgoingPacket &out_packet,
 					UInt64 characterId,
 					UInt32 spellId
-					);
+				);
 			}
 
 			/// Contains methods for reading packets coming from the world server.
@@ -476,17 +474,14 @@ namespace wowpp
 
 				bool mailDraft(
 					io::Reader &packet,
-					UInt32 &out_unk1,
-					UInt32 &out_unk2,
-					String &out_sender,
-					String &out_receiver,
-					String &out_subject,
-					String &out_body,
-					UInt32 &out_money,
-					UInt32 &out_COD,
-					UInt32 &out_cost,
-					const std::vector<std::shared_ptr<GameItem>> &out_items
+					Mail &out_mail,
+					String &out_receiver
 				);	
+
+				bool mailGetList(
+					io::Reader &packet,
+					DatabaseId &out_characterId
+				);
 			}
 
 			/// Contains methods for reading packets coming from the realm server.
@@ -576,7 +571,7 @@ namespace wowpp
 					io::Reader &packet,
 					UInt64 &out_characterId,
 					UInt32 &out_spellId
-					);
+				);
 			}
 		}
 	}

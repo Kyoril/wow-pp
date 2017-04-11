@@ -28,8 +28,13 @@ namespace wowpp
 	class Editor;
 
 	/// Manages all connected editors.
-	class EditorManager : public boost::noncopyable
+	class EditorManager final
 	{
+	private:
+
+		EditorManager(const EditorManager &Other) = delete;
+		EditorManager &operator=(const EditorManager &Other) = delete;
+
 	public:
 
 		typedef std::vector<std::shared_ptr<Editor>> Editors;

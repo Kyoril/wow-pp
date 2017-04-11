@@ -48,15 +48,27 @@ namespace wowpp
 			connect(m_ui->triggerView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onTriggerSelectionChanged(QItemSelection, QItemSelection)));
+
+			for (UInt32 i = 1; i <= trigger_flags::Count_; ++i)
+			{
+				QCheckBox *box = m_ui->flagBox->findChild<QCheckBox*>(QString("flag_%1").arg(i));
+				if (box)
+				{
+					connect(box,
+						SIGNAL(stateChanged(int)),
+						this, SLOT(onFlagChanged(int)));
+				}
+			}
 		}
 
 		void TriggerEditor::onTriggerSelectionChanged(const QItemSelection& selection, const QItemSelection& old)
 		{
+			m_selectedTrigger = nullptr;
+
 			// Get the selected unit
 			if (selection.isEmpty())
 			{
 				updateSelection(false);
-				m_selectedTrigger = nullptr;
 				return;
 			}
 
@@ -64,13 +76,11 @@ namespace wowpp
 			if (index < 0)
 			{
 				updateSelection(false);
-				m_selectedTrigger = nullptr;
 				return;
 			}
 
 			// Get trigger entry
 			auto *trigger = m_application.getProject().triggers.getTemplates().mutable_entry(index);
-			m_selectedTrigger = trigger;
 			if (!trigger)
 			{
 				updateSelection(false);
@@ -78,8 +88,18 @@ namespace wowpp
 			}
 
 			m_ui->triggerNameBox->setText(trigger->name().c_str());
-			m_ui->triggerPathBox->setText((trigger->category().empty() ? "(Default)" : trigger->category().c_str()));
+			//m_ui->triggerPathBox->setText((trigger->category().empty() ? "(Default)" : trigger->category().c_str()));
 			m_ui->splitter->setEnabled(true);
+			m_ui->probabilityBox->setValue(trigger->probability());
+
+			for (int i = 1; i <= trigger_flags::Count_; ++i)
+			{
+				auto *child = m_ui->flagBox->findChild<QCheckBox*>(QString("flag_%1").arg(i));
+				if (child)
+				{
+					child->setChecked(trigger->flags() & (1 << (i - 1)));
+				}
+			}
 
 			auto *rootItem = m_ui->functionView->topLevelItem(0);
 			if (rootItem)
@@ -131,6 +151,43 @@ namespace wowpp
 
 			rootItem->setExpanded(true);
 			updateSelection(true);
+			m_selectedTrigger = trigger;
+		}
+
+		void TriggerEditor::onFlagChanged(int state)
+		{
+			if (!m_selectedTrigger)
+				return;
+
+			// Build flag mask
+			UInt32 flagMask = 0;
+			for (UInt32 i = 1; i <= trigger_flags::Count_; ++i)
+			{
+				QCheckBox *box = m_ui->flagBox->findChild<QCheckBox*>(QString("flag_%1").arg(i));
+				if (box)
+				{
+					if (box->isChecked())
+						flagMask |= (1 << (i - 1));
+				}
+			}
+
+			if (m_selectedTrigger->flags() != flagMask)
+			{
+				m_selectedTrigger->set_flags(flagMask);
+				m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
+			}
+		}
+
+		void TriggerEditor::on_probabilityBox_valueChanged(int value)
+		{
+			if (m_selectedTrigger == nullptr)
+				return;
+
+			if (m_selectedTrigger->probability() != value)
+			{
+				m_selectedTrigger->set_probability(value);
+				m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
+			}
 		}
 
 		void TriggerEditor::on_actionNewTrigger_triggered()
@@ -305,14 +362,25 @@ namespace wowpp
 			}
 			else if (m_ui->triggerView->hasFocus())
 			{
-				// Unlink trigger
-				auto &unitEntries = m_application.getProject().units.getTemplates().entry();
-				//for (auto &unit : unitEntries)
-				//{
-				//unit->unlinkTrigger(m_selectedTrigger->id);
-				//}
-
 				UInt32 triggerId = m_selectedTrigger->id();
+
+				// Unlink trigger from all referencing units
+				auto &unitEntries = *m_application.getProject().units.getTemplates().mutable_entry();
+				for (auto &unit : unitEntries)
+				{
+					for (int i = 0; i < unit.triggers_size();)
+					{
+						if (unit.triggers(i) == triggerId)
+						{
+							unit.mutable_triggers()->erase(
+								unit.mutable_triggers()->begin() + i);
+						}
+						else
+						{
+							++i;
+						}
+					}
+				}
 
 				// Remove selected trigger
 				m_application.getProject().triggers.remove(triggerId);
@@ -343,19 +411,6 @@ namespace wowpp
 
 			// Rename
 			m_selectedTrigger->set_name(m_ui->triggerNameBox->text().toStdString());
-
-			// This will update all views
-			emit m_application.getTriggerListModel()->layoutChanged();
-			m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
-		}
-
-		void TriggerEditor::on_triggerPathBox_editingFinished()
-		{
-			if (!m_selectedTrigger)
-				return;
-
-			// Move
-			m_selectedTrigger->set_category(m_ui->triggerPathBox->text().toStdString());
 
 			// This will update all views
 			emit m_application.getTriggerListModel()->layoutChanged();

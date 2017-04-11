@@ -74,6 +74,7 @@ namespace wowpp
 			connect(m_ui->actionSave, SIGNAL(triggered()), &m_application, SLOT(saveUnsavedChanges()));
 			connect(m_ui->actionObjectEditor, SIGNAL(triggered()), &m_application, SLOT(showObjectEditor()));
 			connect(m_ui->actionTriggerEditor, SIGNAL(triggered()), &m_application, SLOT(showTriggerEditor()));
+			connect(m_ui->actionVariables, SIGNAL(triggered()), &m_application, SLOT(showVariableEditor()));
 
 			// Create new label with this form as parent (qt will handle destruction)
 			m_pageLabel = new QLabel(this);
@@ -151,6 +152,9 @@ namespace wowpp
 			{
 				m_application.setTransformTool(transform_tool::Scale);
 			}
+
+			// Refresh render window
+			QApplication::postEvent(m_ui->renderWidget, new QEvent(QEvent::UpdateRequest));
 		}
 
 		void MainWindow::on_actionDelete_triggered()
@@ -281,7 +285,11 @@ namespace wowpp
 				// in the editor.
 				if (entry->id() == 1)
 				{
-					camera->setPosition(10304.0f, 870.033f, 1336.65f);
+					// GM Island
+					camera->setPosition(16226.2f, 16257.0f, 13.2022f);
+
+					// Night Elf Starting Zone
+					//camera->setPosition(10304.0f, 870.033f, 1336.65f);
 				}
 				else if (entry->id() == 0)
 				{

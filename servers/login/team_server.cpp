@@ -38,7 +38,7 @@ namespace wowpp
 		, m_address(address)
 		, m_authed(false)
 	{
-		assert(m_connection);
+		ASSERT(m_connection);
 
 		m_connection->setListener(*this);
 	}

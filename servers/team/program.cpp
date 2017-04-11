@@ -196,7 +196,7 @@ namespace wowpp
 			EditorManager->addEditor(editor);
 		};
 		
-		const boost::signals2::scoped_connection editorConnected(editorServer->connected().connect(createEditor));
+		const simple::scoped_connection editorConnected(editorServer->connected().connect(createEditor));
 		editorServer->startAccept();
 
 		// Run IO service

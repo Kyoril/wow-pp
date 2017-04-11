@@ -23,7 +23,6 @@
 
 #include "defines.h"
 #include "math/vector3.h"
-#include "common/simple.hpp"
 
 namespace wowpp
 {
@@ -35,6 +34,10 @@ namespace wowpp
 	/// should attack, and also controls it's movement.
 	class CreatureAI
 	{
+	public:
+
+		typedef std::shared_ptr<CreatureAIState> CreatureAIStatePtr;
+
 	public:
 
 		/// Defines the home of a creature.
@@ -100,16 +103,16 @@ namespace wowpp
 
 	protected:
 
-		void setState(std::unique_ptr<CreatureAIState> state);
+		void setState(CreatureAIStatePtr state);
 		virtual void onSpawned();
 
 	private:
 
 		GameCreature &m_controlled;
-		std::unique_ptr<CreatureAIState> m_state;
+		CreatureAIStatePtr m_state;
 		Home m_home;
-		simple::scoped_connection m_onSpawned;
-		boost::signals2::scoped_connection m_onKilled, m_onDamaged;
+		simple::scoped_connection m_onSpawned, m_onDamaged;
+		simple::scoped_connection m_onKilled;
 		bool m_evading;
 	};
 }

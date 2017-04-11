@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "auth_protocol.h"
+#include "common/utilities.h"
 
 namespace wowpp
 {
@@ -356,7 +357,7 @@ namespace wowpp
 		}
 
 
-		void server_write::logonChallenge(auth::OutgoingPacket &out_packet, auth_result::Type result,
+		void server_write::logonChallenge(auth::OutgoingPacket &out_packet, auth_result::Type result, SecurityFlags securityFlags,
 		                                  const BigNumber &B, const BigNumber &g, const BigNumber &N, const BigNumber &s, const BigNumber &unk3)
 		{
 			out_packet.start(server_packet::LogonChallenge);
@@ -391,29 +392,29 @@ namespace wowpp
 				        << io::write_range(unk3_.begin(), unk3_.end());
 
 				// Write security flags
-				UInt8 securityFlags = 0x00;	// 0x00...0x04
 				out_packet
 				        << io::write<NetUInt8>(securityFlags);
 
-				if (securityFlags & 0x01)
+				if (securityFlags & security_flags::PinInput)
 				{
 					out_packet
-					        << io::write<NetUInt32>(0)
-					        << io::write<NetUInt64>(0)
-					        << io::write<NetUInt64>(0);
+					        << io::write<NetUInt32>(0xFEEAD911)
+					        << io::write<NetUInt64>(0) << io::write<NetUInt64>(0);
 				}
 
-				if (securityFlags & 0x02)
+				if (securityFlags & security_flags::MatrixInput)
 				{
+					std::uniform_int_distribution<UInt64> dist(1, std::numeric_limits<UInt64>::max());
 					out_packet
-					        << io::write<NetUInt8>(0)
-					        << io::write<NetUInt8>(0)
-					        << io::write<NetUInt8>(0)
-					        << io::write<NetUInt8>(0)
-					        << io::write<NetUInt64>(0);
+					        << io::write<NetUInt8>(8)							// Width of the field	(A-H = 0-7)
+					        << io::write<NetUInt8>(10)							// Height of the field	(1-10 = 0-9)
+					        << io::write<NetUInt8>(1)							// ???
+					        << io::write<NetUInt8>(3)							// Number of fields the player has to enter
+					        << io::write<NetUInt64>(dist(randomGenerator));		// This field encodes the key indices and should be random generated per login attempt
+																				// I still need to understand how this works so that I am able to evaluate the clients input correctly
 				}
 
-				if (securityFlags & 0x04)
+				if (securityFlags & security_flags::TokenInput)
 				{
 					out_packet
 					        << io::write<NetUInt8>(1);
@@ -523,7 +524,7 @@ namespace wowpp
 				        << io::write<NetUInt8>(0)									// C-Style string terminator
 				        << io::write_range(address.begin(), address.end())
 				        << io::write<NetUInt8>(0)									// C-Style string terminator
-				        << io::write<float>(0.0f)
+				        << io::write<float>(0.1f)
 				        << io::write<NetUInt8>(AmountOfCharacters)
 				        << io::write<NetUInt8>(1)									// Timezone (Cfg_Categories.dbc)
 #if SUPPORTED_CLIENT_BUILD >= 6546

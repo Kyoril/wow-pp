@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "movement_path.h"
+#include "common/macros.h"
 #include "log/default_log_levels.h"
 
 namespace wowpp
@@ -85,7 +86,7 @@ namespace wowpp
 
 			// Normalize end time value (end - start) for a range of 0 to END
 			MovementPath::Timestamp nEnd = static_cast<MovementPath::Timestamp>(t2->first - t1->first);
-			assert(nEnd != 0);
+			ASSERT(nEnd != 0);
 
 			// Determine normalized position
 			MovementPath::Timestamp nPos = static_cast<MovementPath::Timestamp>(timestamp - t1->first);

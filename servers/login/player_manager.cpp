@@ -45,7 +45,7 @@ namespace wowpp
 		{
 			return (&player == p.get());
 		});
-		assert(p != m_players.end());
+		ASSERT(p != m_players.end());
 		m_players.erase(p);
 	}
 
@@ -61,7 +61,7 @@ namespace wowpp
 
 	void PlayerManager::addPlayer(std::unique_ptr<Player> added)
 	{
-		assert(added);
+		ASSERT(added);
 		m_players.push_back(std::move(added));
 	}
 

@@ -29,8 +29,13 @@ namespace wowpp
 	class Player;
 
 	/// Manages all connected players.
-	class PlayerManager : public boost::noncopyable
+	class PlayerManager final
 	{
+	private:
+
+		PlayerManager(const PlayerManager &Other) = delete;
+		PlayerManager &operator=(const PlayerManager &Other) = delete;
+
 	public:
 
 		typedef std::vector<std::unique_ptr<Player>> Players;

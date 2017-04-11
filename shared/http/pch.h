@@ -40,6 +40,6 @@
 #include <type_traits>
 
 // Boost Libraies
-#include <boost/signals2.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+
+#include "simple/simple.hpp"

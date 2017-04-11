@@ -40,13 +40,16 @@ namespace wowpp
 	/// Represents an AI controlled creature unit in the game.
 	class GameCreature final : public GameUnit
 	{
+	public:
+
 		typedef LinearSet<UInt64> LootRecipients;
+		typedef std::function<const math::Vector3 &()> RandomPointProc;
 
 	public:
 
 		/// Executed when the unit entry was changed after this creature has spawned. This
 		/// can happen if the unit transforms.
-		boost::signals2::signal<void()> entryChanged;
+		simple::signal<void()> entryChanged;
 
 	public:
 
@@ -101,8 +104,8 @@ namespace wowpp
 			return !m_lootRecipients.empty();
 		}
 		/// Get unit loot.
-		LootInstance *getUnitLoot() const {
-			return m_unitLoot.get();
+		std::shared_ptr<LootInstance> getUnitLoot() const {
+			return m_unitLoot;
 		}
 		void setUnitLoot(std::unique_ptr<LootInstance> unitLoot);
 		/// Gets the number of loot recipients.
@@ -136,9 +139,16 @@ namespace wowpp
 		void setWaypoints(const std::vector<proto::Waypoint> &waypoints);
 
 		virtual float getBaseSpeed(MovementType type) const override;
+		/// Enables skinning loot of this creature if possible.
+		void activateSkinningLoot();
 
 		/// @copydoc GameUnit::isEvading()
 		virtual bool isEvading() const override;
+
+		/// Sets the random movement point generator callback.
+		void setRandomPointGenerator(RandomPointProc proc) { m_randomPoint = proc; }
+		/// Gets a random movement point nearby.
+		const math::Vector3 &getRandomPoint() const { return m_randomPoint ? m_randomPoint() : getLocation(); }
 
 	public:
 
@@ -181,10 +191,11 @@ namespace wowpp
 		std::unique_ptr<CreatureAI> m_ai;
 		simple::scoped_connection m_onSpawned;
 		LootRecipients m_lootRecipients;
-		std::unique_ptr<LootInstance> m_unitLoot;
+		std::shared_ptr<LootInstance> m_unitLoot;
 		bool m_combatMovement;
 		game::CreatureMovement m_movement;
 		std::vector<proto::Waypoint> m_waypoints;
+		RandomPointProc m_randomPoint;
 	};
 
 	UInt32 getZeroDiffXPValue(UInt32 killerLevel);

@@ -54,10 +54,9 @@
 #include <type_traits>
 
 // Boost Libraies
-#include <boost/signals2.hpp>
+#include <boost/variant.hpp>
 #include <boost/optional.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/asio.hpp>
@@ -70,3 +69,5 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/type_traits/is_float.hpp>
+
+#include "simple/simple.hpp"

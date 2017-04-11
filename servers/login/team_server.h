@@ -33,8 +33,12 @@ namespace wowpp
 	/// Player connection class.
 	class TeamServer final
 			: public pp::IConnectionListener
-			, public boost::noncopyable
 	{
+	private:
+
+		TeamServer(const TeamServer &Other) = delete;
+		TeamServer &operator=(const TeamServer &Other) = delete;
+
 	public:
 
 		typedef AbstractConnection<pp::Protocol> Client;
@@ -47,7 +51,7 @@ namespace wowpp
 						const String &address);
 
 		/// Gets the player connection class used to send packets to the client.
-		Client &getConnection() { assert(m_connection); return *m_connection; }
+		Client &getConnection() { ASSERT(m_connection); return *m_connection; }
 		/// Gets the player manager which manages all connected players.
 		TeamServerManager &getManager() const { return m_manager; }
 		/// Determines whether this team server is authentificated.

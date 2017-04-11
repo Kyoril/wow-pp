@@ -25,6 +25,7 @@
 #include "common/big_number.h"
 #include "wowpp_protocol.h"
 #include "binary_io/reader.h"
+#include "auth_protocol/auth_protocol.h"
 
 namespace wowpp
 {
@@ -32,7 +33,7 @@ namespace wowpp
 	{
 		namespace realm_login
 		{
-			static const UInt32 ProtocolVersion = 0x05;
+			static const UInt32 ProtocolVersion = 0x06;
 
 			namespace realm_packet
 			{
@@ -178,6 +179,7 @@ namespace wowpp
 				    pp::OutgoingPacket &out_packet,
 				    const String &accountName,
 				    UInt32 accountId,
+					auth::AuthLocale locale,
 				    const BigNumber &sessionKey,
 				    const BigNumber &v,
 				    const BigNumber &s,
@@ -298,6 +300,7 @@ namespace wowpp
 				    io::Reader &packet,
 				    String &out_accountName,
 				    UInt32 &out_accountId,
+					auth::AuthLocale &out_locale,
 				    BigNumber &out_sessionKey,
 				    BigNumber &out_v,
 				    BigNumber &out_s,

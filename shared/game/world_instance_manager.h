@@ -40,8 +40,13 @@ namespace wowpp
 	class Universe;
 
 	/// Manages all available world instances of the server.
-	class WorldInstanceManager final : private boost::noncopyable
+	class WorldInstanceManager final
 	{
+	private:
+
+		WorldInstanceManager(const WorldInstanceManager &Other) = delete;
+		WorldInstanceManager &operator=(const WorldInstanceManager &Other) = delete;
+
 	public:
 
 		typedef std::vector<std::unique_ptr<WorldInstance>> Instances;

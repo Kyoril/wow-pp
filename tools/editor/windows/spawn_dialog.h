@@ -36,6 +36,7 @@ namespace wowpp
 	namespace proto
 	{
 		class UnitSpawnEntry;
+		class ObjectSpawnEntry;
 	}
 
 	namespace editor
@@ -50,7 +51,12 @@ namespace wowpp
 		public:
 
 			/// 
-			explicit SpawnDialog(EditorApplication &app, proto::UnitSpawnEntry &spawn);
+			explicit SpawnDialog(EditorApplication &app, proto::UnitSpawnEntry &unitSpawn);
+			explicit SpawnDialog(EditorApplication &app, proto::ObjectSpawnEntry &objectSpawn);
+
+		private:
+
+			void initialize();
 
 		private slots:
 
@@ -60,7 +66,8 @@ namespace wowpp
 
 			Ui::SpawnDialog *m_ui;
 			EditorApplication &m_app;
-			proto::UnitSpawnEntry &m_spawn;
+			proto::UnitSpawnEntry *m_unitSpawn;
+			proto::ObjectSpawnEntry *m_objectSpawn;
 		};
 	}
 }

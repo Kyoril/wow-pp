@@ -102,11 +102,12 @@ namespace wowpp
 					out_packet.finish();
 				}
 
-				void playerLoginSuccess(pp::OutgoingPacket &out_packet, const String &accountName, UInt32 accountId, const BigNumber &sessionKey, const BigNumber &v, const BigNumber &s, const std::array<UInt32, 8> &tutorialData)
+				void playerLoginSuccess(pp::OutgoingPacket &out_packet, const String &accountName, UInt32 accountId, auth::AuthLocale locale, const BigNumber &sessionKey, const BigNumber &v, const BigNumber &s, const std::array<UInt32, 8> &tutorialData)
 				{
 					out_packet.start(login_packet::PlayerLoginSuccess);
 					out_packet
-					        << io::write_dynamic_range<NetUInt8>(accountName)
+							<< io::write_dynamic_range<NetUInt8>(accountName)
+							<< io::write<NetUInt32>(locale)
 					        << io::write<NetUInt32>(accountId);
 
 					// Write numbers
@@ -203,10 +204,11 @@ namespace wowpp
 					return true;
 				}
 
-				bool playerLoginSuccess(io::Reader &packet, String &out_accountName, UInt32 &out_accountId, BigNumber &out_sessionKey, BigNumber &out_v, BigNumber &out_s, std::array<UInt32, 8> &out_tutorialData)
+				bool playerLoginSuccess(io::Reader &packet, String &out_accountName, UInt32 &out_accountId, auth::AuthLocale &out_locale, BigNumber &out_sessionKey, BigNumber &out_v, BigNumber &out_s, std::array<UInt32, 8> &out_tutorialData)
 				{
 					if (!(packet
 					        >> io::read_container<NetUInt8>(out_accountName)
+							>> io::read<NetUInt32>(out_locale)
 					        >> io::read<NetUInt32>(out_accountId)))
 					{
 						return false;
