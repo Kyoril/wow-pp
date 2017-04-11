@@ -40,6 +40,8 @@ message UnitEntry {
 	required uint32 id = 1;
 	required string name = 2;
 	optional string subname = 3;
+	repeated string name_loc = 57;
+	repeated string subname_loc = 58;
 	required uint32 minlevel = 4;
 	required uint32 maxlevel = 5;
 	required uint32 alliancefaction = 6;
@@ -91,6 +93,8 @@ message UnitEntry {
 	optional uint32 mechanicimmunity = 52;
 	optional uint32 schoolimmunity = 53;
 	optional uint32 skinninglootentry = 54;
+	repeated uint32 variables = 55;
+	optional uint32 killcredit = 56;
 }
 
 message Units {

@@ -277,8 +277,9 @@ namespace wowpp
 		String accountName;
 		BigNumber key, v, s;
 		UInt32 accountId;
+		auth::AuthLocale locale;
 		std::array<UInt32, 8> tutorialData;
-		if (!pp::realm_login::login_read::playerLoginSuccess(packet, accountName, accountId, key, v, s, tutorialData))
+		if (!pp::realm_login::login_read::playerLoginSuccess(packet, accountName, accountId, locale, key, v, s, tutorialData))
 		{
 			ELOG("Could not read packet!");
 			return;
@@ -289,7 +290,7 @@ namespace wowpp
 		if (player)
 		{
 			// Proceed with login procedure
-			player->loginSucceeded(accountId, key, v, s, tutorialData);
+			player->loginSucceeded(accountId, locale, key, v, s, tutorialData);
 		}
 
 		// Remove pending session

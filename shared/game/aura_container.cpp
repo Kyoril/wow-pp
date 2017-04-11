@@ -175,6 +175,7 @@ namespace wowpp
 		// Store aura instance
 		auto *auraPtr = aura.get();
 		m_auras.push_back(std::move(aura));
+		m_auraTypeCount[auraPtr->getEffect().aura()]++;
 
 		// Add aura to the list of auras of this unit and apply it's effects
 		// Note: We use auraPtr here, since std::move will make aura invalid
@@ -199,11 +200,15 @@ namespace wowpp
 	void AuraContainer::removeAura(AuraList::iterator &it)
 	{
 		// Make sure that the aura is not destroy when releasing
-		assert(it != m_auras.end());
+		ASSERT(it != m_auras.end());
 		auto strong = *it;
-
+		
 		// Remove the aura from the list of auras
 		it = m_auras.erase(it);
+
+		// Reduce counter
+		ASSERT(m_auraTypeCount[strong->getEffect().aura()] > 0);
+		m_auraTypeCount[strong->getEffect().aura()]--;
 
 		// NOW misapply the aura. It is important to call this method AFTER the aura has been
 		// removed from the list of auras. First: To prevent a stack overflow when removing
@@ -224,34 +229,28 @@ namespace wowpp
 
 	void AuraContainer::handleTargetDeath()
 	{
-		const auto newEnd =
-		    std::partition(std::begin(m_auras),
-		                   std::end(m_auras),
-		                   [](const std::shared_ptr<Aura> &instance)
+		AuraList::iterator it = m_auras.begin();
+		while (it != m_auras.end())
 		{
-			return (instance->getSpell().attributes(3) & 0x00100000) != 0 || instance->isPassive();
-		});
-
-		for (auto i = newEnd; i != std::end(m_auras); ++i)
-		{
-			//TODO handle exceptions somehow?
-			(*i)->onForceRemoval();
+			if (((*it)->getSpell().attributes(3) & game::spell_attributes_ex_c::DeathPersistent) != 0 || 
+				(*it)->isPassive())
+			{
+				++it;
+			}
+			else
+			{
+				removeAura(it);
+			}
 		}
-
-		//m_auras.erase(newEnd, std::end(m_auras));
 	}
 
 	bool AuraContainer::hasAura(game::AuraType type) const
 	{
-		for (auto &it : m_auras)
-		{
-			if (it->getEffect().aura() == type)
-			{
-				return true;
-			}
-		}
+		auto it = m_auraTypeCount.find(type);
+		if (it == m_auraTypeCount.end())
+			return false;
 
-		return false;
+		return it->second > 0;
 	}
 
 	UInt32 AuraContainer::consumeAbsorb(UInt32 damage, UInt8 school)
@@ -259,6 +258,8 @@ namespace wowpp
 		UInt32 absorbed = 0;
 		UInt32 ownerMana = m_owner.getUInt32Value(unit_fields::Power1);
 		UInt32 manaShielded = 0;
+
+		std::list<std::shared_ptr<Aura>> toRemove;
 		for (auto &it : m_auras)
 		{
 			if (it->getEffect().aura() == game::aura_type::SchoolAbsorb
@@ -274,7 +275,7 @@ namespace wowpp
 				else
 				{
 					absorbed += toConsume;
-					it->setBasePoints(0);
+					toRemove.push_back(it);
 				}
 			}
 			else if (it->getEffect().aura() == game::aura_type::ManaShield
@@ -299,7 +300,7 @@ namespace wowpp
 						manaShielded += toConsume;
 						const Int32 manaToConsume = (toConsume * it->getEffect().multiplevalue());
 						ownerMana -= manaToConsume;
-						it->setBasePoints(0);
+						toRemove.push_back(it);
 					}
 					else
 					{
@@ -316,6 +317,12 @@ namespace wowpp
 		{
 			m_owner.setUInt32Value(unit_fields::Power1, ownerMana);
 		}
+
+		for (auto &aura : toRemove)
+		{
+			removeAura(*aura);
+		}
+
 		return absorbed;
 	}
 
@@ -392,6 +399,12 @@ namespace wowpp
 
 	void AuraContainer::forEachAuraOfType(game::AuraType type, std::function<bool(Aura&)> functor)
 	{
+		// Performance check before iteration
+		if (!hasAura(type))
+			return;
+
+		// TODO: Order auras differently so that we iterate as less auras as possible for
+		// performance reasons.
 		for (auto &aura : m_auras)
 		{
 			if (aura->getEffect().aura() == type)

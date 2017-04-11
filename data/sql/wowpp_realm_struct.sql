@@ -109,6 +109,8 @@ DROP TABLE IF EXISTS `character_spells`;
 CREATE TABLE `character_spells` (
   `guid` int(10) unsigned NOT NULL,
   `spell` int(10) unsigned NOT NULL,
+  `active` TINYINT UNSIGNED DEFAULT 1 NOT NULL,
+  `disabled` TINYINT UNSIGNED DEFAULT 0 NOT NULL,
   PRIMARY KEY (`guid`,`spell`),
   CONSTRAINT `character_spells_ibfk_1` FOREIGN KEY (`guid`) REFERENCES `character` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
@@ -185,6 +187,17 @@ CREATE TABLE `character_quests` (
   `itemcount4` int(11) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`guid`,`quest`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;
+
+DROP TABLE IF EXISTS `character_skills`;
+
+CREATE TABLE `character_skills` (
+  `guid` INT(10) UNSIGNED NOT NULL,
+  `skill` INT(10) UNSIGNED NOT NULL,
+  `current` INT(10) UNSIGNED NOT NULL DEFAULT '1',
+  `max` INT(10) UNSIGNED NOT NULL DEFAULT '1',
+  PRIMARY KEY (`guid`,`skill`),
+  CONSTRAINT `character_skill_binding` FOREIGN KEY (`guid`) REFERENCES `character` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;

@@ -68,7 +68,7 @@ namespace wowpp
 		std::uniform_int_distribution<UInt32> dist;
 		m_seed = dist(randomGenerator);
 
-		assert(m_connection);
+		ASSERT(m_connection);
 
 		m_connection->setListener(*this);
 		m_social.reset(new PlayerSocial(m_manager, *this));
@@ -81,7 +81,7 @@ namespace wowpp
 			std::bind(game::server_write::authChallenge, std::placeholders::_1, m_seed));
 	}
 
-	void Player::loginSucceeded(UInt32 accountId, const BigNumber &key, const BigNumber &v, const BigNumber &s, const std::array<UInt32, 8> &tutorialData)
+	void Player::loginSucceeded(UInt32 accountId, auth::AuthLocale locale, const BigNumber &key, const BigNumber &v, const BigNumber &s, const std::array<UInt32, 8> &tutorialData)
 	{
 		// Check that Key and account name are the same on client and server
 		Boost_SHA1HashSink sha;
@@ -107,10 +107,12 @@ namespace wowpp
 		m_sessionKey = key;
 		m_v = v;
 		m_s = s;
+		m_locale = locale;
 
 		//TODO Create session
 
 		ILOG("Client " << m_accountName << " authenticated successfully from " << m_address);
+		ILOG("Client locale: " << m_locale);
 		m_authed = true;
 
 		// Notify login connector
@@ -328,6 +330,10 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(CharRename, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(QuestQuery, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(Who, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(MinimapPing, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(ItemNameQuery, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(CreatureQuery, game::session_status::LoggedIn)
+
 #undef WOWPP_HANDLE_PACKET
 #undef QUOTE
 
@@ -814,7 +820,7 @@ namespace wowpp
 
 	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, math::Vector3 location, float o)
 	{
-		assert(m_gameCharacter);
+		ASSERT(m_gameCharacter);
 
 		// Watch for world node disconnection
 		m_worldNode = &world;
@@ -880,13 +886,39 @@ namespace wowpp
 		sendPacket(
 			std::bind(game::server_write::bindPointUpdate, std::placeholders::_1, homeMap, zoneId, std::cref(homePos)));
 
-		// Send spells
-		const auto &spells = m_gameCharacter->getSpells();
-		sendPacket(
-			std::bind(game::server_write::initialSpells, std::placeholders::_1, std::cref(m_project), std::cref(spells), std::cref(m_gameCharacter->getCooldowns())));
-
 		if (isLoginEnter)
 		{
+			// TODO: Change this
+			std::vector<const proto::SpellEntry*> spellBookList;
+			for (const auto *spell : m_gameCharacter->getSpells())
+			{
+				if (spell->rank() != 0)
+				{
+					if (!canStackSpellRanksInSpellBook(*spell))
+					{
+						// Skip spells where lower ranked spell is not learned
+						if (spell->prevspell())
+						{
+							if (!m_gameCharacter->hasSpell(spell->prevspell()))
+								continue;
+						}
+
+						// Skip lower-ranked spells
+						if (spell->nextspell())
+						{
+							if (m_gameCharacter->hasSpell(spell->nextspell()))
+								continue;
+						}
+					}
+				}
+
+				spellBookList.push_back(spell);
+			}
+
+			// Send spells
+			sendPacket(
+				std::bind(game::server_write::initialSpells, std::placeholders::_1, std::cref(m_project), std::cref(spellBookList), std::cref(m_gameCharacter->getCooldowns())));
+
 			// Send tutorial flags (which tutorials have been viewed etc.)
 			sendPacket(
 				std::bind(game::server_write::tutorialFlags, std::placeholders::_1, std::cref(m_tutorialData)));
@@ -895,13 +927,13 @@ namespace wowpp
 				std::bind(game::server_write::unlearnSpells, std::placeholders::_1));
 
 			auto raceEntry = m_gameCharacter->getRaceEntry();
-			assert(raceEntry);
+			ASSERT(raceEntry);
 
 			sendPacket(
 				std::bind(game::server_write::actionButtons, std::placeholders::_1, std::cref(m_actionButtons)));
 		
 			sendPacket(
-				std::bind(game::server_write::initializeFactions, std::placeholders::_1));
+				std::bind(game::server_write::initializeFactions, std::placeholders::_1, std::cref(*m_gameCharacter)));
 
 			// Trigger intro cinematic based on the characters race
 			game::CharEntry *charEntry = getCharacterById(m_characterId);
@@ -1619,9 +1651,39 @@ namespace wowpp
 
 			// Write answer packet
 			sendPacket(
-				std::bind(game::server_write::itemQuerySingleResponse, std::placeholders::_1, std::cref(*item)));
+				std::bind(game::server_write::itemQuerySingleResponse, std::placeholders::_1, m_locale, std::cref(*item)));
 		}
 	}
+
+	void Player::handleCreatureQuery(game::IncomingPacket &packet)
+	{
+		// Read the client packet
+		UInt32 creatureEntry;
+		UInt64 objectGuid;
+		if (!game::client_read::creatureQuery(packet, creatureEntry, objectGuid))
+		{
+			// Could not read packet
+			WLOG("Could not read packet data");
+			return;
+		}
+
+		//TODO: Find creature object and check if it exists
+
+		// Find creature info by entry
+		const auto *unit = m_project.units.getById(creatureEntry);
+		if (unit)
+		{
+			// Write answer packet
+			sendPacket(
+				std::bind(game::server_write::creatureQueryResponse, std::placeholders::_1, m_locale, std::cref(*unit)));
+		}
+		else
+		{
+			//TODO: Send resulting packet SMSG_CREATURE_QUERY_RESPONSE with only one uin32 value
+			//which is creatureEntry | 0x80000000
+		}
+	}
+
 	/*
 	void Player::saveCharacter()
 	{
@@ -2000,6 +2062,14 @@ namespace wowpp
 		}
 	}
 
+	void Player::mailReceived(Mail mail)
+	{
+		// TODO save to db
+		m_mails.push_back(mail);
+
+		DLOG("Mail stored");
+	}
+
 	void Player::handleRequestPartyMemberStats(game::IncomingPacket &packet)
 	{
 		UInt64 guid = 0;
@@ -2169,7 +2239,7 @@ namespace wowpp
 
 		// Send response
 		sendPacket(
-			std::bind(game::server_write::gameObjectQueryResponse, std::placeholders::_1, std::cref(*objectEntry)));
+			std::bind(game::server_write::gameObjectQueryResponse, std::placeholders::_1, m_locale, std::cref(*objectEntry)));
 	}
 
 	void Player::handleTutorialFlag(game::IncomingPacket &packet)
@@ -2613,6 +2683,56 @@ namespace wowpp
 		// Match Count is request count right now (TODO)
 		sendPacket(
 			std::bind(game::server_write::whoRequestResponse, std::placeholders::_1, response, response.entries.size()));
+	}
 
+	void Player::handleMinimapPing(game::IncomingPacket & packet)
+	{
+		float x = 0.0f, y = 0.0f;
+		if (!(game::client_read::minimapPing(packet, x, y)))
+		{
+			WLOG("Could not read minimap ping packet");
+			return;
+		}
+
+		// Only accepted while in group
+		if (!m_group)
+		{
+			WLOG("Player is not in a group");
+			return;
+		}
+
+		// TODO: Only send to group members in the same map instance?
+
+		std::vector<UInt64> excludeGuids;
+		excludeGuids.push_back(m_gameCharacter->getGuid());
+
+		// Broadcast packet to group
+		auto generator = std::bind(game::server_write::minimapPing, std::placeholders::_1, m_gameCharacter->getGuid(), x, y);
+		m_group->broadcastPacket(generator, &excludeGuids);
+	}
+
+	void Player::handleItemNameQuery(game::IncomingPacket & packet)
+	{
+		UInt32 itemEntry = 0;
+		UInt64 itemGuid = 0;
+		if (!(game::client_read::itemNameQuery(packet, itemEntry, itemGuid)))
+		{
+			return;
+		}
+
+		const auto *entry = m_project.items.getById(itemEntry);
+		if (!entry)
+		{
+			return;
+		}
+
+		String name =
+			entry->name_loc_size() >= static_cast<Int32>(m_locale) ?
+			entry->name_loc(static_cast<Int32>(m_locale) - 1) : entry->name();
+		if (name.empty()) name = entry->name();
+
+		// Match Count is request count right now
+		sendPacket(
+			std::bind(game::server_write::itemNameQueryResponse, std::placeholders::_1, itemEntry, std::cref(name), entry->inventorytype()));
 	}
 }

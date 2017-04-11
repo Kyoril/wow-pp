@@ -72,7 +72,7 @@ namespace wowpp
 
 			static void parseThing(const char *&pos, const char *end, String &dest)
 			{
-				assert(dest.empty());
+				ASSERT(dest.empty());
 
 				while (pos != end &&
 				        !isWhitespace(*pos))
@@ -111,7 +111,7 @@ namespace wowpp
 
 			static void readUntil(const char *&pos, const char *end, String &value, char until)
 			{
-				assert(value.empty());
+				ASSERT(value.empty());
 
 				while (pos != end &&
 				        *pos != until)

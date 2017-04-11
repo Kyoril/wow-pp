@@ -38,6 +38,10 @@ namespace wowpp
 
 	public:
 
+		simple::signal<void()> misapplied;
+
+	public:
+
 		/// Initializes a new instance of the Aura class.
 		explicit Aura(const proto::SpellEntry &spell, 
 					  const proto::SpellEffect &effect, 
@@ -146,6 +150,8 @@ namespace wowpp
 
 	protected:
 
+		// Aura effect handlers implemented in aura_effects.cpp
+
 		/// 0
 		void handleModNull(bool apply);
 		/// 3
@@ -196,8 +202,14 @@ namespace wowpp
 		void handleTrackCreatures(bool apply);
 		/// 45
 		void handleTrackResources(bool apply);
+		/// 47
+		void handleModParryPercent(bool apply);
+		/// 49
+		void handleModDodgePercent(bool apply);
 		/// 52
 		void handleModCritPercent(bool apply);
+		/// 53
+		void handlePeriodicLeech(bool apply);
 		/// 56
 		void handleTransform(bool apply);
 		/// 65
@@ -214,6 +226,8 @@ namespace wowpp
 		void handleModDamagePercentDone(bool apply);
 		/// 85
 		void handleModPowerRegen(bool apply);
+		/// 86
+		void handleChannelDeathItem(bool apply);
 		/// 97
 		void handleManaShield(bool apply);
 		/// 99
@@ -250,12 +264,16 @@ namespace wowpp
 		void handleModHaste(bool apply);
 		/// 140
 		void handleModRangedHaste(bool apply);
+		/// 141
+		void handleModRangedAmmoHaste(bool apply);
 		/// 142
 		void handleModBaseResistancePct(bool apply);
 		/// 143
 		void handleModResistanceExclusive(bool apply);
 		/// 182
 		void handleModResistanceOfStatPercent(bool apply);
+		/// 189
+		void handleModRating(bool apply);
 		/// 201
 		void handleFly(bool apply);
 		/// 226
@@ -271,6 +289,12 @@ namespace wowpp
 		void handleDamageShieldProc(GameUnit *attacker);
 		/// 42
 		void handleTriggerSpellProc(GameUnit *attacker, UInt32 amount);
+
+	protected:
+
+		// Periodic tick effects
+		void calculatePeriodicDamage(UInt32 &out_damage, UInt32 &out_absorbed, UInt32 &out_resisted);
+		void periodicLeechEffect();
 
 	private:
 
@@ -291,9 +315,9 @@ namespace wowpp
 
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
-		simple::scoped_connection m_onExpire, m_onTick;
-		boost::signals2::scoped_connection m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onTargetKilled;
-		boost::signals2::scoped_connection m_takenDamage, m_procKilled, m_onDamageBreak, m_onProc, m_onTakenAutoAttack;
+		simple::scoped_connection m_onExpire, m_onTick, m_takenDamage;
+		simple::scoped_connection m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onTargetKilled;
+		simple::scoped_connection m_procKilled, m_onDamageBreak, m_onProc, m_onTakenAutoAttack;
 		std::shared_ptr<GameUnit> m_caster;
 		GameUnit &m_target;
 		SpellTargetMap m_targetMap;

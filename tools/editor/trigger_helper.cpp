@@ -77,6 +77,9 @@ namespace wowpp
 			case trigger_event::OnEmote:
 				return QString("Owning unit was targeted by emote %1")
 					.arg(getTriggerEventData(e, 0, withLinks));
+			case trigger_event::OnSpellCast:
+				return QString("Owning unit successfully casted spell %1")
+					.arg(getTriggerEventData(e, 0, withLinks));
 			default:
 				return "(INVALID EVENT)";
 			}
@@ -187,6 +190,48 @@ namespace wowpp
 				return QString("Player - Raise quest event or exploration of quest %2 for %1")
 					.arg(getTriggerTargetName(action, withLinks))
 					.arg(actionDataEntry(project.quests, action, 0, withLinks));
+			case trigger_actions::Dismount:
+				return QString("Unit - Dismount %1")
+					.arg(getTriggerTargetName(action, withLinks));
+			case trigger_actions::SetMount:
+				return QString("Unit - Set mount id of %1 to %2")
+					.arg(getTriggerTargetName(action, withLinks))
+					.arg(getTriggerActionData(action, 0, withLinks));
+			case trigger_actions::SetVariable:
+			{
+				QString format("Object - Set %1's variable %2 to %3");
+
+				UInt32 varIndex = 0;
+				if (action.data_size() > 0) 
+					varIndex = action.data(0);
+
+				auto *var = project.variables.getById(varIndex);
+				if (var)
+				{
+					switch (var->data_case())
+					{
+						case proto::VariableEntry::kIntvalue:
+						case proto::VariableEntry::kLongvalue:
+						case proto::VariableEntry::kFloatvalue:
+							return format
+								.arg(getTriggerTargetName(action, withLinks))
+								.arg(actionDataEntry(project.variables, action, 0, withLinks))
+								.arg(getTriggerActionData(action, 1, withLinks));
+						default:
+							return format
+								.arg(getTriggerTargetName(action, withLinks))
+								.arg(actionDataEntry(project.variables, action, 0, withLinks))
+								.arg(getTriggerActionString(action, 0, withLinks));
+					}
+				}
+				else
+				{
+					return format
+						.arg(getTriggerTargetName(action, withLinks))
+						.arg(actionDataEntry(project.variables, action, 0, withLinks))
+						.arg(getTriggerActionData(action, 1, withLinks));
+				}
+			}
 			default:
 				return QString("UNKNOWN TRIGGER ACTION");
 			}

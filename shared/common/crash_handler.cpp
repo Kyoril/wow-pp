@@ -21,7 +21,6 @@
 
 #include "pch.h"
 #include "crash_handler.h"
-#include "version.h"
 #include "log/default_log_levels.h"
 
 #ifdef _MSC_VER
@@ -152,6 +151,7 @@ namespace wowpp
 #	include <signal.h>
 #	include <execinfo.h>
 #	include <cxxabi.h>
+#	include "version.h"
 namespace wowpp
 {
 	//no file ending for unix

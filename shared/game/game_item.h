@@ -62,7 +62,7 @@ namespace wowpp
 		friend io::Writer &operator << (io::Writer &w, GameItem const &object);
 		friend io::Reader &operator >> (io::Reader &r, GameItem &object);
 
-		boost::signals2::signal<void()> equipped;
+		simple::signal<void()> equipped;
 
 	public:
 
@@ -88,8 +88,8 @@ namespace wowpp
 		void notifyEquipped();
 
 		///
-		LootInstance *getLoot() {
-			return m_loot.get();
+		std::shared_ptr<LootInstance> getLoot() {
+			return m_loot;
 		}
 
 		///
@@ -107,8 +107,8 @@ namespace wowpp
 	private:
 
 		const proto::ItemEntry &m_entry;
-		std::unique_ptr<LootInstance> m_loot;
-		boost::signals2::scoped_connection m_onLootCleared;
+		std::shared_ptr<LootInstance> m_loot;
+		simple::scoped_connection m_onLootCleared;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameItem const &object);

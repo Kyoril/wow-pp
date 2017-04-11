@@ -43,7 +43,7 @@ namespace wowpp
 		, m_authed(false)
 		, m_timeout(timerQueue)
 	{
-		assert(m_connection);
+		ASSERT(m_connection);
 
 		m_connection->setListener(*this);
 
@@ -222,7 +222,7 @@ namespace wowpp
 		{
 			// Session is always valid here since getPlayerByAccount already checks it
 			const auto session = player->getSession();
-			assert(session != nullptr);
+			ASSERT(session != nullptr);
 			
 			// Check if the player is not already logged in to a realm
 			if (session->hasEnteredRealm())
@@ -247,12 +247,21 @@ namespace wowpp
 						std::placeholders::_1, 
 						std::cref(session->getUserName()),
 						session->getUserId(), 
+						player->getLocale(),
 						std::cref(session->getKey()),
 						std::cref(session->getV()),
 						std::cref(session->getS()),
 						std::cref(tutorialData)));
+
+				// Close client connection
+				player->getConnection().close();
+
 				return;
 			}
+		}
+		else
+		{
+			WLOG("Invalid login request for player " << accountName << ": Not connected");
 		}
 
 		// Send failure

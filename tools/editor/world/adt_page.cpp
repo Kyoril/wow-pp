@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "adt_page.h"
+#include "common/macros.h"
 #include "log/default_log_levels.h"
 #include "OgreMatrix4.h"
 #include "OgreVector3.h"
@@ -189,9 +190,9 @@ namespace wowpp
 
 			static bool readMCVTSubChunk(adt::Page &page, const Ogre::DataStreamPtr &ptr, UInt32 chunkSize, const MCNKHeader &header)
 			{
-				assert(header.IndexX < constants::TilesPerPage);
-				assert(header.IndexY < constants::TilesPerPage);
-				assert(chunkSize == sizeof(float) * constants::VertsPerTile);
+				ASSERT(header.IndexX < constants::TilesPerPage);
+				ASSERT(header.IndexY < constants::TilesPerPage);
+				ASSERT(chunkSize == sizeof(float) * constants::VertsPerTile);
 
 				// Calculate tile index
 				UInt32 tileIndex = header.IndexY + header.IndexX * constants::TilesPerPage;
@@ -215,8 +216,8 @@ namespace wowpp
             
             static bool readMCNRSubChunk(adt::Page &page, const Ogre::DataStreamPtr &ptr, UInt32 chunkSize, const MCNKHeader &header)
             {
-                assert(header.IndexX < constants::TilesPerPage);
-                assert(header.IndexY < constants::TilesPerPage);
+				ASSERT(header.IndexX < constants::TilesPerPage);
+				ASSERT(header.IndexY < constants::TilesPerPage);
 
                 // Calculate tile index
                 UInt32 tileIndex = header.IndexY + header.IndexX * constants::TilesPerPage;
@@ -255,8 +256,8 @@ namespace wowpp
 
 			static bool readMCLYSubChunk(adt::Page &page, const Ogre::DataStreamPtr &ptr, UInt32 chunkSize, const MCNKHeader &header)
 			{
-				assert(header.IndexX < constants::TilesPerPage);
-				assert(header.IndexY < constants::TilesPerPage);
+				ASSERT(header.IndexX < constants::TilesPerPage);
+				ASSERT(header.IndexY < constants::TilesPerPage);
 
 				size_t endPos = ptr->tell() + chunkSize;
 
@@ -296,8 +297,8 @@ namespace wowpp
 
 			static bool readMCALSubChunk(adt::Page &page, const Ogre::DataStreamPtr &ptr, UInt32 chunkSize, const MCNKHeader &header)
 			{
-				assert(header.IndexX < constants::TilesPerPage);
-				assert(header.IndexY < constants::TilesPerPage);
+				ASSERT(header.IndexX < constants::TilesPerPage);
+				ASSERT(header.IndexY < constants::TilesPerPage);
 
 				size_t endPos = ptr->tell() + chunkSize;
 
@@ -442,12 +443,14 @@ namespace wowpp
 				if (!(file->read(&chunkHeader, sizeof(UInt32))) ||
 					chunkHeader == 0)
 				{
+					WLOG("Could not read chunk header");
 					break;
 				}
 
 				// Read chunk size
 				if (!(file->read(&chunkSize, sizeof(UInt32))))
 				{
+					WLOG("Could not read chunk size for chunk " << chunkHeader);
 					break;
 				}
 
@@ -540,7 +543,10 @@ namespace wowpp
             for (auto &entry : MCINEntries)
             {
                 file->seek(entry.offsMCNK + 8);
-                read::readMCNKChunk(out_page, file, entry.size);
+				if (!read::readMCNKChunk(out_page, file, entry.size))
+				{
+					WLOG("Could not read MCNK chunk");
+				}
             }
 		}
 

@@ -55,15 +55,35 @@ namespace wowpp
 			/// @copydoc 
 			virtual void beginCheckLocalCopy(const std::string &name) override;
 
+		signals:
+
+			/// Sets the status message.
+			void setStatusMessage(QString text);
+			/// Sets the progress bar value.
+			void setProgress(float percent);
+			/// 
+			void finishedUpdates(bool applyPatch);
+
+		public slots:
+
+			/// Sets the status message.
+			void onSetStatusMessage(QString text);
+			/// Sets the progress bar value.
+			void onSetProgress(float percent);
+			/// 
+			void onFinishedUpdates(bool applyPatch);
+
 		private:
 
-
-			//void checkForUpdates();
+			/// Processes updates
+			void checkForUpdates();
 
 		private:
 
 			Ui::UpdateDialog *m_ui;
 			EditorApplication &m_app;
+			size_t m_lastLoaded;
+			size_t m_loaded;
 		};
 	}
 }

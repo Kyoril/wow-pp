@@ -36,8 +36,12 @@ namespace wowpp
 	/// Player connection class.
 	class Player final
 			: public auth::IConnectionListener
-			, public boost::noncopyable
 	{
+	private:
+
+		Player(const Player &Other) = delete;
+		Player &operator=(const Player &Other) = delete;
+
 	public:
 
 		typedef AbstractConnection<auth::Protocol> Client;
@@ -54,7 +58,7 @@ namespace wowpp
 						TimerQueue &m_timerQueue);
 
 		/// Gets the player connection class used to send packets to the client.
-		Client &getConnection() { assert(m_connection); return *m_connection; }
+		Client &getConnection() { ASSERT(m_connection); return *m_connection; }
 		/// Gets the player manager which manages all connected players.
 		PlayerManager &getManager() const { return m_manager; }
 		/// Determines whether the player is authentificated.
@@ -70,6 +74,8 @@ namespace wowpp
 		const Session *getSession() const { return m_session.get(); }
 		/// 
 		UInt32 getAccountId() const { return m_accountId; }
+		/// Returns the client locale.
+		const auth::AuthLocale &getLocale() const { return m_locale; }
 
 	private:
 
@@ -93,6 +99,8 @@ namespace wowpp
 		bool m_reconnectChallenge;				// Reconnect challenge sent?
 		Countdown m_timeout;					// Timeout countdown
 		simple::scoped_connection m_onTimeout;
+		GameTime m_nextRealmRequest;
+		UInt8 m_realmRequestCount;
 
 	private:
 

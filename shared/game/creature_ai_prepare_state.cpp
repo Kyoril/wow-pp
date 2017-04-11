@@ -37,14 +37,6 @@ namespace wowpp
 		: CreatureAIState(ai)
 		, m_preparation(ai.getControlled().getTimers())
 	{
-		m_preparation.ended.connect([this]()
-		{
-			// Enter idle state
-			getAI().idle();
-		});
-
-		// Start preparation timer (3 seconds)
-		m_preparation.setEnd(getCurrentTime() + constants::OneSecond * 6);
 	}
 
 	CreatureAIPrepareState::~CreatureAIPrepareState()
@@ -53,6 +45,17 @@ namespace wowpp
 
 	void CreatureAIPrepareState::onEnter()
 	{
+		CreatureAIState::onEnter();
+
+		m_preparation.ended.connect([this]()
+		{
+			// Enter idle state
+			getAI().idle();
+		});
+
+		// Start preparation timer (3 seconds)
+		m_preparation.setEnd(getCurrentTime() + constants::OneSecond * 6);
+
 		// Watch for threat events to enter combat
 		auto &ai = getAI();
 		m_onThreatened = getControlled().threatened.connect(std::bind(&CreatureAI::onThreatened, &ai, std::placeholders::_1, std::placeholders::_2));
@@ -63,7 +66,7 @@ namespace wowpp
 
 	void CreatureAIPrepareState::onLeave()
 	{
-
+		CreatureAIState::onLeave();
 	}
 
 }

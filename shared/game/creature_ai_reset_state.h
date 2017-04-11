@@ -45,7 +45,7 @@ namespace wowpp
 
 	private:
 
-		boost::signals2::scoped_connection m_onHomeReached;
-		boost::signals2::scoped_connection m_onStateChanged;
+		simple::scoped_connection m_onHomeReached;
+		simple::scoped_connection m_onStateChanged;
 	};
 }

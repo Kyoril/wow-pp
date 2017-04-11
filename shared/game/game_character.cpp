@@ -39,6 +39,42 @@ namespace wowpp
 	static constexpr UInt8 MaxQuestsOnLog = 25;
 	static constexpr UInt8 MaxSkills = 127;
 
+	bool canStackSpellRanksInSpellBook(const proto::SpellEntry &spell)
+	{
+		// Ranked passive spells don't stack
+		if ((spell.attributes(0) & game::spell_attributes::Passive) != 0 &&
+			spell.rank() != 0)
+			return false;
+
+		// Only mana and health spells allow stacking for efficiency
+		if (spell.powertype() != game::power_type::Mana && spell.powertype() != game::power_type::Health)
+			return false;
+
+		// TODO: Profession and riding spells don't allow stacking
+
+		// Stances don't allow stacking (We only need to check mana / energy classes here)
+		for (const auto &effect : spell.effects())
+		{
+			switch (spell.family())
+			{
+				case game::spell_family::Paladin:
+					// Paladin auras
+					if (effect.type() == game::spell_effects::ApplyAreaAuraParty)
+						return false;
+					break;
+				case game::spell_family::Druid:
+				case game::spell_family::Rogue:
+					// Druid shapeshifting spells or rogue stealth
+					if (effect.type() == game::spell_effects::ApplyAura &&
+						effect.aura() == game::aura_type::ModShapeShift)
+						return false;
+					break;
+			}
+		}
+
+		return true;
+	}
+
 	GameCharacter::GameCharacter(
 	    proto::Project &project,
 	    TimerQueue &timers)
@@ -61,12 +97,17 @@ namespace wowpp
 		, m_resurrectMap(0)
 		, m_resurrectHealth(0)
 		, m_resurrectMana(0)
+		, m_restType(rest_type::None)
+		, m_restTrigger(nullptr)
 	{
 		// Resize values field
 		m_values.resize(character_fields::CharacterFieldCount, 0);
 		m_valueBitset.resize((character_fields::CharacterFieldCount + 31) / 32, 0);
 
 		m_objectType |= type_mask::Player;
+
+		// Players can charge up on terrain
+		getMover().setTerrainMovement(true);
 
 		// Reset time values
 		m_playedTime.fill(0);
@@ -144,17 +185,21 @@ namespace wowpp
 		setUInt32Value(character_fields::ShieldBlock, 0);
 
 		// Flag for pvp
-		addFlag(character_fields::CharacterFlags, 512);
 		addFlag(unit_fields::UnitFlags, game::unit_flags::PvP);
-
+		addFlag(unit_fields::UnitFlags, game::unit_flags::PvPMode);
+		addFlag(character_fields::CharacterFlags, game::char_flags::PvP);
 		removeFlag(unit_fields::UnitFlags, game::unit_flags::NotAttackable);
 		removeFlag(unit_fields::UnitFlags, game::unit_flags::NotAttackablePvP);
+
 
 		// Dodge percentage
 		setFloatValue(character_fields::DodgePercentage, 0.0f);
 
 		// Reset threat modifiers
 		m_threatModifier.fill(1.0f);
+
+		// On login, the character's state should be falling
+		m_movementInfo.moveFlags = game::movement_flags::Falling;
 	}
 
 	game::QuestStatus GameCharacter::getQuestStatus(UInt32 quest) const
@@ -292,6 +337,11 @@ namespace wowpp
 				{
 					questTimer = time(nullptr) + questEntry->timelimit();
 					data.expiration = questTimer;
+				}
+
+				if (questEntry->timelimit() > 0)
+				{
+
 				}
 
 				// Set quest log
@@ -762,6 +812,8 @@ namespace wowpp
 
 	void GameCharacter::onQuestKillCredit(UInt64 unitGuid, const proto::UnitEntry &entry)
 	{
+		const UInt32 creditEntry = (entry.killcredit() != 0) ? entry.killcredit() : entry.id();
+
 		// Check all quests in the quest log
 		bool updateQuestObjects = false;
 		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
@@ -791,7 +843,7 @@ namespace wowpp
 			UInt8 reqIndex = 0;
 			for (const auto &req : quest->requirements())
 			{
-				if (req.creatureid() == entry.id())
+				if (req.creatureid() == creditEntry)
 				{
 					// Get current counter
 					UInt8 counter = getByteValue(character_fields::QuestLog1_1 + i * 4 + 2, reqIndex);
@@ -802,7 +854,7 @@ namespace wowpp
 						it->second.creatures[reqIndex]++;
 
 						// Fire signal to update UI
-						questKillCredit(*quest, unitGuid, entry.id(), counter, req.creaturecount());
+						questKillCredit(*quest, unitGuid, creditEntry, counter, req.creaturecount());
 
 						// Check if this completed the quest
 						if (fulfillsQuestRequirements(*quest))
@@ -1443,6 +1495,12 @@ namespace wowpp
 
 		switch (combatRating)
 		{
+		case combat_rating::Parry:
+			updateParryPercentage();
+			break;
+		case combat_rating::Dodge:
+			updateDodgePercentage();
+			break;
 		case combat_rating::CritMelee:
 			updateCritChance(game::weapon_attack::BaseAttack);
 			updateCritChance(game::weapon_attack::OffhandAttack);
@@ -1450,12 +1508,15 @@ namespace wowpp
 		case combat_rating::CritRanged:
 			updateCritChance(game::weapon_attack::RangedAttack);
 			break;
+		case combat_rating::CritSpell:
+			updateAllSpellCritChances();
+			break;
 		}
 	}
 
 	void GameCharacter::applyCombatRatingMod(CombatRatingType combatRating, Int32 amount, bool apply)
 	{
-		m_combatRatings[combatRating] = apply ? amount : -amount;
+		m_combatRatings[combatRating] += apply ? amount : -amount;
 
 		updateRating(combatRating);
 	}
@@ -1514,27 +1575,51 @@ namespace wowpp
 
 		float value = getRatingBonusValue(combatRating) + getTotalPercentageModValue(modGroup);
 
-		// Commented out for testing purposes; skill values not implemented yet
-		// value += (static_cast<Int32>(getWeaponSkillValue(attackType)) - static_cast<Int32>(getMaxSkillValueForLevel())) * 0.04f;
+		const Int32 weaponSkillVal = getWeaponSkillValue(attackType, *this);
+		const Int32 maxWeaponSkillVal = getMaxWeaponSkillValueForLevel();
+		value += (weaponSkillVal - maxWeaponSkillVal) * 0.04f;
 
 		setFloatValue(index, value < 0.0f ? 0.0f : value);
 	}
 
-	void GameCharacter::updateAllCritChances()
+	void GameCharacter::updateDodgePercentage()
 	{
-		UInt32 level = getLevel();
-		UInt32 charClass = getClass();
+		float value = getDodgeFromAgility();
 
-		if (level > 100)
+		const Int32 defenseSkillVal = getDefenseSkillValue(*this);
+		const Int32 maxWeaponSkillVal = getMaxWeaponSkillValueForLevel();
+		value += (defenseSkillVal - maxWeaponSkillVal) * 0.04f;
+
+		value += getAuras().getTotalBasePoints(game::aura_type::ModDodgePercent);
+
+		value += getRatingBonusValue(combat_rating::Dodge);
+
+		setFloatValue(character_fields::DodgePercentage, value < 0.0f ? 0.0f : value);
+	}
+
+	void GameCharacter::updateParryPercentage()
+	{
+		float value = 0.0f;
+
+		if (canParry())
 		{
-			level = 100;
+			value = 5.0f;
+
+			const Int32 defenseSkillVal = getDefenseSkillValue(*this);
+			const Int32 maxWeaponSkillVal = getMaxWeaponSkillValueForLevel();
+			value += (defenseSkillVal - maxWeaponSkillVal) * 0.04f;
+
+			value += getAuras().getTotalBasePoints(game::aura_type::ModParryPercent);
+
+			value += getRatingBonusValue(combat_rating::Parry);
 		}
 
-		const auto *critEntry = getProject().meleeCritChance.getById((charClass - 1) * 100 + level - 1);
-		const auto &critBase = critEntry->basechanceperlevel();
-		const auto &critRatio = critEntry->chanceperlevel();
+		setFloatValue(character_fields::ParryPercentage, value < 0.0f ? 0.0f : value);
+	}
 
-		float value = (critBase + getUInt32Value(unit_fields::Stat0 + unit_mods::StatAgility) * critRatio) * 100.0f;
+	void GameCharacter::updateAllCritChances()
+	{
+		float value = getMeleeCritFromAgility();
 
 		m_baseCRMod[base_mod_group::CritPercentage][base_mod_type::Percentage] = value;
 		m_baseCRMod[base_mod_group::OffHandCritPercentage][base_mod_type::Percentage] = value;
@@ -1543,6 +1628,32 @@ namespace wowpp
 		updateCritChance(game::weapon_attack::BaseAttack);
 		updateCritChance(game::weapon_attack::OffhandAttack);
 		updateCritChance(game::weapon_attack::RangedAttack);
+	}
+
+	void GameCharacter::updateSpellCritChance(game::SpellSchool spellSchool)
+	{
+		float crit = 0.0f;
+
+		if (spellSchool != game::spell_school::Normal)
+		{
+			crit += getSpellCritFromIntellect();
+
+			crit += getAuras().getTotalBasePoints(game::aura_type::ModSpellCritChance);
+
+			// TODO: ModSpellCritChanceSchool aura
+
+			crit += getRatingBonusValue(combat_rating::CritSpell);
+		}
+
+		setFloatValue(character_fields::SpellCritPercentage + spellSchool, crit);
+	}
+
+	void GameCharacter::updateAllSpellCritChances()
+	{
+		for (UInt8 i = game::spell_school::Normal; i < game::spell_school::End; ++i)
+		{
+			updateSpellCritChance(game::SpellSchool(i));
+		}
 	}
 
 	void GameCharacter::applyWeaponCritMod(std::shared_ptr<GameItem> item, game::WeaponAttack attackType, const proto::SpellEntry & spell, float amount, bool apply)
@@ -1617,6 +1728,126 @@ namespace wowpp
 	void GameCharacter::setPlayTime(PlayerTimeIndex index, UInt32 value)
 	{
 		m_playedTime[index] = value;
+	}
+
+	void GameCharacter::setRestType(RestType type, const proto::AreaTriggerEntry *trigger)
+	{
+		// Update rest type
+		m_restType = type;
+
+		// Update character flags and state
+		if (type == rest_type::None)
+		{
+			// Remove the resting flag
+			removeFlag(character_fields::CharacterFlags, game::char_flags::Resting);
+			m_restTrigger = nullptr;
+		}
+		else
+		{
+			// Add the resting flag (if not set already)
+			addFlag(character_fields::CharacterFlags, game::char_flags::Resting);
+			m_restTrigger = trigger;
+		}
+	}
+
+	bool GameCharacter::isInRestAreaTrigger() const
+	{
+		// Was a trigger set properly?
+		if (!m_restTrigger)
+			return false;
+
+		return isInAreaTrigger(*m_restTrigger, 5.0f);
+	}
+
+	bool GameCharacter::isInAreaTrigger(const proto::AreaTriggerEntry & entry, float delta) const 
+	{
+		const math::Vector3 &position = getLocation();
+		if (getMapId() != entry.map())
+			return false;
+
+		if (entry.radius() > 0)
+		{
+			// Sphere radius check
+			const math::Vector3 pt(entry.x(), entry.y(), entry.z());
+			const float distSq = (position - pt).squared_length();
+			const float tolerated = entry.radius() + delta;
+			if (distSq > tolerated * tolerated)
+				return false;
+		}
+		else
+		{
+			// Box check
+
+			// 2PI = 360, keep in mind that ingame orientation is counter-clockwise
+			const double rotation = 2 * 3.1415927 - entry.box_o();
+			const double sinVal = sin(rotation);
+			const double cosVal = cos(rotation);
+
+			float playerBoxDistX = position.x - entry.x();
+			float playerBoxDistY = position.y - entry.y();
+
+			float rotPlayerX = float(entry.x() + playerBoxDistX * cosVal - playerBoxDistY * sinVal);
+			float rotPlayerY = float(entry.y() + playerBoxDistY * cosVal + playerBoxDistX * sinVal);
+
+			// box edges are parallel to coordiante axis, so we can treat every dimension independently :D
+			float dz = position.z - entry.z();
+			float dx = rotPlayerX - entry.x();
+			float dy = rotPlayerY - entry.y();
+			if ((fabs(dx) > entry.box_x() / 2 + delta) ||
+				(fabs(dy) > entry.box_y() / 2 + delta) ||
+				(fabs(dz) > entry.box_z() / 2 + delta))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	game::FactionFlags GameCharacter::getBaseFlags(UInt32 faction) const
+	{
+		const auto *entry = getProject().factions.getById(faction);
+		if (!entry)
+			return game::faction_flags::None;
+
+		const UInt32 classMask = 1 << (getClass() - 1);
+		const UInt32 raceMask = 1 << (getRace() - 1);
+		for (const auto &rep : entry->baserep())
+		{
+			if ((rep.racemask() == 0 || rep.racemask() & raceMask) &&
+				(rep.classmask() == 0 || rep.classmask() & classMask))
+			{
+				return static_cast<game::FactionFlags>(rep.flags());
+			}
+		}
+
+		return game::faction_flags::None;
+	}
+
+	Int32 GameCharacter::getBaseReputation(UInt32 faction) const
+	{
+		const auto *entry = getProject().factions.getById(faction);
+		if (!entry)
+			return 0;
+
+		const UInt32 classMask = 1 << (getClass() - 1);
+		const UInt32 raceMask = 1 << (getRace() - 1);
+		for (const auto &rep : entry->baserep())
+		{
+			if ((rep.racemask() == 0 || rep.racemask() & raceMask) &&
+				(rep.classmask() == 0 || rep.classmask() & classMask))
+			{
+				return rep.value();
+			}
+		}
+
+		return 0;
+	}
+
+	Int32 GameCharacter::getReputation(UInt32 faction) const
+	{
+		// TODO
+		return getBaseReputation(faction);
 	}
 
 	void GameCharacter::onKilled(GameUnit * killer)
@@ -1751,6 +1982,19 @@ namespace wowpp
 		// Maximize mana and energy
 		setUInt32Value(unit_fields::Power1, getUInt32Value(unit_fields::MaxPower1));
 		setUInt32Value(unit_fields::Power3, getUInt32Value(unit_fields::MaxPower3));
+
+		// Update maximum of all skills if needed
+		for (const auto *skill : m_skills)
+		{
+			if (skill->category() == game::skill_category::Weapon)
+			{
+				UInt16 current = 0, max = 0;
+				getSkillValue(skill->id(), current, max);
+
+				max = static_cast<UInt16>(getLevel() * 5);
+				setSkillValue(skill->id(), std::min(current, max), max);
+			}
+		}
 	}
 
 	void GameCharacter::setName(const String &name)
@@ -1758,12 +2002,53 @@ namespace wowpp
 		m_name = name;
 	}
 
+	void GameCharacter::setZone(UInt32 zoneIndex)
+	{
+		const auto *entry = getProject().zones.getById(zoneIndex);
+		if (!entry)
+		{
+			WLOG("Unknown zone id " << zoneIndex);
+			return;
+		}
+
+		m_zoneIndex = zoneIndex;
+
+		// Get area of zone
+		const proto::ZoneEntry *area = entry;
+		if (entry->parentzone() != 0)
+		{
+			area = getProject().zones.getById(entry->parentzone());
+		}
+
+		if (area == nullptr)
+		{
+			WLOG("No area belongs to zone " << zoneIndex);
+			return;
+		}
+
+		// Eventually update rest zone
+		if (area->flags() & game::area_flags::Capital)
+		{
+			setRestType(rest_type::City, nullptr);
+		}
+		else if (m_restType == rest_type::City)
+		{
+			setRestType(rest_type::None, nullptr);
+		}
+	}
+
 	bool GameCharacter::addSpell(const proto::SpellEntry &spell)
 	{
 		if (hasSpell(spell.id()))
-		{
 			return false;
-		}
+
+		// Check race requirement
+		if (spell.racemask() != 0 && !(spell.racemask() & (1 << (getRace() - 1))))
+			return false;
+
+		// Check class requirement
+		if (spell.classmask() != 0 && !(spell.classmask() & (1 << (getClass() - 1))))
+			return false;
 
 		// Evaluate parry and block spells
 		for (int i = 0; i < spell.effects_size(); ++i)
@@ -1807,6 +2092,34 @@ namespace wowpp
 
 		// Fire signal
 		spellLearned(spell);
+
+		// If it is a trade skill...
+		bool isTradeSkill = false;
+		Int32 skillIndex = 0, skillPoint = 0;
+		for (const auto &effect : spell.effects())
+		{
+			if (effect.type() == game::spell_effects::TradeSkill)
+			{
+				isTradeSkill = true;
+			}
+			else if (effect.type() == game::spell_effects::Skill)
+			{
+				skillIndex = effect.miscvaluea();
+				skillPoint = effect.basepoints() + effect.basedice();
+			}
+		}
+
+		if (isTradeSkill && skillIndex > 0)
+		{
+			const auto *skill = m_project.skills.getById(skillIndex);
+			if (skill) {
+				// Add dependent skill
+				addSkill(*skill);
+				UInt16 current = 1, max = 1;
+				getSkillValue(skillIndex, current, max);
+				setSkillValue(skillIndex, current, 75 * skillPoint);
+			}
+		}
 
 		return true;
 	}
@@ -1942,7 +2255,17 @@ namespace wowpp
 				setUInt32Value(skillIndex + 1, minMaxValue);
 				m_skills.push_back(&skill);
 
-				// TODO: Learn dependant spells if any
+				// Learn dependant spells if any
+				for (const auto &spell : skill.spells())
+				{
+					const auto *spellEntry = getProject().spells.getById(spell);
+					if (spellEntry)
+					{
+						// Spell may be learned
+						addSpell(*spellEntry);
+					}
+				}
+
 				return;
 			}
 		}
@@ -2015,6 +2338,68 @@ namespace wowpp
 		}
 	}
 
+	void GameCharacter::updateWeaponSkill(UInt32 skillId)
+	{
+		// Check if we have that skill
+		const proto::SkillEntry *weaponSkill = nullptr;
+		for (const auto *skill : m_skills)
+		{
+			if (skill->id() == skillId)
+			{
+				weaponSkill = skill;
+				break;
+			}
+		}
+
+		if (!weaponSkill)
+		{
+			WLOG("Player doesn't know skill " << skillId);
+			return;
+		}
+
+		if (weaponSkill->category() != game::skill_category::Weapon)
+		{
+			WLOG("Skill " << skillId << " - " << weaponSkill->name() << " is not a weapon skill");
+			return;
+		}
+
+		// Get skill value
+		UInt16 current = 0, max = 0;
+		if (!getSkillValue(skillId, current, max))
+		{
+			WLOG("Could not get skill values for skill " << skillId);
+			return;
+		}
+
+		// Something to increase?
+		if (current == 0 || max == 0 || current >= max)
+			return;
+
+		// Intellect increases the chance to get a skill-levelup
+		const UInt32 maxFactor = 512;
+		const UInt32 minFactor = 50;
+		const UInt32 bonusInt = getUInt32Value(unit_fields::Stat3) - getModifierValue(unit_mods::StatIntellect, unit_mod_type::BaseValue);
+		const UInt32 levelInt = getLevel() * 5;
+
+		// Calculate reduction factor in percent and clamp to 0..1
+		float factor = static_cast<float>(bonusInt) / static_cast<float>(levelInt);	// 50 bonus int at level 20 would be 50 / 100
+		factor = std::min(1.0f, std::max(0.0f, factor));
+
+		// Perform a roll to see if we should increase the skill value
+		std::uniform_int_distribution<UInt32> dist(0, maxFactor);
+		const UInt32 roll = dist(randomGenerator);
+		
+		// Formular: current * (512 - (50 * 0..1)) < max * random(0,512)
+		if (static_cast<UInt32>(current) * (maxFactor - (static_cast<float>(minFactor) * factor)) < static_cast<UInt32>(max) * roll)
+		{
+			// Increase skill value
+			setSkillValue(skillId, current + 1, max);
+
+			// Update combat ratings...
+			updateAllRatings();
+		}
+	}
+
 	void GameCharacter::setSkillValue(UInt32 skillId, UInt16 current, UInt16 maximum)
 	{
 		// Find the next usable skill slot
@@ -2028,9 +2413,11 @@ namespace wowpp
 			{
 				const UInt32 minMaxValue = UInt32(UInt16(current) | (UInt32(maximum) << 16));
 				setUInt32Value(skillIndex + 1, minMaxValue);
-				break;
+				return;
 			}
 		}
+
+		WLOG("Character does not know skill " << skillId);
 	}
 
 	void GameCharacter::updateArmor()
@@ -2329,7 +2716,9 @@ namespace wowpp
 				}
 			}
 
-			const float att_speed = attackTime * getModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::BasePct);
+			const float att_speed = 
+				(attackTime * getModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::BasePct) + 
+					getModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::TotalValue)) * getModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::TotalPct);
 
 			setUInt32Value(unit_fields::RangedAttackTime, att_speed);
 		}
@@ -2404,6 +2793,12 @@ namespace wowpp
 					case game::item_stat::Stamina:
 						updateModifierValue(unit_mods::StatStamina, unit_mod_type::TotalValue, entry.value(), apply);
 						break;
+					case game::item_stat::DodgeRating:
+						applyCombatRatingMod(combat_rating::Dodge, entry.value(), apply);
+						break;
+					case game::item_stat::ParryRating:
+						applyCombatRatingMod(combat_rating::Parry, entry.value(), apply);
+						break;
 					case game::item_stat::CritMeleeRating:
 						applyCombatRatingMod(combat_rating::CritMelee, entry.value(), apply);
 						break;
@@ -2413,6 +2808,9 @@ namespace wowpp
 					case game::item_stat::CritRating:
 						applyCombatRatingMod(combat_rating::CritMelee, entry.value(), apply);
 						applyCombatRatingMod(combat_rating::CritRanged, entry.value(), apply);
+						break;
+					case game::item_stat::CritSpellRating:
+						applyCombatRatingMod(combat_rating::CritSpell, entry.value(), apply);
 						break;
 					default:
 						break;
@@ -2472,7 +2870,7 @@ namespace wowpp
 			for (auto &spell : item.getEntry().spells())
 			{
 				// Trigger == onEquip?
-				if (spell.trigger() == 1)
+				if (spell.trigger() == game::item_spell_trigger::OnEquip)
 				{
 					castSpell(targetMap, spell.spell(), { 0, 0, 0 }, 0, true, item.getGuid());
 				}
@@ -2526,6 +2924,18 @@ namespace wowpp
 		// Update amount of XP
 		experienceGained(victim ? victim->getGuid() : 0, experience, 0);
 		setUInt32Value(character_fields::Xp, newXP);
+	}
+
+	bool GameCharacter::canDetectStealth(GameUnit & target) const
+	{
+		// Characters in the same party can see each other
+		if (target.isGameCharacter())
+		{
+			if (reinterpret_cast<GameCharacter&>(target).getGroupId() == m_groupId)
+				return true;
+		}
+
+		return GameUnit::canDetectStealth(target);
 	}
 
 	void GameCharacter::modifyGroupUpdateFlags(GroupUpdateFlags flags, bool apply)
@@ -2610,12 +3020,20 @@ namespace wowpp
 			addHealth *= 1.33f;
 		}
 
-		float auraRegen = getAuras().getTotalBasePoints(game::aura_type::ModRegen);
-		addHealth += auraRegen * 0.4f;
+		// No regeneration in combat
+		if (isInCombat())
+			addHealth = 0.0f;
 
-		if (addHealth < 0.0f) {
+		if (getAuras().hasAura(game::aura_type::ModRegen))
+			addHealth += getAuras().getTotalBasePoints(game::aura_type::ModRegen) * 0.4f;
+
+		// Apply regeneration which continues even in combat
+		if (getAuras().hasAura(game::aura_type::ModHealthRegenInCombat))
+			addHealth += (getAuras().getTotalBasePoints(game::aura_type::ModHealthRegenInCombat) * 0.4f);
+
+		// Anything to regenerate here?
+		if (addHealth < 0.0f)
 			return;
-		}
 
 		heal(static_cast<UInt32>(addHealth), nullptr, true);
 	}
@@ -2656,29 +3074,34 @@ namespace wowpp
 		}
 	}
 
-	UInt32 GameCharacter::getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit * target)
+	UInt32 GameCharacter::getWeaponSkillValue(game::WeaponAttack attackType, const GameUnit &target) const
 	{
+		// Try to get the respective weapon
 		std::shared_ptr<GameItem> item = m_inventory.getWeaponByAttackType(attackType, true, true);
-
 		if (attackType != game::weapon_attack::BaseAttack && !item)
 		{
+			// Not sure about this one... needs research
 			return 0;
 		}
 
+		// Feral druids don't use weapon skills so always return max here for calculations
 		if (isInFeralForm())
 		{
-			return getMaxSkillValueForLevel();
+			return getMaxWeaponSkillValueForLevel();
 		}
 
-		UInt32 skill = item ? item->getEntry().skill() : static_cast<UInt32>(game::skill_type::Unarmed);
+		// Get the weapon skill index to check
+		const UInt32 skillId = item ? item->getEntry().skill() : static_cast<UInt32>(game::skill_type::Unarmed);
 
+		// Request current weapon skill (or unarmed skill of no weapon)
 		UInt16 maxSkillValue, skillValue;
-		getSkillValue(skill, skillValue, maxSkillValue);
+		getSkillValue(skillId, skillValue, maxSkillValue);
 
-		UInt32 value = (target && target->isGameCharacter()) ? maxSkillValue : skillValue;
+		// TODO: Use max skill value against players (pvp), real skill value otherwise
+		UInt32 value = skillValue;//(target.isGameCharacter() ? maxSkillValue : skillValue);
 
+		// Increase value based on combat ratings (this seems completely useless)
 		CombatRatingType combatRating = combat_rating::WeaponSkill;
-
 		value += getRatingBonusValue(combatRating);
 
 		switch (attackType)
@@ -2697,12 +3120,16 @@ namespace wowpp
 		return value;
 	}
 
-	UInt32 GameCharacter::getDefenseSkillValue(const GameUnit * target)
+	UInt32 GameCharacter::getDefenseSkillValue(const GameUnit &attacker) const 
 	{
-		UInt16 maxSkillValue, skillValue;
+		// In case of failure of getSkillValue, initialize these
+		UInt16 maxSkillValue = getMaxWeaponSkillValueForLevel(), skillValue = 1;
 		getSkillValue(game::skill_type::Defense, skillValue, maxSkillValue);
 
-		UInt32 value = target && target->isGameCharacter() ? maxSkillValue : skillValue;
+		// TODO: Use max skill value against players (pvp), real skill value otherwise
+		UInt32 value = skillValue;//(target.isGameCharacter() ? maxSkillValue : skillValue);
+
+		// TODO: DefenseSkill value has to be implemented
 		value += static_cast<UInt32>(getRatingBonusValue(combat_rating::DefenseSkill));
 
 		return value;
@@ -2719,22 +3146,28 @@ namespace wowpp
 
 	void GameCharacter::updateTalentPoints()
 	{
-		auto level = getLevel();
+		Int32 level = static_cast<Int32>(getLevel());
+		ASSERT(level > 0);
 
-		UInt32 talentPoints = 0;
+		Int32 talentPoints = 0;
 		if (level >= 10)
 		{
 			// This is the maximum number of talent points available at the current character level
 			talentPoints = level - 9;
-
-			// Now iterate through every learned spell and reduce the amount of talent points
-			for (auto &spell : m_spells)
+			if (talentPoints > 0)
 			{
-				talentPoints -= spell->talentcost();
+				// Now iterate through every learned spell and reduce the amount of talent points
+				for (auto &spell : m_spells)
+				{
+					talentPoints -= spell->talentcost();
+				}
+
+				if (talentPoints < 0)
+					talentPoints = 0;
 			}
 		}
 
-		setUInt32Value(character_fields::CharacterPoints_1, talentPoints);
+		setInt32Value(character_fields::CharacterPoints_1, talentPoints);
 	}
 
 	void GameCharacter::initClassEffects()
@@ -2784,9 +3217,9 @@ namespace wowpp
 				if (object->isWorldObject())
 				{
 					// We only need to check objects that have potential quest loot
-					auto *loot = reinterpret_cast<WorldObject *>(object)->getObjectLoot();
+					auto loot = reinterpret_cast<WorldObject *>(object)->getObjectLoot();
 					if (loot &&
-					        !loot->isEmpty())
+					    !loot->isEmpty())
 					{
 						// Force update of DynamicFlags field (TODO: This update only needs to be sent to OUR client,
 						// as every client will have a different DynamicFlags field)
@@ -2795,6 +3228,70 @@ namespace wowpp
 				}
 			}
 		});
+	}
+
+	float GameCharacter::getMeleeCritFromAgility()
+	{
+		UInt32 level = getLevel();
+		UInt32 charClass = getClass();
+
+		if (level > 100)
+		{
+			level = 100;
+		}
+
+		const auto *critEntry = getProject().meleeCritChance.getById((charClass - 1) * 100 + level - 1);
+		ASSERT(critEntry);
+
+		const float critBase = critEntry->basechanceperlevel();
+		const float critRatio = critEntry->chanceperlevel();
+
+		return (critBase + getUInt32Value(unit_fields::Stat0 + unit_mods::StatAgility) * critRatio) * 100.0f;
+	}
+
+	float GameCharacter::getDodgeFromAgility()
+	{
+		UInt32 level = getLevel();
+		UInt32 charClass = getClass();
+
+		if (level > 100)
+		{
+			level = 100;
+		}
+
+		const auto &project = getProject();
+		const auto *dodgeEntry = project.meleeCritChance.getById((charClass - 1) * 100 + level - 1);
+		ASSERT(dodgeEntry);
+
+		const auto * classDodge = project.dodgeChance.getById(charClass - 1);
+		ASSERT(classDodge);
+
+		const float baseDodge = classDodge->basedodge();
+		const float critToDodge = classDodge->crittododge();
+
+		return baseDodge + 
+			getUInt32Value(unit_fields::Stat0 + unit_mods::StatAgility) * 
+			dodgeEntry->chanceperlevel() * 
+			critToDodge *
+			100.0f;
+	}
+
+	float GameCharacter::getSpellCritFromIntellect()
+	{
+		UInt32 level = getLevel();
+		UInt32 charClass = getClass();
+
+		if (level > 100)
+		{
+			level = 100;
+		}
+
+		const auto *critEntry = getProject().spellCritChance.getById((charClass - 1) * 100 + level - 1);
+		ASSERT(critEntry);
+
+		const float critBase = critEntry->basechanceperlevel();
+		const float critRatio = critEntry->chanceperlevel();
+		return (critBase + getUInt32Value(unit_fields::Stat0 + unit_mods::StatIntellect) * critRatio) * 100.0f;
 	}
 
 	void GameCharacter::getHome(UInt32 &out_map, math::Vector3 &out_pos, float &out_rot) const
@@ -2817,14 +3314,24 @@ namespace wowpp
 
 	bool GameCharacter::hasMainHandWeapon() const
 	{
-		auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+		auto item = getMainHandWeapon();
 		return item != nullptr;
 	}
 
 	bool GameCharacter::hasOffHandWeapon() const
 	{
-		auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
-		return (item && item->getEntry().inventorytype() != game::inventory_type::Shield);
+		auto item = getOffHandWeapon();
+		return (item && item->getEntry().inventorytype() != game::inventory_type::Shield && item->getEntry().inventorytype() != game::inventory_type::Holdable);
+	}
+
+	std::shared_ptr<GameItem> GameCharacter::getMainHandWeapon() const
+	{
+		return m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Mainhand));
+	}
+
+	std::shared_ptr<GameItem> GameCharacter::getOffHandWeapon() const
+	{
+		return m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, player_equipment_slots::Offhand));
 	}
 
 	io::Writer &operator<<(io::Writer &w, GameCharacter const &object)
@@ -2859,13 +3366,13 @@ namespace wowpp
 		for (const auto &pair : object.m_quests)
 		{
 			w
-			        << io::write<NetUInt32>(pair.first)
-			        << io::write<NetUInt8>(pair.second.status)
-			        << io::write<NetUInt64>(pair.second.expiration)
-			        << io::write<NetUInt8>(pair.second.explored)
-			        << io::write_range(pair.second.creatures)
-			        << io::write_range(pair.second.objects)
-			        << io::write_range(pair.second.items);
+			    << io::write<NetUInt32>(pair.first)
+			    << io::write<NetUInt8>(pair.second.status)
+			    << io::write<NetUInt64>(pair.second.expiration)
+			    << io::write<NetUInt8>(pair.second.explored)
+			    << io::write_range(pair.second.creatures)
+			    << io::write_range(pair.second.objects)
+			    << io::write_range(pair.second.items);
 		}
 
 		// Write play-time
@@ -2895,6 +3402,21 @@ namespace wowpp
 			>> io::read<float>(object.m_homeRotation)
 			>> object.m_inventory
 			>> io::read<NetUInt64>(object.m_groupId);
+
+		// Add skills to the list of known skills
+		for (UInt8 i = 0; i < MaxSkills; ++i)
+		{
+			const UInt16 skillIndex = character_fields::SkillInfo1_1 + (i * 3);
+			const UInt32 skillId = object.getUInt32Value(skillIndex);
+			if (skillId != 0 && !object.hasSkill(skillId))
+			{
+				const auto *skill = object.getProject().skills.getById(skillId);
+				if (skill)
+				{
+					object.m_skills.push_back(skill);
+				}
+			}
+		}
 
 		// Read spell values
 		UInt16 spellCount = 0;

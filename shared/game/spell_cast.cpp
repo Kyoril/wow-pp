@@ -33,6 +33,15 @@
 
 namespace wowpp
 {
+	bool isSealSpell(const proto::SpellEntry & spell)
+	{
+		// Collection of all the seal family flags. No other paladin spell has any of those.
+		return spell.family() == game::spell_family::Paladin &&
+			(spell.familyflags() & 0x000004000A000200ULL) != 0 &&
+			spell.effects_size() > 0 &&
+			spell.effects(0).targeta() == game::targets::UnitCaster;
+	}
+
 	SpellCast::SpellCast(TimerQueue &timers, GameUnit &executer)
 		: m_timers(timers)
 		, m_executer(executer)
@@ -42,7 +51,7 @@ namespace wowpp
 
 	std::pair<game::SpellCastResult, SpellCasting *> SpellCast::startCast(const proto::SpellEntry &spell, SpellTargetMap target, const game::SpellPointsArray &basePoints, GameTime castTime, bool isProc, UInt64 itemGuid)
 	{
-		assert(m_castState);
+		ASSERT(m_castState);
 
 		GameUnit *unitTarget = nullptr;
 		target.resolvePointers(*m_executer.getWorldInstance(), &unitTarget, nullptr, nullptr, nullptr);
@@ -101,22 +110,20 @@ namespace wowpp
 				tileIndex,
 				[this, &foundObject, &spell](VisibilityTile &tile)
 			{
-				for (auto &object : tile.getGameObjects())
+				for (const auto *object : tile.getGameObjects())
 				{
 					if (!object->isWorldObject())
-					{
-						return;
-					}
+						continue;
 
-					WorldObject *worldObject = reinterpret_cast<WorldObject*>(object);
+					const auto *worldObject = reinterpret_cast<const WorldObject*>(object);
 					if (worldObject->getUInt32Value(world_object_fields::TypeID) != world_object_type::SpellFocus)
 					{
-						return;
+						continue;
 					}
 
 					if (worldObject->getEntry().data(0) != spell.focusobject())
 					{
-						return;
+						continue;
 					}
 
 					float distance = float(worldObject->getEntry().data(1));
@@ -137,7 +144,8 @@ namespace wowpp
 		if (spell.mechanic() != 0)
 		{
 			if (unitTarget &&
-				unitTarget->isImmuneAgainstMechanic(spell.mechanic()))
+				unitTarget->isImmuneAgainstMechanic(spell.mechanic()) &&
+				!unitTarget->isHostileTo(m_executer))
 			{
 				return std::make_pair(game::spell_cast_result::FailedPreventedByMechanic, nullptr);
 			}
@@ -209,7 +217,7 @@ namespace wowpp
 
 		// Check facing (Need to have the target in front of us)
 		if (spell.facing() & 0x01 &&
-			!(spell.attributes(2) & game::spell_attributes_ex_b::CantReflect))
+			!(spell.attributes(2) & game::spell_attributes_ex_b::IgnoreLineOfSight))
 		{
 			const auto *world = m_executer.getWorldInstance();
 			if (world)
@@ -234,7 +242,7 @@ namespace wowpp
 		// Can't use while moving (this needs to be researched)
 		if (m_executer.getTypeId() == object_type::Character)
 		{
-			if (m_executer.getMovementInfo().moveFlags)
+			if (m_executer.getMovementInfo().moveFlags & game::movement_flags::Moving)
 			{
 				if (spell.interruptflags() & game::spell_interrupt_flags::Movement &&
 					castTime)
@@ -280,20 +288,20 @@ namespace wowpp
 
 	void SpellCast::stopCast(game::SpellInterruptFlags reason, UInt64 interruptCooldown/* = 0*/)
 	{
-		assert(m_castState);
+		ASSERT(m_castState);
 		m_castState->stopCast(reason, interruptCooldown);
 	}
 
 	void SpellCast::onUserStartsMoving()
 	{
-		assert(m_castState);
+		ASSERT(m_castState);
 		m_castState->onUserStartsMoving();
 	}
 
 	void SpellCast::setState(std::shared_ptr<CastState> castState)
 	{
-		assert(castState);
-		assert(m_castState);
+		ASSERT(castState);
+		ASSERT(m_castState);
 
 		m_castState = std::move(castState);
 		m_castState->activate();
@@ -301,7 +309,7 @@ namespace wowpp
 
 	void SpellCast::finishChanneling()
 	{
-		assert(m_castState);
+		ASSERT(m_castState);
 
 		m_castState->finishChanneling();
 	}

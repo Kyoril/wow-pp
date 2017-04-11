@@ -39,11 +39,12 @@ namespace wowpp
 
 	CreatureAIDeathState::~CreatureAIDeathState()
 	{
-
 	}
 
 	void CreatureAIDeathState::onEnter()
 	{
+		CreatureAIState::onEnter();
+
 		auto &controlled = getControlled();
 		controlled.raiseTrigger(trigger_event::OnKilled);
 
@@ -155,14 +156,11 @@ namespace wowpp
 				// 3 Minutes of despawn delay if creature still has loot
 				despawnDelay = constants::OneMinute * 3;
 
+				// As soon as the loot window is cleared, toggle the flag
 				m_onLootCleared = loot->cleared.connect([&controlled]()
 				{
 					controlled.removeFlag(unit_fields::DynamicFlags, game::unit_dynamic_flags::Lootable);
-					if (controlled.getEntry().skinninglootentry())
-					{
-						// It can be skinned
-						controlled.addFlag(unit_fields::UnitFlags, game::unit_flags::Skinnable);
-					}
+					controlled.activateSkinningLoot();
 
 					// 30 more seconds until despawn from now on
 					controlled.triggerDespawnTimer(constants::OneSecond * 30);
@@ -173,11 +171,7 @@ namespace wowpp
 			}
 			else
 			{
-				if (controlled.getEntry().skinninglootentry())
-				{
-					// It can be skinned
-					controlled.addFlag(unit_fields::UnitFlags, game::unit_flags::Skinnable);
-				}
+				controlled.activateSkinningLoot();
 			}
 		}
 
@@ -187,7 +181,7 @@ namespace wowpp
 
 	void CreatureAIDeathState::onLeave()
 	{
-
+		CreatureAIState::onLeave();
 	}
 
 }

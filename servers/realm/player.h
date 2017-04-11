@@ -24,6 +24,7 @@
 #include "game_protocol/game_protocol.h"
 #include "game_protocol/game_connection.h"
 #include "game_protocol/game_crypted_connection.h"
+#include "auth_protocol/auth_protocol.h"
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "common/big_number.h"
 #include "common/id_generator.h"
@@ -83,8 +84,12 @@ namespace wowpp
 	/// Player connection class.
 	class Player final
 			: public game::IConnectionListener
-			, public boost::noncopyable
 	{
+	private:
+
+		Player(const Player &Other) = delete;
+		Player &operator=(const Player &Other) = delete;
+
 	public:
 
 		typedef AbstractConnection<game::Protocol> Client;
@@ -122,7 +127,7 @@ namespace wowpp
 		/// @param key Sesskion key (K) of the client which was calculated by the login server.
 		/// @param v V value which was calculated by the login server.
 		/// @param s S value which was calculated by the login server.
-		void loginSucceeded(UInt32 accountId, const BigNumber &key, const BigNumber &v, const BigNumber &s, const std::array<UInt32, 8> &tutorialData);
+		void loginSucceeded(UInt32 accountId, auth::AuthLocale locale, const BigNumber &key, const BigNumber &v, const BigNumber &s, const std::array<UInt32, 8> &tutorialData);
 		/// The login server notified us that the player login failed. This can have several
 		/// different reasons (unknown account name, suspended account etc.),
 		void loginFailed();
@@ -139,7 +144,7 @@ namespace wowpp
 		void commitTransfer();
 
 		/// Gets the player connection class used to send packets to the client.
-		Client &getConnection() { assert(m_connection); return *m_connection; }
+		Client &getConnection() { ASSERT(m_connection); return *m_connection; }
 		/// Gets the player manager which manages all connected players.
 		PlayerManager &getManager() const { return m_manager; }
 		/// Gets the user name sent by the client.
@@ -160,12 +165,16 @@ namespace wowpp
 		UInt32 getWorldInstanceId() const { return m_instanceId; }
 		/// Gets the connected world node
 		World *getWorldNode() { return m_worldNode; }
+		///
+		std::vector<Mail> getMails() { return m_mails; }
 		/// Declines a pending group invite (if available).
 		void declineGroupInvite();
 		/// 
 		void reloadCharacters();
 		/// 
 		void spawnedNotification();
+		/// Called when character receives a (valid) mail
+		void mailReceived(Mail mail);
 
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.
@@ -229,7 +238,7 @@ namespace wowpp
 		DatabaseId m_characterId;
 		std::shared_ptr<GameCharacter> m_gameCharacter;
 		UInt32 m_instanceId;
-		boost::signals2::scoped_connection m_worldDisconnected;
+		simple::scoped_connection m_worldDisconnected;
 		UInt32 m_timeSyncCounter;
 		World *m_worldNode;
 		std::unique_ptr<PlayerSocial> m_social;
@@ -240,6 +249,8 @@ namespace wowpp
 		ActionButtons m_actionButtons;
 		std::array<UInt32, 8> m_tutorialData;
 		GameTime m_nextWhoRequest;
+		auth::AuthLocale m_locale;
+		std::vector<Mail> m_mails;
 
 	private:
 
@@ -301,5 +312,8 @@ namespace wowpp
 		void handleCharRename(game::IncomingPacket &packet);
 		void handleQuestQuery(game::IncomingPacket &packet);
 		void handleWho(game::IncomingPacket &packet);
+		void handleMinimapPing(game::IncomingPacket &packet);
+		void handleItemNameQuery(game::IncomingPacket &packet);
+		void handleCreatureQuery(game::IncomingPacket &packet);
 	};
 }

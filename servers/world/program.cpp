@@ -181,7 +181,7 @@ namespace wowpp
 			PlayerManager->addPlayer(std::move(player));
 		};
 
-		std::map<RealmConnector*, boost::signals2::scoped_connection> enterConnections;
+		std::map<RealmConnector*, simple::scoped_connection> enterConnections;
 		for (auto &realm : realmConnectors)
 		{
 			enterConnections[realm.get()] = realm->worldInstanceEntered.connect(createPlayer);

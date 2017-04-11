@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include "common/typedefs.h"
 #include <QtWidgets/QApplication>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QWindow>
@@ -43,6 +44,7 @@ struct IScene
 	virtual void update(float delta) = 0;
 	virtual void onSelection(Ogre::Entity &entity) = 0;
 	virtual void onSetPoint(const Ogre::Vector3 &point) = 0;
+	virtual void onAddUnitSpawn(wowpp::UInt32 entry, const Ogre::Vector3 &point) = 0;
 	virtual void onKeyPressed(const QKeyEvent *e) = 0;
 	virtual void onKeyReleased(const QKeyEvent *e) = 0;
 	virtual void onMousePressed(const QMouseEvent *e) = 0;
@@ -77,6 +79,7 @@ public slots:
 	virtual void renderLater();
 	virtual void renderNow();
 	virtual bool eventFilter(QObject *target, QEvent *e);
+	
 
 signals:
 

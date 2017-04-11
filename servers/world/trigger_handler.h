@@ -45,7 +45,7 @@ namespace wowpp
 		explicit TriggerHandler(proto::Project &project, PlayerManager &playerManager, TimerQueue &timers);
 
 		/// Fires a trigger event.
-		virtual void executeTrigger(const proto::TriggerEntry &entry, game::TriggerContext context, UInt32 actionOffset = 0) override;
+		virtual void executeTrigger(const proto::TriggerEntry &entry, game::TriggerContext context, UInt32 actionOffset = 0, bool ignoreProbability = false) override;
 
 	private:
 
@@ -72,12 +72,20 @@ namespace wowpp
 		void handleSetSpellCooldown(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleQuestKillCredit(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleQuestEventOrExploration(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetVariable(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleDismount(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleSetMount(const proto::TriggerAction &action, game::TriggerContext &context);
+
+	private:
+
+		bool checkInCombatFlag(const proto::TriggerEntry &entry, const GameObject *owner);
+		bool checkOwnerAliveFlag(const proto::TriggerEntry &entry, const GameObject *owner);
 
 	private:
 
 		proto::Project &m_project;
 		PlayerManager &m_playerManager;
 		TimerQueue &m_timers;
-		std::vector<std::unique_ptr<Countdown>> m_delays;
+		std::list<std::unique_ptr<Countdown>> m_delays;
 	};
 }

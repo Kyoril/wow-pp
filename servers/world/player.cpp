@@ -22,6 +22,7 @@
 #include "pch.h"
 #include "player.h"
 #include "player_manager.h"
+#include "common/macros.h"
 #include "log/default_log_levels.h"
 #include "game/world_instance_manager.h"
 #include "game/world_instance.h"
@@ -38,8 +39,6 @@ using namespace std;
 
 namespace wowpp
 {
-	TradeStatusInfo::TradeStatusInfo(UInt64 guid = 0) {}
-
 	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance, proto::Project &project)
 		: m_manager(manager)
 		, m_realmConnector(realmConnector)
@@ -69,33 +68,21 @@ namespace wowpp
 			m_nextClientSync.ended.connect(this, &Player::onClientSync)
 		});
 
-		m_onProfChanged = m_character->proficiencyChanged.connect(
-			std::bind(&Player::onProficiencyChanged, this, std::placeholders::_1, std::placeholders::_2));
-		m_onAtkSwingErr = m_character->autoAttackError.connect(
-			std::bind(&Player::onAttackSwingError, this, std::placeholders::_1));
-		m_onInvFailure = m_character->inventoryChangeFailure.connect(
-			std::bind(&Player::onInventoryChangeFailure, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-		m_onComboPoints = m_character->comboPointsChanged.connect(
-			std::bind(&Player::onComboPointsChanged, this));
-		m_onXP = m_character->experienceGained.connect(
-			std::bind(&Player::onExperienceGained, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-		m_onCastError = m_character->spellCastError.connect(
-			std::bind(&Player::onSpellCastError, this, std::placeholders::_1, std::placeholders::_2));
-		m_onGainLevel = m_character->levelGained.connect(
-			std::bind(&Player::onLevelGained, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, 
-													std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8));
-		m_onAuraUpdate = m_character->auraUpdated.connect(
-			std::bind(&Player::onAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-		m_onTargetAuraUpdate = m_character->targetAuraUpdated.connect(
-			std::bind(&Player::onTargetAuraUpdated, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
-		m_onTeleport = m_character->teleport.connect(
-			std::bind(&Player::onTeleport, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-		m_onResurrectRequest = m_character->resurrectRequested.connect(
-			std::bind(&Player::onResurrectRequest, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-		m_onCooldownEvent = m_character->cooldownEvent.connect([this](UInt32 spellId) {
-				sendProxyPacket(std::bind(game::server_write::cooldownEvent, std::placeholders::_1, spellId, m_character->getGuid()));
+		m_onProfChanged = m_character->proficiencyChanged.connect(this, &Player::onProficiencyChanged);
+		m_onAtkSwingErr = m_character->autoAttackError.connect(this, &Player::onAttackSwingError);
+		m_onInvFailure = m_character->inventoryChangeFailure.connect(this, &Player::onInventoryChangeFailure);
+		m_onComboPoints = m_character->comboPointsChanged.connect(this, &Player::onComboPointsChanged);
+		m_onXP = m_character->experienceGained.connect(this, &Player::onExperienceGained);
+		m_onCastError = m_character->spellCastError.connect(this, &Player::onSpellCastError);
+		m_onGainLevel = m_character->levelGained.connect(this, &Player::onLevelGained);
+		m_onAuraUpdate = m_character->auraUpdated.connect(this, &Player::onAuraUpdated);
+		m_onTargetAuraUpdate = m_character->targetAuraUpdated.connect(this, &Player::onTargetAuraUpdated);
+		m_onTeleport = m_character->teleport.connect(this, &Player::onTeleport);
+		m_onResurrectRequest = m_character->resurrectRequested.connect(this, &Player::onResurrectRequest);
+		m_onCooldownEvent = m_character->cooldownEvent.connect([&](UInt32 spellId) {
+			sendProxyPacket(std::bind(game::server_write::cooldownEvent, std::placeholders::_1, spellId, m_character->getGuid()));
 		});
-		m_questChanged = m_character->questDataChanged.connect([this](UInt32 questId, const QuestStatusData &data) {
+		m_questChanged = m_character->questDataChanged.connect([&](UInt32 questId, const QuestStatusData &data) {
 			m_realmConnector.sendQuestData(m_character->getGuid(), questId, data);
 			if (data.status == game::quest_status::Complete ||
 				(data.status == game::quest_status::Incomplete && data.explored == true))
@@ -103,20 +90,17 @@ namespace wowpp
 				sendProxyPacket(std::bind(game::server_write::questupdateComplete, std::placeholders::_1, questId));
 			}
 		});
-		m_questKill = m_character->questKillCredit.connect([this](const proto::QuestEntry &quest, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total) {
+		m_questKill = m_character->questKillCredit.connect([&](const proto::QuestEntry &quest, UInt64 guid, UInt32 entry, UInt32 count, UInt32 total) {
 			sendProxyPacket(std::bind(game::server_write::questupdateAddKill, std::placeholders::_1, quest.id(), entry, count, total, guid));
 		});
-		m_standStateChanged = m_character->standStateChanged.connect([this](UnitStandState state) {
+		m_standStateChanged = m_character->standStateChanged.connect([&](UnitStandState state) {
 			sendProxyPacket(std::bind(game::server_write::standStateUpdate, std::placeholders::_1, state));
 		});
-
-		m_objectInteraction = m_character->objectInteraction.connect([this](WorldObject &object) {
+		m_objectInteraction = m_character->objectInteraction.connect([&](WorldObject &object)
+		{
 			if (object.getEntry().type() == world_object_type::QuestGiver)
-			{
 				sendGossipMenu(object.getGuid());
-			}
 		});
-
 		m_onItemAdded = m_character->itemAdded.connect([this](UInt16 slot, UInt16 amount, bool looted, bool created) {
 			auto inst = m_character->getInventory().getItemAtSlot(slot);
 			if (inst)
@@ -133,23 +117,25 @@ namespace wowpp
 
 		// Inventory change signals
 		auto &inventory = m_character->getInventory();
-		m_itemCreated = inventory.itemInstanceCreated.connect(std::bind(&Player::onItemCreated, this, std::placeholders::_1, std::placeholders::_2));
-		m_itemUpdated = inventory.itemInstanceUpdated.connect(std::bind(&Player::onItemUpdated, this, std::placeholders::_1, std::placeholders::_2));
-		m_itemDestroyed = inventory.itemInstanceDestroyed.connect(std::bind(&Player::onItemDestroyed, this, std::placeholders::_1, std::placeholders::_2));
+		m_itemCreated = inventory.itemInstanceCreated.connect(this, &Player::onItemCreated);
+		m_itemUpdated = inventory.itemInstanceUpdated.connect(this, &Player::onItemUpdated);
+		m_itemDestroyed = inventory.itemInstanceDestroyed.connect(this, &Player::onItemDestroyed);
 
 		// Loot signal
-		m_onLootInspect = m_character->lootinspect.connect([this](LootInstance &instance) {
-			auto *object = m_instance.findObjectByGUID(instance.getLootGuid());
+		m_onLootInspect = m_character->lootinspect.connect([&](std::shared_ptr<LootInstance> instance) {
+			ASSERT(instance);
+
+			auto *object = m_instance.findObjectByGUID(instance->getLootGuid());
 			if (!object)
 			{
-				WLOG("Could not find loot source object: 0x" << std::hex << instance.getLootGuid());
+				WLOG("Could not find loot source object: 0x" << std::hex << instance->getLootGuid());
 				return;
 			}
 			openLootDialog(instance, *object);
 		});
 
 		// Root / stun change signals
-		auto onRootOrStunUpdate = [this](UInt32 state, bool flag) {
+		auto onRootOrStunUpdate = [&](UInt32 state, bool flag) {
 			if (state == unit_state::Rooted || state == unit_state::Stunned)
 			{
 				if (flag || m_character->isRooted() || m_character->isStunned())
@@ -176,7 +162,7 @@ namespace wowpp
 		m_onUnitStateUpdate = m_character->unitStateChanged.connect(onRootOrStunUpdate);
 
 		// Spell modifier applied or misapplied (changed)
-		m_spellModChanged = m_character->spellModChanged.connect([this](SpellModType type, UInt8 bit, SpellModOp op, Int32 value) {
+		m_spellModChanged = m_character->spellModChanged.connect([&](SpellModType type, UInt8 bit, SpellModOp op, Int32 value) {
 			sendProxyPacket(
 				type == spell_mod_type::Flat ?
 					std::bind(game::server_write::setFlatSpellModifier, std::placeholders::_1, bit, op, value) :
@@ -185,7 +171,7 @@ namespace wowpp
 		});
 
 		// Group update signal
-		m_groupUpdate.ended.connect([this]()
+		m_groupUpdate.ended.connect([&]()
 		{
 			math::Vector3 location(m_character->getLocation());
 
@@ -224,17 +210,29 @@ namespace wowpp
 
 	void Player::logoutRequest()
 	{
-		// Make our character sit down
-		m_character->setStandState(unit_stand_state::Sit);
+		GameTime logoutTime = getCurrentTime();
 
-		// Root our character
-		m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
-		sendProxyPacket(
-			std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
+		bool instantLogout = (m_character->getRestType() != rest_type::None);
+		if (!instantLogout)
+		{
+			// Make our character sit down
+			m_character->setStandState(unit_stand_state::Sit);
 
+			// Root our character
+			m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
+			sendProxyPacket(
+				std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
+
+			// Send answer and engage logout process
+			sendProxyPacket(
+				std::bind(game::server_write::logoutResponse, std::placeholders::_1, true));
+
+			// Player has to wait 20 seconds
+			logoutTime += 20 * constants::OneSecond;
+		}
+		
 		// Setup the logout countdown
-		m_logoutCountdown.setEnd(
-			getCurrentTime() + (20 * constants::OneSecond));
+		m_logoutCountdown.setEnd(logoutTime);
 	}
 
 	void Player::cancelLogoutRequest()
@@ -249,6 +247,19 @@ namespace wowpp
 
 		// Cancel the countdown
 		m_logoutCountdown.cancel();
+	}
+
+	void Player::kick()
+	{
+		// Remove the character from the world
+		m_instance.removeGameObject(*m_character);
+		m_character.reset();
+
+		// Notify the realm
+		m_realmConnector.notifyWorldInstanceLeft(m_characterId, pp::world_realm::world_left_reason::Disconnect);
+
+		// Remove player
+		m_manager.playerDisconnected(*this);
 	}
 
 	void Player::onLogout()
@@ -586,15 +597,21 @@ namespace wowpp
 		m_realmConnector.sendCharacterSpawnNotification(m_character->getGuid());
 
 		// Subscribe for spell notifications
-		m_onSpellLearned = m_character->spellLearned.connect(
-			std::bind(&Player::onSpellLearned, this, std::placeholders::_1));
+		m_onSpellLearned = m_character->spellLearned.connect(this, &Player::onSpellLearned);
 
 		// Trigger regeneration for our character
 		m_character->startRegeneration();
+
+		auto moveInfo = m_character->getMovementInfo();
+		moveInfo.moveFlags = game::movement_flags::Falling;
+		m_character->setMovementInfo(moveInfo);
 	}
 
 	void Player::onDespawn(GameObject &/*despawning*/)
 	{
+		// Cancel trade (if any)
+		cancelTrade();
+
 		updatePlayerTime();
 		saveCharacterData();
 
@@ -705,7 +722,7 @@ namespace wowpp
 		{
 			for (auto *object : tile.getGameObjects().getElements())
 			{
-				assert(object);
+				ASSERT(object);
 				if (!object->canSpawnForCharacter(*m_character))
 				{
 					continue;
@@ -735,7 +752,7 @@ namespace wowpp
 		{
 			for (auto *obj : tile.getGameObjects().getElements())
 			{
-				assert(obj);
+				ASSERT(obj);
 
 				if (!obj->canSpawnForCharacter(*m_character))
 				{
@@ -838,489 +855,6 @@ namespace wowpp
 				break;
 			}
 		}
-	}
-
-	void Player::handleAutoStoreLootItem(game::Protocol::IncomingPacket &packet)
-	{
-		UInt8 lootSlot;
-		if (!game::client_read::autoStoreLootItem(packet, lootSlot))
-		{
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		// Check if the player is looting
-		if (!m_loot)
-		{
-			WLOG("Player isn't looting anything");
-			return;
-		}
-
-		// Try to get loot at slot
-		auto *lootItem = m_loot->getLootDefinition(lootSlot);
-		if (!lootItem)
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::SlotIsEmpty, nullptr, nullptr));
-			return;
-		}
-
-		// Already looted?
-		if (lootItem->isLooted)
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::AlreadyLooted, nullptr, nullptr));
-			return;
-		}
-
-		const auto *item = m_project.items.getById(lootItem->definition.item());
-		if (!item)
-		{
-			WLOG("Can't find item!");
-			return;
-		}
-
-		auto &inv = m_character->getInventory();
-
-		std::map<UInt16, UInt16> addedBySlot;
-		auto result = inv.createItems(*item, lootItem->count, &addedBySlot);
-		if (result != game::inventory_change_failure::Okay)
-		{
-			onInventoryChangeFailure(result, nullptr, nullptr);
-			return;
-		}
-
-		for (auto &slot : addedBySlot)
-		{
-			auto inst = inv.getItemAtSlot(slot.first);
-			if (inst)
-			{
-				UInt8 bag = 0, subslot = 0;
-				Inventory::getRelativeSlots(slot.first, bag, subslot);
-				const auto totalCount = inv.getItemCount(item->id());
-
-				sendProxyPacket(
-					std::bind(game::server_write::itemPushResult, std::placeholders::_1,
-						m_character->getGuid(), std::cref(*inst), true, false, bag, subslot, slot.second, totalCount));
-
-				// Group broadcasting
-				if (m_character->getGroupId() != 0)
-				{
-					TileIndex2D tile;
-					if (m_character->getTileIndex(tile))
-					{
-						std::vector<char> buffer;
-						io::VectorSink sink(buffer);
-						game::Protocol::OutgoingPacket itemPacket(sink);
-						game::server_write::itemPushResult(itemPacket, m_character->getGuid(), std::cref(*inst), true, false, bag, subslot, slot.second, totalCount);
-						forEachSubscriberInSight(
-							m_character->getWorldInstance()->getGrid(),
-							tile,
-							[&](ITileSubscriber &subscriber)
-						{
-							if (subscriber.getControlledObject()->getGuid() != m_character->getGuid())
-							{
-								auto subscriberGroup = subscriber.getControlledObject()->getGroupId();
-								if (subscriberGroup != 0 && subscriberGroup == m_character->getGroupId())
-								{
-									subscriber.sendPacket(itemPacket, buffer);
-								}
-							}
-						});
-					}
-				}
-			}
-		}
-
-		m_loot->takeItem(lootSlot);
-	}
-
-	void Player::handleAutoEquipItem(game::Protocol::IncomingPacket &packet)
-	{
-		UInt8 srcBag, srcSlot;
-		if (!game::client_read::autoEquipItem(packet, srcBag, srcSlot))
-		{
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		auto &inv = m_character->getInventory();
-		auto absSrcSlot = Inventory::getAbsoluteSlot(srcBag, srcSlot);
-		auto item = inv.getItemAtSlot(absSrcSlot);
-		if (!item)
-		{
-			ELOG("Item not found");
-			return;
-		}
-
-		UInt8 targetSlot = 0xFF;
-
-		// Check if item is equippable
-		const auto &entry = item->getEntry();
-		switch (entry.inventorytype())
-		{
-		case game::inventory_type::Ammo:
-			// TODO
-			break;
-		case game::inventory_type::Head :
-			targetSlot = player_equipment_slots::Head;
-			break;
-		case game::inventory_type::Cloak:
-			targetSlot = player_equipment_slots::Back;
-			break;
-		case game::inventory_type::Neck:
-			targetSlot = player_equipment_slots::Neck;
-			break;
-		case game::inventory_type::Feet:
-			targetSlot = player_equipment_slots::Feet;
-			break;
-		case game::inventory_type::Body:
-			targetSlot = player_equipment_slots::Body;
-			break;
-		case game::inventory_type::Chest:
-		case game::inventory_type::Robe:
-			targetSlot = player_equipment_slots::Chest;
-			break;
-		case game::inventory_type::Legs:
-			targetSlot = player_equipment_slots::Legs;
-			break;
-		case game::inventory_type::Shoulders:
-			targetSlot = player_equipment_slots::Shoulders;
-			break;
-		case game::inventory_type::TwoHandedWeapon:
-		case game::inventory_type::MainHandWeapon:
-			targetSlot = player_equipment_slots::Mainhand;
-			break;
-		case game::inventory_type::OffHandWeapon:
-		case game::inventory_type::Shield:
-		case game::inventory_type::Holdable:
-			targetSlot = player_equipment_slots::Offhand;
-			break;
-		case game::inventory_type::Weapon:
-			targetSlot = player_equipment_slots::Mainhand;
-			break;
-		case game::inventory_type::Finger:
-			targetSlot = player_equipment_slots::Finger1;
-			break;
-		case game::inventory_type::Trinket:
-			targetSlot = player_equipment_slots::Trinket1;
-			break;
-		case game::inventory_type::Wrists:
-			targetSlot = player_equipment_slots::Wrists;
-			break;
-		case game::inventory_type::Tabard:
-			targetSlot = player_equipment_slots::Tabard;
-			break;
-		case game::inventory_type::Hands:
-			targetSlot = player_equipment_slots::Hands;
-			break;
-		case game::inventory_type::Waist:
-			targetSlot = player_equipment_slots::Waist;
-			break;
-		case game::inventory_type::Ranged:
-		case game::inventory_type::RangedRight:
-		case game::inventory_type::Thrown:
-			targetSlot = player_equipment_slots::Ranged;
-			break;
-		default:
-			if (entry.itemclass() == game::item_class::Container)
-			{
-				for (UInt16 slot = player_inventory_slots::Start; slot < player_inventory_slots::End; ++slot)
-				{
-					auto bag = inv.getBagAtSlot(slot | 0xFF00);
-					if (!bag)
-					{
-						targetSlot = slot;
-						break;
-					}
-				}
-
-				if (targetSlot == 0xFF)
-				{
-					m_character->inventoryChangeFailure(game::inventory_change_failure::NoEquipmentSlotAvailable, item.get(), nullptr);
-					return;
-				}
-			}
-			break;
-		}
-
-		// Check if valid slot found
-		auto absDstSlot = Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, targetSlot);
-		if (!Inventory::isEquipmentSlot(absDstSlot) && !Inventory::isBagPackSlot(absDstSlot))
-		{
-			ELOG("Invalid target slot: " << targetSlot);
-			m_character->inventoryChangeFailure(game::inventory_change_failure::ItemCantBeEquipped, item.get(), nullptr);
-			return;
-		}
-
-		// Get item at target slot
-		auto result = inv.swapItems(absSrcSlot, absDstSlot);
-		if (result != game::inventory_change_failure::Okay)
-		{
-			// Something went wrong
-			ELOG("ERROR: " << result);
-		}
-	}
-
-	void Player::handleAutoStoreBagItem(game::Protocol::IncomingPacket &packet)
-	{
-		UInt8 srcBag, srcSlot, dstBag;
-		if (!game::client_read::autoStoreBagItem(packet, srcBag, srcSlot, dstBag))
-		{
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		DLOG("CMSG_AUTO_STORE_BAG_ITEM(src bag: " << UInt32(srcBag) << ", src slot: " << UInt32(srcSlot) << ", dst bag: " << UInt32(dstBag) << ")");
-
-		// TODO
-		sendProxyPacket(
-			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
-	}
-
-	void Player::handleSwapItem(game::Protocol::IncomingPacket &packet)
-	{
-		UInt8 srcBag, srcSlot, dstBag, dstSlot;
-		if (!game::client_read::swapItem(packet, dstBag, dstSlot, srcBag, srcSlot))
-		{
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		auto &inv = m_character->getInventory();
-		auto result = inv.swapItems(
-			Inventory::getAbsoluteSlot(srcBag, srcSlot),
-			Inventory::getAbsoluteSlot(dstBag, dstSlot));
-		if (!result)
-		{
-			// An error happened
-		}
-	}
-
-	void Player::handleSwapInvItem(game::Protocol::IncomingPacket &packet)
-	{
-		UInt8 srcSlot, dstSlot;
-		if (!game::client_read::swapInvItem(packet, srcSlot, dstSlot))
-		{
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		auto &inv = m_character->getInventory();
-		auto result = inv.swapItems(
-			Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, srcSlot),
-			Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, dstSlot));
-		if (!result)
-		{
-			// An error happened
-		}
-	}
-
-	void Player::handleSplitItem(game::Protocol::IncomingPacket &packet)
-	{
-		UInt8 srcBag, srcSlot, dstBag, dstSlot, count;
-		if (!game::client_read::splitItem(packet, srcBag, srcSlot, dstBag, dstSlot, count))
-		{
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		DLOG("CMSG_SPLIT_ITEM(src bag: " << UInt32(srcBag) << ", src slot: " << UInt32(srcSlot) << ", dst bag: " << UInt32(dstBag) << ", dst slot: " << UInt32(dstSlot) << ", count: " << UInt32(count) << ")");
-		sendProxyPacket(
-			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
-	}
-
-	void Player::handleAutoEquipItemSlot(game::Protocol::IncomingPacket &packet)
-	{
-		UInt64 itemGUID;
-		UInt8 dstSlot;
-		if (!game::client_read::autoEquipItemSlot(packet, itemGUID, dstSlot))
-		{
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		DLOG("CMSG_AUTO_EQUIP_ITEM_SLOT(item: 0x" << std::hex << std::uppercase << std::setw(16) << std::setfill('0') << itemGUID << std::dec << ", dst slot: " << UInt32(dstSlot) << ")");
-		sendProxyPacket(
-			std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::InternalBagError, nullptr, nullptr));
-	}
-
-	void Player::handleDestroyItem(game::Protocol::IncomingPacket &packet)
-	{
-		UInt8 bag, slot, count, data1, data2, data3;
-		if (!game::client_read::destroyItem(packet, bag, slot, count, data1, data2, data3))
-		{
-			return;
-		}
-		
-		auto result = m_character->getInventory().removeItem(Inventory::getAbsoluteSlot(bag, slot), count);
-		if (!result)
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, result, nullptr, nullptr));
-		}
-	}
-
-	void Player::handleLoot(game::Protocol::IncomingPacket &packet)
-	{
-		UInt64 objectGuid;
-		if (!game::client_read::loot(packet, objectGuid))
-		{
-			return;
-		}
-		if (!m_character->isAlive())
-		{
-			return;
-		}
-
-		// Find game object
-		GameObject *lootObject = m_character->getWorldInstance()->findObjectByGUID(objectGuid);
-		if (!lootObject)
-		{
-			return;
-		}
-
-		// Is it a creature?
-		if (lootObject->getTypeId() == object_type::Unit)
-		{
-			GameCreature *creature = reinterpret_cast<GameCreature*>(lootObject);
-			if (creature->isAlive())
-			{
-				// TODO: Handle pickpocket case?
-				WLOG("Target creature is not dead and thus has no loot");
-				return;
-			}
-
-			// Get loot from creature
-			auto *loot = creature->getUnitLoot();
-			if (loot && !loot->isEmpty())
-			{
-				openLootDialog(*loot, *creature);
-			}
-			else
-			{
-				sendProxyPacket(
-					std::bind(game::server_write::lootResponseError, std::placeholders::_1, objectGuid, game::loot_type::None, game::loot_error::Locked));
-			}
-		}
-		else
-		{
-			// TODO
-			WLOG("Only creatures are lootable at the moment.");
-			sendProxyPacket(
-				std::bind(game::server_write::lootResponseError, std::placeholders::_1, objectGuid, game::loot_type::None, game::loot_error::Locked));
-		}
-	}
-
-	void Player::handleLootMoney(game::Protocol::IncomingPacket &packet)
-	{
-		if (!game::client_read::lootMoney(packet))
-		{
-			return;
-		}
-
-		if (!m_loot)
-		{
-			WLOG("Player is not looting anything");
-			return;
-		}
-
-		// Find loot recipients
-		auto lootGuid = m_loot->getLootGuid();
-		auto *world = m_character->getWorldInstance();
-		if (!world)
-		{
-			WLOG("Player not in world");
-			return;
-		}
-
-		// Warning: takeGold may make m_loot invalid, because the loot will be reset if it is empty.
-		UInt32 lootGold = m_loot->getGold();
-		if (lootGold == 0)
-		{
-			WLOG("No gold to loot");
-			return;
-		}
-
-		// Check if it's a creature
-		std::vector<GameCharacter*> recipients;
-		if (m_lootSource->getTypeId() == object_type::Unit)
-		{
-			// If looting a creature, loot has to be shared between nearby group members
-			GameCreature *creature = reinterpret_cast<GameCreature*>(m_lootSource);
-			creature->forEachLootRecipient([&recipients](GameCharacter &recipient)
-			{
-				recipients.push_back(&recipient);
-			});
-
-			// Share gold
-			lootGold /= recipients.size();
-			if (lootGold == 0)
-			{
-				lootGold = 1;
-			}
-		}
-		else
-		{
-			// We will be the only recipient
-			recipients.push_back(m_character.get());
-		}
-
-		// Reward with gold
-		for (auto *recipient : recipients)
-		{
-			UInt32 coinage = recipient->getUInt32Value(character_fields::Coinage);
-			if (coinage >= std::numeric_limits<UInt32>::max() - lootGold)
-			{
-				coinage = std::numeric_limits<UInt32>::max();
-			}
-			else
-			{
-				coinage += lootGold;
-			}
-			recipient->setUInt32Value(character_fields::Coinage, coinage);
-
-			// Notify players
-			auto *player = m_manager.getPlayerByCharacterGuid(recipient->getGuid());
-			if (player)
-			{
-				if (recipients.size() > 1)
-				{
-					player->sendProxyPacket(
-						std::bind(game::server_write::lootMoneyNotify, std::placeholders::_1, lootGold));
-				}
-
-				// TODO: Put this packet into the LootInstance class or in an event callback maybe
-				if (m_lootSource &&
-					m_lootSource->getGuid() == lootGuid)
-				{
-					player->sendProxyPacket(
-						std::bind(game::server_write::lootClearMoney, std::placeholders::_1));
-				}
-			}
-		}
-
-		// Take gold (WARNING: May reset m_loot as loot may become empty after this)
-		m_loot->takeGold();
-	}
-
-	void Player::handleLootRelease(game::Protocol::IncomingPacket &packet)
-	{
-		UInt64 creatureId;
-		if (!game::client_read::lootRelease(packet, creatureId))
-		{
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		if (m_lootSource &&
-			m_lootSource->getGuid() != creatureId)
-		{
-			WLOG("Loot source mismatch!");
-			return;
-		}
-
-		closeLootDialog();
 	}
 
 	void Player::onInventoryChangeFailure(game::InventoryChangeFailure failure, GameItem *itemA, GameItem *itemB)
@@ -1514,24 +1048,10 @@ namespace wowpp
 		sendProxyPacket(
 			std::bind(game::server_write::timeSyncReq, std::placeholders::_1, m_timeSyncCounter++));
 
+		m_lastTimeSync = getCurrentTime();
+
 		// Next sync in 30 seconds
-		//m_nextClientSync.setEnd(getCurrentTime() + constants::OneSecond * 30);
-	}
-
-	void Player::handleRepopRequest(game::Protocol::IncomingPacket &packet)
-	{
-		if (!m_character)
-		{
-			return;
-		}
-
-		if (m_character->isAlive())
-		{
-			return;
-		}
-
-		WLOG("TODO: repop at nearest graveyard!");
-		m_character->revive(m_character->getUInt32Value(unit_fields::MaxHealth), 0);
+		m_nextClientSync.setEnd(m_lastTimeSync + constants::OneSecond * 30);
 	}
 
 	void Player::setFallInfo(UInt32 time, float z)
@@ -1543,178 +1063,6 @@ namespace wowpp
 	bool Player::isIgnored(UInt64 guid) const
 	{
 		return guid == 504403158265495562;
-	}
-
-	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
-	{
-		// Can't receive player input when in one of these CC states
-		if (m_character->isFeared() || m_character->isConfused())
-			return;
-
-		MovementInfo info;
-		if (!game::client_read::moveHeartBeat(packet, info))
-		{
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		if (opCode != game::client_packet::MoveStop)
-		{
-			// Don't accept these when it's not a move-stop
-			if (m_character->isStunned() || m_character->isRooted())
-				return;
-
-			auto flags = m_character->getUInt32Value(unit_fields::UnitFlags);
-			if ((flags & 0x00040000) != 0 ||
-				(flags & 0x00000004) != 0)
-			{
-				WLOG("Character is unable to move, ignoring move packet");
-				return;
-			}
-		}
-
-		// Sender guid
-		auto guid = m_character->getGuid();
-
-		// Get object location
-		const math::Vector3 &location = m_character->getLocation();
-
-		// Player started swimming
-		if ((info.moveFlags & game::movement_flags::Swimming) != 0 &&
-			(m_character->getMovementInfo().moveFlags & game::movement_flags::Swimming) == 0)
-		{
-			m_character->getAuras().removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::NotAboveWater);
-		}
-		else if ((info.moveFlags & game::movement_flags::Swimming) == 0 &&
-			(m_character->getMovementInfo().moveFlags & game::movement_flags::Swimming) != 0)
-		{
-			m_character->getAuras().removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::NotUnderWater);
-		}
-
-		// Store movement information
-		m_character->setMovementInfo(info);
-
-		// Convert timestamp into server time
-		info.time = m_serverSync + (info.time - m_clientSync);
-
-		// Transform into grid location
-		TileIndex2D gridIndex;
-		auto &grid = getWorldInstance().getGrid();
-		if (!grid.getTilePosition(location, gridIndex[0], gridIndex[1]))
-		{
-			// TODO: Error?
-			ELOG("Could not resolve grid location!");
-			return;
-		}
-		
-		// Get grid tile
-		(void)grid.requireTile(gridIndex);
-
-		// Notify all watchers about the new object
-		forEachTileInSight(
-			getWorldInstance().getGrid(),
-			gridIndex,
-			[this, &info, opCode, guid](VisibilityTile &tile)
-		{
-			for (auto &watcher : tile.getWatchers())
-			{
-				if (watcher != this)
-				{
-					// Create the chat packet
-					std::vector<char> buffer;
-					io::VectorSink sink(buffer);
-					game::Protocol::OutgoingPacket movePacket(sink);
-					game::server_write::movePacket(movePacket, opCode, guid, info);
-
-					watcher->sendPacket(movePacket, buffer);
-				}
-			}
-		});
-
-		//TODO: Verify new location
-		UInt32 lastFallTime = 0;
-		float lastFallZ = 0.0f;
-		getFallInfo(lastFallTime, lastFallZ);
-
-		// Fall damage
-		if (opCode == game::client_packet::MoveFallLand)
-		{
-			if (info.fallTime >= 1100)
-			{
-				float deltaZ = lastFallZ - info.z;
-				if (m_character->isAlive())
-				{
-					float damageperc = 0.018f * deltaZ - 0.2426f;
-					if (damageperc > 0)
-					{
-						const UInt32 maxHealth = m_character->getUInt32Value(unit_fields::MaxHealth);
-						UInt32 damage = (UInt32)(damageperc * maxHealth);
-
-						if (damage > 0)
-						{
-							//Prevent fall damage from being more than the player maximum health
-							if (damage > maxHealth) damage = maxHealth;
-
-							std::vector<char> dmgBuffer;
-							io::VectorSink dmgSink(dmgBuffer);
-							game::Protocol::OutgoingPacket dmgPacket(dmgSink);
-							game::server_write::environmentalDamageLog(dmgPacket, getCharacterGuid(), 2, damage, 0, 0);
-
-							// Deal damage
-							forEachTileInSight(
-								getWorldInstance().getGrid(),
-								gridIndex,
-								[&dmgPacket, &dmgBuffer](VisibilityTile &tile)
-							{
-								for (auto &watcher : tile.getWatchers())
-								{
-									watcher->sendPacket(dmgPacket, dmgBuffer);
-								}
-							});
-
-							m_character->dealDamage(damage, 0, nullptr, true);
-							if (!m_character->isAlive())
-							{
-								WLOG("TODO: Durability damage!");
-								sendProxyPacket(
-									std::bind(game::server_write::durabilityDamageDeath, std::placeholders::_1));
-							}
-						}
-					}
-				}
-			}
-		}
-
-		if (opCode == game::client_packet::MoveFallLand ||
-			lastFallTime > info.fallTime/* ||
-										info.z < lastFallZ*/)
-		{
-			setFallInfo(info.fallTime, info.z);
-		}
-
-		// Update position
-		m_character->relocate(math::Vector3(info.x, info.y, info.z), info.o, true);
-	}
-
-	void Player::handleTimeSyncResponse(game::Protocol::IncomingPacket &packet)
-	{
-		UInt32 counter, ticks;
-		if (!game::client_read::timeSyncResponse(packet, counter, ticks))
-		{
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		if (counter != m_timeSyncCounter - 1)
-		{
-			// TODO: What to do here?
-			WLOG("TIME SYNC mismatch: Received response for #" << counter << ", but expected " << m_timeSyncCounter - 1);
-		}
-
-		m_serverSync = static_cast<UInt32>(getCurrentTime());
-		m_clientSync = ticks;
-
-		DLOG("TIME SYNC RESPONSE " << m_character->getName() << ": Client Sync " << m_clientSync << "; Server Sync: " << m_serverSync);
 	}
 
 	UInt32 Player::convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const
@@ -1773,317 +1121,6 @@ namespace wowpp
 			// Stop group member update
 			m_groupUpdate.cancel();
 		}
-	}
-
-	void Player::handleLearnTalent(game::Protocol::IncomingPacket &packet)
-	{
-		UInt32 talentId = 0, rank = 0;
-		if (!game::client_read::learnTalent(packet, talentId, rank))
-		{
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		// Try to find talent
-		auto *talent = m_project.talents.getById(talentId);
-		if (!talent)
-		{
-			WLOG("Could not find requested talent id " << talentId);
-			return;
-		}
-
-		// Check rank
-		if (talent->ranks_size() < static_cast<int>(rank))
-		{
-			WLOG("Talent " << talentId << " does offer " << talent->ranks_size() << " ranks, but rank " << rank << " is requested!");
-			return;
-		}
-
-		// TODO: Check whether the player is allowed to learn that talent, based on his class
-
-		// Check if another talent is required
-		if (talent->dependson())
-		{
-			const auto *dependson = m_project.talents.getById(talentId);
-			assert(dependson);
-
-			// Check if we have learned the requested talent rank
-			auto dependantRank = dependson->ranks(talent->dependsonrank());
-			if (!m_character->hasSpell(dependantRank))
-			{
-				return;
-			}
-		}
-
-		// Check if another spell is required
-		if (talent->dependsonspell())
-		{
-			if (!m_character->hasSpell(talent->dependsonspell()))
-			{
-				return;
-			}
-		}
-
-		// Check if we have enough talent points
-		UInt32 freeTalentPoints = m_character->getUInt32Value(character_fields::CharacterPoints_1);
-		if (freeTalentPoints == 0)
-		{
-			return;
-		}
-
-		// Check how many points we have spent in this talent tree already
-		UInt32 spentPoints = 0;
-		for (const auto &t : m_project.talents.getTemplates().entry())
-		{
-			// Same tab
-			if (t.tab() == talent->tab())
-			{
-				for (Int32 i = 0; i < t.ranks_size(); ++i)
-				{
-					if (m_character->hasSpell(t.ranks(i)))
-					{
-						spentPoints += i + 1;
-					}
-				}
-			}
-		}
-
-		if (spentPoints < (talent->row() * 5))
-		{
-			// Not enough points spent in talent tree
-			return;
-		}
-
-		// Remove all previous learnt ranks, learn the highest one
-		for (UInt32 i = 0; i < rank; ++i)
-		{
-			const auto *spell = m_project.spells.getById(talent->ranks(i));
-			if (m_character->removeSpell(*spell))
-			{
-				// TODO: Send packet maybe?
-			}
-		}
-
-		const auto *spell = m_project.spells.getById(talent->ranks(rank));
-
-		// Add new spell, and maybe remove old spells
-		m_character->addSpell(*spell);
-		if ((spell->attributes(0) & game::spell_attributes::Passive) != 0)
-		{
-			SpellTargetMap targets;
-			targets.m_targetMap = game::spell_cast_target_flags::Unit;
-			targets.m_unitTarget = m_character->getGuid();
-			m_character->castSpell(std::move(targets), spell->id());
-		}
-	}
-
-	void Player::handleUseItem(game::Protocol::IncomingPacket &packet)
-	{
-		UInt8 bagId = 0, slotId = 0, spellCount = 0, castCount = 0;
-		UInt64 itemGuid = 0;
-		SpellTargetMap targetMap;
-		if (!game::client_read::useItem(packet, bagId, slotId, spellCount, castCount, itemGuid, targetMap))
-		{
-			ELOG("Could not read packet");
-			return;
-		}
-
-		// Get item
-		auto item = m_character->getInventory().getItemAtSlot(Inventory::getAbsoluteSlot(bagId, slotId));
-		if (!item)
-		{
-			WLOG("Item not found! Bag: " << UInt16(bagId) << "; Slot: " << UInt16(slotId));
-			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
-			return;
-		}
-
-		if (item->getGuid() != itemGuid)
-		{
-			WLOG("Item GUID does not match. We look for 0x" << std::hex << itemGuid << " but found 0x" << std::hex << item->getGuid());
-			sendProxyPacket(
-				std::bind(game::server_write::inventoryChangeFailure, std::placeholders::_1, game::inventory_change_failure::ItemNotFound, nullptr, nullptr));
-			return;
-		}
-
-		auto &entry = item->getEntry();
-		for (int i = 0; i < entry.spells_size(); ++i)
-		{
-			const auto &spell = entry.spells(i);
-			if (!spell.spell())
-			{
-				WLOG("No spell entry");
-				continue;
-			}
-
-			// Spell effect has to be triggered "on use", not "on equip" etc.
-			if (spell.trigger() != 0 && spell.trigger() != 5)
-			{
-				WLOG("No onUse entry");
-				continue;
-			}
-
-			const auto *spellEntry = m_project.spells.getById(spell.spell());
-			if (!spellEntry)
-			{
-				WLOG("Could not find spell by id " << spell.spell());
-				continue;
-			}
-
-			UInt64 time = spellEntry->casttime();
-			m_character->castSpell(std::move(targetMap), spell.spell(), { 0, 0, 0 }, time, false, itemGuid, [this, spellEntry](game::SpellCastResult result) {
-				if (result != game::spell_cast_result::CastOkay)
-				{
-					sendProxyPacket(
-						std::bind(game::server_write::castFailed, std::placeholders::_1, result, std::cref(*spellEntry), 0));
-				}
-			});
-		}
-	}
-
-	void Player::handleListInventory(game::Protocol::IncomingPacket &packet)
-	{
-		UInt64 vendorGuid = 0;
-		if (!game::client_read::listInventory(packet, vendorGuid))
-		{
-			WLOG("Could not read packet data");
-			return;
-		}
-
-		if (!m_character->isAlive())
-			return;
-
-		auto *world = m_character->getWorldInstance();
-		if (!world)
-			return;
-
-		// Try to find that vendor
-		GameCreature *vendor = dynamic_cast<GameCreature*>(m_character->getWorldInstance()->findObjectByGUID(vendorGuid));
-		if (!vendor)
-		{
-			// Could not find vendor by GUID or vendor is not a creature
-			return;
-		}
-
-		// Check if vendor is alive and not in fight
-		if (!vendor->isAlive() || vendor->isInCombat())
-			return;
-
-		// Check if vendor is not hostile against players
-		if (m_character->isHostileToPlayers())
-			return;
-
-		// Check if that vendor has the vendor flag
-		if ((vendor->getUInt32Value(unit_fields::NpcFlags) & game::unit_npc_flags::Vendor) == 0)
-			return;
-
-		// Check if the vendor DO sell items
-		const auto *vendorEntry = m_project.vendors.getById(vendor->getEntry().vendorentry());
-		if (!vendorEntry)
-		{
-			std::vector<proto::VendorItemEntry> emptyList;
-			sendProxyPacket(
-				std::bind(game::server_write::listInventory, std::placeholders::_1, vendor->getGuid(), std::cref(m_project.items), std::cref(emptyList)));
-			return;
-		}
-
-		// TODO
-		std::vector<proto::VendorItemEntry> list;
-		for (const auto &entry : vendorEntry->items())
-		{
-			list.push_back(entry);
-		}
-
-		sendProxyPacket(
-			std::bind(game::server_write::listInventory, std::placeholders::_1, vendor->getGuid(), std::cref(m_project.items), std::cref(list)));
-	}
-
-	void Player::handleBuyItem(game::Protocol::IncomingPacket &packet)
-	{
-		UInt64 vendorGuid = 0;
-		UInt32 item = 0;
-		UInt8 count = 0;
-		if (!(game::client_read::buyItem(packet, vendorGuid, item, count)))
-		{
-			WLOG("Coult not read CMSG_BUY_ITEM packet");
-			return;
-		}
-
-		buyItemFromVendor(vendorGuid, item, 0, 0xFF, count);
-	}
-
-	void Player::handleBuyItemInSlot(game::Protocol::IncomingPacket &packet)
-	{
-		UInt64 vendorGuid = 0, bagGuid = 0;
-		UInt32 item = 0;
-		UInt8 slot = 0, count = 0;
-		if (!(game::client_read::buyItemInSlot(packet, vendorGuid, item, bagGuid, slot, count)))
-		{
-			WLOG("Coult not read CMSG_BUY_ITEM_IN_SLOT packet");
-			return;
-		}
-
-		buyItemFromVendor(vendorGuid, item, bagGuid, slot, count);
-	}
-
-	void Player::handleSellItem(game::Protocol::IncomingPacket &packet)
-	{
-		UInt64 vendorGuid = 0, itemGuid = 0;
-		UInt8 count = 0;
-		if (!(game::client_read::sellItem(packet, vendorGuid, itemGuid, count)))
-		{
-			WLOG("Coult not read CMSG_SELL_ITEM packet");
-			return;
-		}
-
-		// Find vendor
-		GameObject *vendor = m_instance.findObjectByGUID(vendorGuid);
-		if (!vendor ||
-			!vendor->isCreature())
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindVendor, 0, itemGuid, 0));
-			return;
-		}
-
-		// TODO: Check vendor distance
-
-		// Is currently hostile?
-		if (reinterpret_cast<GameCreature*>(vendor)->isHostileTo(*m_character))
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindVendor, 0, itemGuid, 0));
-			return;
-		}
-
-		UInt16 itemSlot = 0;
-		if (!m_character->getInventory().findItemByGUID(itemGuid, itemSlot))
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindItem, vendorGuid, itemGuid, 0));
-			return;
-		}
-
-		// Find the item by it's guid
-		auto item = m_character->getInventory().getItemAtSlot(itemSlot);
-		if (!item)
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindItem, vendorGuid, itemGuid, 0));
-			return;
-		}
-
-		UInt32 stack = item->getStackCount();
-		UInt32 money = stack * item->getEntry().sellprice();
-		if (money == 0)
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantSellItem, vendorGuid, itemGuid, 0));
-			return;
-		}
-
-		m_character->getInventory().removeItem(itemSlot, stack);
-		m_character->setUInt32Value(character_fields::Coinage, m_character->getUInt32Value(character_fields::Coinage) + money);
 	}
 
 	void Player::buyItemFromVendor(UInt64 vendorGuid, UInt32 itemEntry, UInt64 bagGuid, UInt8 slot, UInt8 count)
@@ -2231,7 +1268,7 @@ namespace wowpp
 					questStatus == game::quest_status::Complete)
 				{
 					const auto *quest = m_project.quests.getById(questid);
-					assert(quest);
+					ASSERT(quest);
 
 					game::QuestMenuItem item;
 					item.quest = quest;
@@ -2248,7 +1285,7 @@ namespace wowpp
 				if (questStatus == game::quest_status::Available)
 				{
 					const auto *quest = m_project.quests.getById(questid);
-					assert(quest);
+					ASSERT(quest);
 
 					game::QuestMenuItem item;
 					item.quest = quest;
@@ -2386,13 +1423,15 @@ namespace wowpp
 		}
 	}
 
-	void Player::openLootDialog(LootInstance & loot, GameObject & source)
+	void Player::openLootDialog(std::shared_ptr<LootInstance> loot, GameObject & source)
 	{
+		ASSERT(loot);
+
 		// Close old dialog if any
 		closeLootDialog();
 
 		// Remember those parameters
-		m_loot = &loot;
+		m_loot = loot;
 		m_lootSource = &source;
 
 		// Add the looting flag to our character
@@ -2412,6 +1451,14 @@ namespace wowpp
 			closeLootDialog();
 		});
 
+		m_lootSignals.append({
+			m_loot->itemRemoved.connect([this](UInt8 slot)
+			{
+				sendProxyPacket(
+					std::bind(game::server_write::lootRemoved, std::placeholders::_1, slot));
+			})
+		});
+
 		// Send the actual loot data (TODO: Determine loot type)
 		auto guid = source.getGuid();
 		auto lootType = game::loot_type::Corpse;
@@ -2419,14 +1466,22 @@ namespace wowpp
 		{
 			m_character->getAuras().removeAurasByType(game::aura_type::Mounted);
 		}
+
+		UInt64 playerGuid = m_character->getGuid();
 		sendProxyPacket(
-			std::bind(game::server_write::lootResponse, std::placeholders::_1, guid, lootType, std::cref(loot)));
+			std::bind(game::server_write::lootResponse, std::placeholders::_1, guid, lootType, playerGuid, std::cref(*loot)));
 	}
 
 	void Player::closeLootDialog()
 	{
+		// Disconnect all signals
+		m_lootSignals.disconnect();
+
 		if (m_loot)
 		{
+			// Notify loot watchers about this
+			m_loot->closed(m_character->getGuid());
+
 			// Notify the client
 			sendProxyPacket(
 				std::bind(game::server_write::lootReleaseResponse, std::placeholders::_1, m_loot->getLootGuid()));
@@ -2444,627 +1499,36 @@ namespace wowpp
 		}
 	}
 
-	void Player::handleGossipHello(game::Protocol::IncomingPacket &packet)
+	void Player::initiateTrade(UInt64 target)
 	{
-		UInt64 npcGuid = 0;
-		if (!(game::client_read::gossipHello(packet, npcGuid)))
-		{
-			return;
-		}
-
-		sendGossipMenu(npcGuid);
-	}
-
-	void Player::handleTrainerBuySpell(game::Protocol::IncomingPacket &packet)
-	{
-		UInt64 npcGuid = 0;
-		UInt32 spellId = 0;
-		if (!(game::client_read::trainerBuySpell(packet, npcGuid, spellId)))
-		{
-			return;
-		}
-
-		auto *world = m_character->getWorldInstance();
-		if (!world)
-		{
-			return;
-		}
-
-		GameCreature *creature = dynamic_cast<GameCreature*>(world->findObjectByGUID(npcGuid));
-		if (!creature)
-		{
-			return;
-		}
-
-		const auto *trainerEntry = m_project.trainers.getById(creature->getEntry().trainerentry());
-		if (!trainerEntry)
-		{
-			return;
-		}
-
-		if (trainerEntry->type() == proto::TrainerEntry_TrainerType_CLASS_TRAINER &&
-			m_character->getClass() != trainerEntry->classid())
-		{
-			return;
-		}
-
-		UInt32 cost = 0;
-		const proto::SpellEntry *entry = nullptr;
-		for (const auto &spell : trainerEntry->spells())
-		{
-			if (spell.spell() == spellId)
-			{
-				entry = m_project.spells.getById(spell.spell());
-				cost = spell.spellcost();
-				break;
-			}
-		}
-
-		if (!entry)
-		{
-			return;
-		}
-
-		if (m_character->hasSpell(spellId))
-		{
-			return;
-		}
-
-		sendProxyPacket(
-			std::bind(game::server_write::playSpellVisual, std::placeholders::_1, npcGuid, 0xB3));
-		sendProxyPacket(
-			std::bind(game::server_write::playSpellImpact, std::placeholders::_1, m_character->getGuid(), 0x016A));
-
-		UInt32 money = m_character->getUInt32Value(character_fields::Coinage);
-		if (money < cost)
-			return;
-		m_character->setUInt32Value(character_fields::Coinage, money - cost);
-
-		m_character->addSpell(*entry);
-		if ((entry->attributes(0) & game::spell_attributes::Passive) != 0)
-		{
-			SpellTargetMap targetMap;
-			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-			targetMap.m_unitTarget = m_character->getGuid();
-			m_character->castSpell(std::move(targetMap), spellId);
-		}
-
-		sendProxyPacket(
-			std::bind(game::server_write::trainerBuySucceeded, std::placeholders::_1, npcGuid, spellId));
-	}
-
-	void Player::handleQuestgiverStatusQuery(game::Protocol::IncomingPacket & packet)
-	{
-		UInt64 guid = 0;
-		if (!(game::client_read::questgiverStatusQuery(packet, guid)))
-		{
-			return;
-		}
-
-		// Can't find world instance
-		auto *world = m_character->getWorldInstance();
-		if (!world)
-		{
-			return;
-		}
-
-		// Can't find questgiver
-		GameObject *questgiver = world->findObjectByGUID(guid);
-		if (!questgiver)
-		{
-			return;
-		}
-
-		// Default status: None
-		game::QuestgiverStatus status = game::questgiver_status::None;
-		switch (questgiver->getTypeId())
-		{
-			case object_type::Unit:
-			{
-				GameCreature *creature = reinterpret_cast<GameCreature*>(questgiver);
-				status = creature->getQuestgiverStatus(*m_character);
-				break;
-			}
-			case object_type::GameObject:
-			{
-				WorldObject *object = reinterpret_cast<WorldObject*>(questgiver);
-				status = object->getQuestgiverStatus(*m_character);
-				break;
-			}
-			default:
-			{
-				// Unexpected object type!
-				break;
-			}
-		}
-
-		// Send answer
-		sendProxyPacket(
-			std::bind(game::server_write::questgiverStatus, std::placeholders::_1, guid, status));
-	}
-
-	void Player::handleQuestgiverStatusMultipleQuery(game::Protocol::IncomingPacket & packet)
-	{
-		std::map<UInt64, game::QuestgiverStatus> statusMap;
-
-		// Find all potential quest givers near our character
-		TileIndex2D tile;
-		if (m_character->getTileIndex(tile))
-		{
-			forEachTileInSight(
-				m_character->getWorldInstance()->getGrid(),
-				tile,
-				[&statusMap, this](VisibilityTile & tile) {
-				for (auto *object : tile.getGameObjects())
-				{
-					switch (object->getTypeId())
-					{
-						case object_type::Unit:
-						{
-							GameCreature *creature = reinterpret_cast<GameCreature*>(object);
-							if ((creature->getEntry().quests_size() || creature->getEntry().end_quests_size()) &&
-								!creature->isHostileTo(*m_character))
-							{
-								statusMap[object->getGuid()] = creature->getQuestgiverStatus(*m_character);
-							}
-							break;
-						}
-						case object_type::GameObject:
-						{
-							WorldObject *worldObject = reinterpret_cast<WorldObject*>(object);
-							if (worldObject->getEntry().quests_size() ||
-								worldObject->getEntry().end_quests_size())
-							{
-								statusMap[object->getGuid()] = worldObject->getQuestgiverStatus(*m_character);
-							}
-							break;
-						}
-						default:	// Make the compiler happy
-							break;
-					}
-				}
-			});
-		}
-
-		// Send questgiver status map
-		sendProxyPacket(
-			std::bind(game::server_write::questgiverStatusMultiple, std::placeholders::_1, std::cref(statusMap)));
-	}
-
-	void Player::handleQuestgiverHello(game::Protocol::IncomingPacket & packet)
-	{
-		UInt64 guid = 0;
-		if (!(game::client_read::questgiverStatusQuery(packet, guid)))
-		{
-			return;
-		}
-
-		sendGossipMenu(guid);
-	}
-
-	void Player::handleQuestgiverQueryQuest(game::Protocol::IncomingPacket & packet)
-	{
-		UInt64 guid = 0;
-		UInt32 questId = 0;
-		if (!(game::client_read::questgiverQueryQuest(packet, guid, questId)))
-		{
-			return;
-		}
-
-		const auto *quest = m_project.quests.getById(questId);
-		if (!quest)
-		{
-			return;
-		}
-
-		if (isItemGUID(guid))
-		{
-			UInt16 itemSlot = 0;
-			if (!m_character->getInventory().findItemByGUID(guid, itemSlot))
-			{
-				return;
-			}
-
-			auto item = m_character->getInventory().getItemAtSlot(itemSlot);
-			if (!item)
-			{
-				return;
-			}
-
-			if (item->getEntry().questentry() != questId)
-			{
-				return;
-			}
-		}
-		else
-		{
-			GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
-			if (!object)
-			{
-				return;
-			}
-
-			if (!object->providesQuest(questId))
-			{
-				return;
-			}
-		}
-
-		sendProxyPacket(
-			std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, guid, std::cref(m_project.items), std::cref(*quest)));
-		//DLOG("CMSG_QUESTGIVER_QUERY_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
-	}
-
-	void Player::handleQuestgiverQuestAutolaunch(game::Protocol::IncomingPacket & packet)
-	{
-		if (!(game::client_read::questgiverQuestAutolaunch(packet)))
-		{
-			return;
-		}
-
-		DLOG("CMSG_QUESTGIVER_QUEST_AUTO_LAUNCH");
-	}
-
-	void Player::handleQuestgiverAcceptQuest(game::Protocol::IncomingPacket & packet)
-	{
-		UInt64 guid = 0;
-		UInt32 questId = 0;
-		if (!(game::client_read::questgiverAcceptQuest(packet, guid, questId)))
-		{
-			return;
-		}
-
-		UInt16 itemSlot = 0;
-		std::shared_ptr<GameItem> itemQuestgiver;
-		if (isItemGUID(guid))
-		{
-			if (!m_character->getInventory().findItemByGUID(guid, itemSlot))
-			{
-				return;
-			}
-
-			itemQuestgiver = m_character->getInventory().getItemAtSlot(itemSlot);
-			if (!itemQuestgiver)
-			{
-				return;
-			}
-
-			if (itemQuestgiver->getEntry().questentry() != questId)
-			{
-				return;
-			}
-		}
-		else
-		{
-			// Check if that object exists and provides the requested quest
-			GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
-			if (!object ||
-				!object->providesQuest(questId))
-			{
-				return;
-			}
-		}
-
-		// We need this check since the quest can fail for various other reasons
-		if (m_character->isQuestlogFull())
-		{
-			sendProxyPacket(std::bind(game::server_write::questlogFull, std::placeholders::_1));
-			return;
-		}
-
-		// Remove quest item now (we need to do this before accepting the quest as some quests re-add the source quest item)
-		if (itemQuestgiver && itemSlot != 0)
-		{
-			auto result = m_character->getInventory().removeItem(itemSlot);
-			if (result != game::inventory_change_failure::Okay)
-			{
-				m_character->inventoryChangeFailure(result, itemQuestgiver.get(), nullptr);
-				return;
-			}
-		}
-
-		// Accept that quest
-		if (!m_character->acceptQuest(questId))
-		{
-			if (itemQuestgiver && itemSlot != 0)
-			{
-				// Try to restore previously given quest item (TODO: This is ugly and could be a security issue because, in theory,
-				// this could lead to creating the item twice etc.)
-				auto result = m_character->getInventory().createItems(itemQuestgiver->getEntry(), itemQuestgiver->getStackCount());
-				if (result != game::inventory_change_failure::Okay)
-				{
-					// Worst case! Player has lost the quest item... this may NEVER EVER happen (need for an inventory transaction system)
-					ELOG("PLAYER " << m_character->getGuid() << " ITEM LOSS SINCE QUEST " << questId << " COULD NOT BE ACCEPTED AND QUESTGIVER ITEM "
-						<< itemQuestgiver->getStackCount() << "x " << itemQuestgiver->getEntry().id() << " COULD NOT BE RECREATED!");
-					assert(false);
-				}
-			}
-			
-			return;
-		}
-
-		sendProxyPacket(
-			std::bind(game::server_write::gossipComplete, std::placeholders::_1));
-	}
-
-	void Player::handleQuestgiverCompleteQuest(game::Protocol::IncomingPacket & packet)
-	{
-		UInt64 guid = 0;
-		UInt32 questId = 0;
-		if (!(game::client_read::questgiverCompleteQuest(packet, guid, questId)))
-		{
-			return;
-		}
-
-		const auto *quest = m_project.quests.getById(questId);
-		if (!quest)
-		{
-			return;
-		}
-
-		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
-		if (!object)
-		{
-			return;
-		}
-
-		if (!object->endsQuest(questId))
-		{
-			return;
-		}
-
-		const bool hasCompleted = (m_character->getQuestStatus(questId) == game::quest_status::Complete);
-		if (!quest->requestitemstext().empty())
-			sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, guid, true, hasCompleted, std::cref(m_project.items), std::cref(*quest)));
-		else
-			sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, hasCompleted, std::cref(m_project.items), std::cref(*quest)));
-	}
-
-	void Player::handleQuestgiverRequestReward(game::Protocol::IncomingPacket & packet)
-	{
-		UInt64 guid = 0;
-		UInt32 questId = 0;
-		if (!(game::client_read::questgiverRequestReward(packet, guid, questId)))
-		{
-			return;
-		}
-
-		const auto *quest = m_project.quests.getById(questId);
-		if (!quest)
-		{
-			return;
-		}
-
-		// Check if that object exists and provides the requested quest
-		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
-		if (!object ||
-			!object->endsQuest(questId))
-		{
-			return;
-		}
-
-		// Check quest state
-		auto state = m_character->getQuestStatus(questId);
-		sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, 
-			(state == game::quest_status::Complete), std::cref(m_project.items), std::cref(*quest)));
-	}
-
-	void Player::handleQuestgiverChooseReward(game::Protocol::IncomingPacket & packet)
-	{
-		UInt64 guid = 0;
-		UInt32 questId = 0, reward = 0;
-		if (!(game::client_read::questgiverChooseReward(packet, guid, questId, reward)))
-		{
-			return;
-		}
-
-		const auto *quest = m_project.quests.getById(questId);
-		if (!quest)
-		{
-			return;
-		}
-
-		// Validate data
-		if (reward > 0 &&
-			reward >= static_cast<UInt32>(quest->rewarditemschoice_size()))
-		{
-			return;
-		}
-
-		GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
-		if (!object)
-		{
-			return;
-		}
-
-		if (!object->endsQuest(questId))
-		{
-			return;
-		}
-
-		// Reward this quest
-		bool result = m_character->rewardQuest(questId, reward, [this, quest](UInt32 xp) {
-			sendProxyPacket(
-				std::bind(game::server_write::questgiverQuestComplete, std::placeholders::_1, m_character->getLevel() >= 70, xp, std::cref(*quest)));
-		});
-		if (result)
-		{
-			// Try to find next quest and if there is one, send quest details
-			UInt32 nextQuestId = quest->nextchainquestid();
-			if (nextQuestId &&
-				object->providesQuest(nextQuestId) &&
-				m_character->getQuestStatus(nextQuestId) == game::quest_status::Available)
-			{
-				const auto *nextQuestEntry = m_project.quests.getById(nextQuestId);
-				if (nextQuestEntry)
-				{
-					sendProxyPacket(
-						std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, guid, std::cref(m_project.items), std::cref(*nextQuestEntry)));
-				}
-			}
-		}
-	}
-
-	void Player::handleQuestgiverCancel(game::Protocol::IncomingPacket & packet)
-	{
-		if (!(game::client_read::questgiverCancel(packet)))
-		{
-			return;
-		}
-
-		DLOG("CMSG_QUESTGIVER_CANCEL");
-	}
-
-	void Player::handleQuestlogRemoveQuest(game::Protocol::IncomingPacket & packet)
-	{
-		UInt8 index = 0;
-		if (!(game::client_read::questlogRemoveQuest(packet, index)))
-		{
-			return;
-		}
-
-		if (index < 25)
-		{
-			UInt32 quest = m_character->getUInt32Value(character_fields::QuestLog1_1 + index * 4);
-			if (quest)
-			{
-				m_character->abandonQuest(quest);
-			}
-		}
-	}
-
-	void Player::handleGameObjectUse(game::Protocol::IncomingPacket & packet)
-	{
-		UInt64 guid = 0;
-		if (!(game::client_read::gameobjectUse(packet, guid)))
-		{
-			return;
-		}
-
-		auto *obj = m_instance.findObjectByGUID(guid);
-		if (!obj)
-		{
-			return;
-		}
-
-		if (!obj->isWorldObject())
-		{
-			return;
-		}
-
-		sendGossipMenu(guid);
-
-		WorldObject &wobj = reinterpret_cast<WorldObject&>(*obj);
-		if (wobj.getEntry().type() == world_object_type::Goober)
-		{
-			// Possibly quest object
-			m_character->onQuestObjectCredit(0, wobj);
-
-			// Check if spell cast is needed
-			UInt32 spellId = wobj.getEntry().data(10);
-			if (spellId)
-			{
-				// Cast spell
-				SpellTargetMap target;
-				target.m_unitTarget = m_character->getGuid();
-				target.m_targetMap = game::spell_cast_target_flags::Unit;
-				m_character->castSpell(std::move(target), spellId);
-			}
-		}
-	}
-
-	void Player::handleOpenItem(game::Protocol::IncomingPacket & packet)
-	{
-		UInt8 bag = 0, slot = 0;
-		if (!(game::client_read::openItem(packet, bag, slot)))
-		{
-			return;
-		}
-
-		auto &inv = m_character->getInventory();
-
-		// Look for the item at the given slot
-		auto item = inv.getItemAtSlot(Inventory::getAbsoluteSlot(bag, slot));
-		if (!item)
-		{
-			m_character->inventoryChangeFailure(game::inventory_change_failure::ItemNotFound, nullptr, nullptr);
-			return;
-		}
-
-		if (item->getLoot())
-		{
-			openLootDialog(*item->getLoot(), *item);
-		}
-		else
-		{
-			m_character->inventoryChangeFailure(game::inventory_change_failure::CantLootThatNow, item.get(), nullptr);
-		}
-	}
-
-	void Player::handleMoveTimeSkipped(game::Protocol::IncomingPacket & packet)
-	{
-		UInt64 guid;
-		UInt32 timeSkipped;
-		if (!(game::client_read::moveTimeSkipped(packet, guid, timeSkipped)))
-		{
-			return;
-		}
-
-		if (guid != m_character->getGuid())
-		{
-			WLOG("Received CMSG_MOVE_TIME_SKIPPED for different character...");
-			return;
-		}
-
-		// Anti hack check
-		if (Int32(timeSkipped) < 0)
-		{
-			WLOG("PLAYER " << m_character->getName() << " POSSIBLY HACKING");
-
-			// Kick that player!
-			m_instance.removeGameObject(*m_character);
-			m_character.reset();
-
-			// Notify the realm
-			m_realmConnector.notifyWorldInstanceLeft(m_characterId, pp::world_realm::world_left_reason::Disconnect);
-
-			// Destroy player instance
-			m_manager.playerDisconnected(*this);
-			return;
-		}
-
-		// TODO: Do something with the time diff
-	}
-
-	void Player::handleInitateTrade(game::Protocol::IncomingPacket & packet)
-	{
-		UInt64 otherGuid;
-		TradeStatusInfo statusInfo;
-		if (!(game::client_read::initateTrade(packet, otherGuid)))
-		{
-			return;
-		}
-
+		// Cancel current trade if any
+		if (isTrading())
+			cancelTrade();
+
+		// Check for character existance
 		if (!m_character)
-		{
 			return;
-		}
 
 		// Can't trade while dead
-		if(!m_character->isAlive())
+		if (!m_character->isAlive())
 		{
+			WLOG("Player is dead and thus can't trade");
 			sendTradeStatus(game::trade_status::YouDead);
 			return;
 		}
 
+		// Can't trade while stunned as well
 		if (m_character->isStunned())
 		{
+			WLOG("Player is stunned and thus can't trade");
 			sendTradeStatus(game::trade_status::YouStunned);
 			return;
 		}
 
-		if (m_logoutCountdown.running)
+		// Can't trade while logout is pending
+		if (isLogoutPending())
 		{
+			WLOG("Player has a pending logout and thus can't trade");
 			sendTradeStatus(game::trade_status::YouLogout);
 			return;
 		}
@@ -3075,282 +1539,92 @@ namespace wowpp
 			return;
 		}
 
-		UInt64 thisguid = m_character->getGuid(); 
+		UInt64 thisguid = m_character->getGuid();
 
-		auto *otherPlayer = m_manager.getPlayerByCharacterGuid(otherGuid);
-		if (otherPlayer == nullptr ||
-			!otherPlayer->getCharacter())
+		// Find other player instance
+		auto *otherPlayer = m_manager.getPlayerByCharacterGuid(target);
+		if (!otherPlayer)
 		{
+			WLOG("Can't find target player");
 			sendTradeStatus(game::trade_status::NoTarget);
 			return;
 		}
 
+		// Get other players character (should never be nullptr, but just in case...)
 		auto otherCharacter = otherPlayer->getCharacter();
+		if (!otherCharacter)
+		{
+			WLOG("Can't find target players character");
+			sendTradeStatus(game::trade_status::NoTarget);
+			return;
+		}
+
+		// Target has to be alive
 		if (!otherCharacter->isAlive())
 		{
+			WLOG("Target is dead and thus can't trade");
 			sendTradeStatus(game::trade_status::TargetDead);
 			return;
 		}
 
+		// Target may not be stunned
 		if (otherCharacter->isStunned())
 		{
+			WLOG("Target is stunned and thus can't trade");
 			sendTradeStatus(game::trade_status::TargetStunned);
 			return;
 		}
 
-		// TODO: Target logout and other checks
-
-		if (otherCharacter->getDistanceTo(*m_character, false) > 10.0f)
+		// Target logout check
+		if (otherPlayer->isLogoutPending())
 		{
+			WLOG("Target has a pending logout and thus can't trade");
+			sendTradeStatus(game::trade_status::TargetLogout);
+			return;
+		}
+
+		// Check if target is busy
+		if (otherPlayer->isTrading())
+		{
+			WLOG("Target is already trading and thus can't trade");
+			sendTradeStatus(game::trade_status::Busy2);
+			return;
+		}
+
+		// Trade distance check (100 = 10*10 because of squared check for performance reasons)
+		// TODO: Is this the correct trade distance?
+		if (otherCharacter->getSquaredDistanceTo(*m_character, false) > 100.0f)
+		{
+			WLOG("Player is too far away from target and thus can't trade");
 			sendTradeStatus(game::trade_status::TargetTooFar);
 			return;
 		}
 
-		// Start trade
-		m_tradeStatusInfo.tradestatus = game::trade_status::BeginTrade;
-		m_tradeStatusInfo.guid = thisguid;
-		m_tradeData = std::make_shared<TradeData>(this, otherPlayer);
-		otherPlayer->m_tradeData = std::make_shared<TradeData>(otherPlayer, this);
-		otherPlayer->sendTradeStatus(m_tradeStatusInfo);
+		// Begin trade (both players share the same trade data session)
+		auto tradeData = std::make_shared<TradeData>(*this, *otherPlayer);
+		setTradeSession(tradeData);
+		otherPlayer->setTradeSession(tradeData);
+		otherPlayer->sendTradeStatus(game::trade_status::BeginTrade, m_character->getGuid());
 	}
 
-	void Player::handleBeginTrade(game::Protocol::IncomingPacket &packet)
+	void Player::cancelTrade()
 	{
-		if (!m_tradeData)
+		// Reset trade data
+		if (m_tradeData)
 		{
-			return;
-		}
-
-		m_tradeStatusInfo.tradestatus = game::trade_status::OpenWindow;
-		
-		m_tradeData->getPlayer()->sendTradeStatus(m_tradeStatusInfo);
-		m_tradeData->getTrader()->sendTradeStatus(m_tradeStatusInfo);
-		
-		//openWindow
-	}
-
-	void Player::handleAcceptTrade(game::Protocol::IncomingPacket &packet)
-	{
-		std::shared_ptr<TradeData> my_Trade = m_tradeData;
-		if (nullptr == my_Trade)
-		{
-			return;
-		}
-
-		std::shared_ptr<GameItem> playerItems[trade_slots::TradedCount];
-		std::shared_ptr<GameItem> traderItems[trade_slots::TradedCount];
-
-		Player* trader = my_Trade-> getTrader();
-		Player* player = my_Trade->getPlayer();
-		std::shared_ptr<TradeData> his_Trade = trader->m_tradeData;
-		if (nullptr == his_Trade)
-		{
-			return;
-		}
-
-		my_Trade->setTradeAcceptState(true);
-
-		TradeStatusInfo info;
-
-		if (my_Trade->getGold() > player->getCharacter()->getUInt32Value(character_fields::Coinage))
-		{
-			info.tradestatus = game::trade_status::CloseWindow;
-			sendTradeStatus(info);
-			my_Trade->setTradeAcceptState(false);
-			return;
-		}
-
-		if (his_Trade->getGold() > trader->getCharacter()->getUInt32Value(character_fields::Coinage))
-		{
-			info.tradestatus = game::trade_status::CloseWindow;
-			sendTradeStatus(info);
-			his_Trade->setTradeAcceptState(false);
-			return;
-		}
-
-		//anti cheat for items
-
-
-								
-		if (his_Trade->isAccepted())
-		{
-			//check for cheating
-			//inform partner client
-
-			info.tradestatus = game::trade_status::TradeAccept;
-			trader->sendTradeStatus(info);
-			//test item << inventory
-
-			TradeStatusInfo playerCanComplete, traderCanComplete;
-
-			//TODO: checkt if there is enough place i inventory
-
-			
-			std::vector<std::shared_ptr<GameItem>> my_Items;
-			my_Items = my_Trade->getItem();
-			
-			for (int i = 0; TradeSlots::Count < 1; i++)		
-			{
-				if (my_Items[i] != nullptr)
-				{
-					playerItems[i] = my_Items[i];
-				}
-			}
-			std::vector<std::shared_ptr<GameItem>> his_Items;
-			his_Items = his_Trade->getItem();
-
-			for (int i = 0; i < TradeSlots::Count; i++)		
-			{
-				if (his_Items[i] != nullptr)
-				{
-					traderItems[i] = his_Items[i];
-				}
-			}
-
-			moveItems(my_Items, his_Items);
-
-			
-
-			//execute Trade
-
-			//update money
-
-			UInt32 gold_nowp = player->getCharacter()->getUInt32Value(character_fields::Coinage);
-			UInt32 gold_newp = gold_nowp - my_Trade->getGold();
-
-			gold_newp += trader->m_tradeData->getGold();
-			player->getCharacter()->setUInt32Value(character_fields::Coinage, gold_newp);
-
-			
-			UInt32 gold_nowt = trader->getCharacter()->getUInt32Value(character_fields::Coinage);
-			UInt32 gold_newt = gold_nowt - trader->m_tradeData->getGold();
-
-			gold_newt += my_Trade->getGold();
-			trader->getCharacter()->setUInt32Value(character_fields::Coinage, gold_newt);
-
-			info.tradestatus = game::trade_status::TradeComplete;
-			trader->sendTradeStatus(info);
-			sendTradeStatus(info);
-		}
-		else
-		{
-			info.tradestatus = game::trade_status::TradeAccept;
-			trader->sendTradeStatus(info);
+			// Calling the cancel-method will automatically reset m_tradeData in this method
+			m_tradeData->cancel();
 		}
 	}
 
-
-	void Player::handleSetTradeGold(game::Protocol::IncomingPacket &packet)
+	void Player::setTradeSession(std::shared_ptr<TradeData> data)
 	{
-		UInt32 gold;
-		if (!(game::client_read::setTradeGold(packet, gold)))
+		// TODO: Disconnect signals
+
+		m_tradeData = std::move(data);
+		if (m_tradeData)
 		{
-			return;
-		}
-
-		if (!m_tradeData)
-		{
-			return;
-		}
-
-		if (gold != m_tradeData->getGold())
-		{
-			// Update the amount of gold
-			m_tradeData->setGold(gold);
-
-			// Update trade status
-			if (m_tradeData->isAccepted())
-			{
-				m_tradeData->setTradeAcceptState(false);
-
-				TradeStatusInfo info;
-				info.tradestatus = game::trade_status::BackToTrade;
-				m_tradeData->getPlayer()->sendTradeStatus(std::move(info));
-			}
-
-			// 
-			m_tradeData->getTrader()->sendUpdateTrade();
-		}
-
-		
-	}
-
-	void Player::handleSetTradeItem(game::Protocol::IncomingPacket &packet)
-	{
-		UInt8 tradeSlot;
-		UInt8 bag;
-		UInt8 slot;
-		if (!(game::client_read::setTradeItem(packet, tradeSlot, bag, slot)))
-		{
-			return;
-		}
-
-		std::shared_ptr<TradeData> my_Trade = m_tradeData;
-		if (my_Trade == nullptr)
-		{
-			return;
-		}
-
-		TradeStatusInfo info;
-
-		if (tradeSlot >= trade_slots::Count)
-		{
-			info.tradestatus = game::trade_status::TradeCanceled;
-			sendTradeStatus(info);
-			return;
-		}
-
-		UInt16 absSlot = Inventory::getAbsoluteSlot(bag, slot);
-		auto this_player = this->getCharacter();
-		auto &inventory = this_player->getInventory();
-		auto item = inventory.getItemAtSlot(absSlot);
-		//TODO: ask if there is an item like that in trade already
-		if (item == nullptr)
-		{
-			DLOG("Item is nullptr");
-		}
-		my_Trade->setTradeAcceptState(false);
-		my_Trade->getTrader()->m_tradeData->setTradeAcceptState(false);
-		
-		
-		info.tradestatus = game::trade_status::BackToTrade;
-		m_tradeData->getPlayer()->sendTradeStatus(std::move(info));
-		my_Trade->setAbsSlot(absSlot, tradeSlot);
-		my_Trade->setItem(item, tradeSlot);
-		m_tradeData->getTrader()->sendUpdateTrade();
-	}
-
-	void Player::moveItems(std::vector<std::shared_ptr<GameItem>> my_Items, std::vector<std::shared_ptr<GameItem>> his_Items)
-	{
-		UInt8 bag, slot;
-		auto trader = m_tradeData->getTrader();
-		if (trader == nullptr)
-		{
-			return;
-		}
-
-		for (int i = 0; i < TradeSlots::TradedCount; i++)
-		{
-			//TODO: check if items exists and can be traded/stored
-			
-			if (my_Items[i])
-			{
-				auto &inventory = this->getCharacter()->getInventory();
-
-				auto &traderInventory = m_tradeData->getTrader()->getCharacter()->getInventory();
-				traderInventory.createItems(my_Items[i]->getEntry(), my_Items[i]->getStackCount());
-				inventory.removeItem(inventory.getAbsoluteSlot(bag, slot));
-
-			}
-
-			if (his_Items[i])
-			{
-				auto &inventory = trader->getCharacter()->getInventory();
-				
-				auto &myInventory = this->getCharacter()->getInventory();
-				myInventory.createItems(his_Items[i]->getEntry(), his_Items[i]->getStackCount());
-				inventory.removeItem(trader->m_tradeData->getAbsSlot(i));
-			}
+			// TODO: Connect the respective signals
 		}
 	}
 
@@ -3379,309 +1653,9 @@ namespace wowpp
 
 	}
 
-	void Player::sendTradeStatus(TradeStatusInfo info)
+	void Player::sendTradeStatus(TradeStatus status, UInt64 guid/* = 0*/, UInt32 errorCode/* = 0*/, UInt32 itemCategory/* = 0*/)
 	{
 		sendProxyPacket(
-			std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, static_cast<UInt32>(info.tradestatus), info.guid));
-	}
-	
-	void Player::sendUpdateTrade()
-	{
-		//TODO maybe build a struct for all of this informations.
-		sendProxyPacket(
-			std::bind(game::server_write::sendUpdateTrade, std::placeholders::_1,
-				1,
-				0,
-				trade_slots::Count,
-				trade_slots::Count,
-				m_tradeData->getTrader()->m_tradeData->getGold(),
-				0,
-				m_tradeData->getTrader()->m_tradeData->getItem()
-				));
-	}
-
-	void Player::handleSetActionBarToggles(game::Protocol::IncomingPacket & packet)
-	{
-		UInt8 actionBars;
-		if (!(game::client_read::setActionBarToggles(packet, actionBars)))
-		{
-			return;
-		}
-
-		// Save action bars
-		m_character->setByteValue(character_fields::FieldBytes, 2, actionBars);
-	}
-
-	void Player::handleToggleHelm(game::Protocol::IncomingPacket & packet)
-	{
-		if (m_character->getUInt32Value(character_fields::CharacterFlags) & 1024)
-		{
-			m_character->removeFlag(character_fields::CharacterFlags, 1024);
-		}
-		else
-		{
-			m_character->addFlag(character_fields::CharacterFlags, 1024);
-		}
-	}
-
-	void Player::handleToggleCloak(game::Protocol::IncomingPacket & packet)
-	{
-		if (m_character->getUInt32Value(character_fields::CharacterFlags) & 2048)
-		{
-			m_character->removeFlag(character_fields::CharacterFlags, 2048);
-		}
-		else
-		{
-			m_character->addFlag(character_fields::CharacterFlags, 2048);
-		}
-	}
-
-	void Player::handleMailSend(game::Protocol::IncomingPacket & packet)
-	{
-		ObjectGuid currentMailbox;
-		game::MailData mailInfo;
-
-		if (!game::client_read::mailSend(packet, currentMailbox, mailInfo))
-		{
-			return;
-		}
-
-		if (mailInfo.receiver.empty())
-		{
-			return;
-		}
-
-		auto *world = m_character->getWorldInstance();
-		if (!world)
-		{
-			return;
-		}
-
-		auto *target = world->findObjectByGUID(currentMailbox);
-		if (!target ||
-			target->getTypeId() != 19)
-		{
-			// Checks if object exists and if it's a mailbox
-			return;
-		}
-
-		// TODO distance to mailbox
-		//float distance = m_character->getDistanceTo(target);
-
-		String receiverCap = mailInfo.receiver;
-		capitalize(receiverCap);
-
-		UInt32 cost = mailInfo.itemsCount ? 30 * mailInfo.itemsCount : 30;
-		UInt32 reqMoney = cost + mailInfo.money;
-		UInt32 plMoney = m_character->getUInt32Value(character_fields::Coinage);
-
-		if (plMoney < reqMoney)
-		{
-			// TODO send error
-			return;
-		}
-
-		auto &inventory = m_character->getInventory();
-		UInt16 itemSlot = 0;
-		std::vector<std::shared_ptr<GameItem>> items;
-		for (UInt8 i = 0; i < mailInfo.itemsCount; ++i)
-		{
-			UInt64 guid = mailInfo.itemsGuids[i];
-			if (!isItemGUID(guid))
-			{
-				// TODO send error
-				return;
-			}
-
-			if (!inventory.findItemByGUID(guid, itemSlot))
-			{
-				// Check if item is on player's inventory
-				return;
-			}
-
-			auto item = inventory.getItemAtSlot(itemSlot);
-			if (!item)
-			{
-				// TODO send error
-				return;
-			}
-
-			const auto &itemEntry = item->getEntry();
-
-			if (itemEntry.flags() & game::item_flags::Bound)
-			{
-				// TODO send error
-				return;
-			}
-
-			if (item->getTypeId() == object_type::Container)
-			{
-				auto bagPtr = std::static_pointer_cast<GameBag>(item);
-				if (bagPtr->isEmpty())
-				{
-					// TODO send error
-					return;
-				}
-			}
-
-			if ((itemEntry.flags() & game::item_flags::Conjured) ||
-				(item->getUInt32Value(item_fields::Duration)))
-			{
-				// TODO send error
-				return;
-			}
-
-			if ((mailInfo.COD) &&
-				(itemEntry.flags() & game::item_flags::Wrapped))
-			{
-				// TODO send error
-				return;
-			}
-
-			// TODO other checks
-			items.push_back(item);
-		}
-
-		// TODO send mail OK message
-
-		// Modify wallet of sender
-		m_character->setUInt32Value(character_fields::Coinage, plMoney - cost);
-
-
-		//TODO
-
-		DLOG("CMSG_MAIL_SEND received from client");
-
-	}
-
-	void Player::handleResurrectResponse(game::Protocol::IncomingPacket & packet)
-	{
-		UInt64 guid;
-		UInt8 status;
-
-		if (!game::client_read::resurrectResponse(packet, guid, status))
-		{
-			return;
-		}
-
-		if (m_character->isAlive())
-		{
-			return;
-		}
-
-		if (status == 0)
-		{
-			math::Vector3 location;
-			m_character->setResurrectRequestData(0, 0, std::move(location), 0, 0);
-			return;
-		}
-
-		if (!m_character->isResurrectRequestedBy(guid))
-		{
-			return;
-		}
-
-		m_character->resurrectUsingRequestData();
-	}
-
-	void Player::handleCancelChanneling(game::Protocol::IncomingPacket & packet)
-	{
-		if (!game::client_read::cancelChanneling(packet))
-		{
-			return;
-		}
-
-		m_character->finishChanneling();
-	}
-	void Player::handlePlayedTime(game::Protocol::IncomingPacket & packet)
-	{
-		updatePlayerTime();
-		sendProxyPacket(
-			std::bind(game::server_write::playedTime, std::placeholders::_1,
-				m_character->getPlayTime(player_time_index::TotalPlayTime),	// Total time played in seconds
-				m_character->getPlayTime(player_time_index::LevelPlayTime)	// Time on characters level in seconds
-			)
-		);
-	}
-	void Player::handleAckCode(game::Protocol::IncomingPacket & packet, UInt16 opCode)
-	{
-		// Read the guid values first
-		UInt64 guid = 0;
-		UInt32 index = 0;
-		if (!(packet
-			>> io::read<NetUInt64>(guid)
-			>> io::read<NetUInt32>(index)))
-		{
-			WLOG("Could not read ack opcode 0x" << std::hex << opCode);
-			return;
-		}
-
-		if (guid != m_character->getGuid())
-		{
-			WLOG("Received ack opcode from other character!");
-			return;
-		}
-
-		// Next data depends on opCode
-		switch (opCode)
-		{
-			case wowpp::game::client_packet::MoveKnockBackAck:
-			{
-				MovementInfo info;
-				if (!(packet >> info))
-				{
-					WLOG("Could not read movement info from CMSG_MOVE_KNOCK_BACK_ACK!");
-					return;
-				}
-
-				//const auto &location = m_character->getLocation();
-				auto location = math::Vector3(info.x, info.y, info.z);
-
-				// Store movement information
-				m_character->setMovementInfo(info);
-				m_character->relocate(location, info.o, true);
-				info.time = m_serverSync + (info.time - m_clientSync);
-
-				// Transform into grid location
-				TileIndex2D gridIndex;
-				if (!m_character->getTileIndex(gridIndex))
-				{
-					ELOG("Could not resolve grid location!");
-					return;
-				}
-
-				auto &grid = getWorldInstance().getGrid();
-				(void)grid.requireTile(gridIndex);
-
-				// Notify all watchers
-				forEachTileInSight(
-					getWorldInstance().getGrid(),
-					gridIndex,
-					[this, &info](VisibilityTile &tile)
-				{
-					for (auto &watcher : tile.getWatchers())
-					{
-						if (watcher != this)
-						{
-							// Create the chat packet
-							std::vector<char> buffer;
-							io::VectorSink sink(buffer);
-							game::Protocol::OutgoingPacket movePacket(sink);
-							game::server_write::moveKnockBackWithInfo(movePacket, m_character->getGuid(), info);
-							watcher->sendPacket(movePacket, buffer);
-						}
-					}
-				});
-
-				break;
-			}
-
-			default:
-			{
-				WLOG("Unhandled Ack packet received: " << opCode);
-				break;
-			}
-		}
-
+			std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, static_cast<UInt32>(status), guid, errorCode != 0, errorCode, itemCategory));
 	}
 }

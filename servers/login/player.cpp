@@ -45,8 +45,10 @@ namespace wowpp
 		, m_loginChallenge(false)
 		, m_reconnectChallenge(false)
 		, m_timeout(timerQueue)
+		, m_nextRealmRequest(0)
+		, m_realmRequestCount(0)
 	{
-		assert(m_connection);
+		ASSERT(m_connection);
 
 		m_connection->setListener(*this);
 		m_onTimeout = m_timeout.ended.connect([this]() 
@@ -128,13 +130,11 @@ namespace wowpp
 				handleLogonChallenge(packet);
 				break;
 			}
-
 			case auth::client_packet::LogonProof:
 			{
 				handleLogonProof(packet);
 				break;
 			}
-
 			case auth::client_packet::ReconnectChallenge:
 			{
 				handleReconnectChallenge(packet);
@@ -145,20 +145,20 @@ namespace wowpp
 				handleReconnectProof(packet);
 				break;
 			}
-
 			case auth::client_packet::RealmList:
 			{
 				handleRealmList(packet);
 				break;
 			}
-
 			default:
 			{
 				isValid = false;
 				WLOG("Unknown packet received from " << m_address 
 					<< " - ID: " << static_cast<UInt32>(packetId) 
 					<< "; Size: " << packet.getSource()->size() << " bytes");
-				break;
+				m_connection->close();
+				destroy();
+				return;
 			}
 		}
 
@@ -175,12 +175,16 @@ namespace wowpp
 		if (!auth::client_read::logonChallenge(packet, m_version1, m_version2, m_version3, m_build, m_platform, m_system, m_locale, m_userName))
 		{
 			ELOG("Could not read packet CMD_AUTH_LOGON_CHALLENGE");
+			m_connection->close();
+			destroy();
 			return;
 		}
 
 		if (m_accountId != 0)
 		{
 			WLOG("Player tried to log in again!");
+			m_connection->close();
+			destroy();
 			return;
 		}
 		
@@ -191,7 +195,7 @@ namespace wowpp
 			destroy();
 			return;
 		}
-
+		
 		// The temporary result
 		auth::AuthResult result = auth::auth_result::FailUnknownAccount;
 
@@ -222,7 +226,7 @@ namespace wowpp
 				BigNumber gmod = constants::srp::g.modExp(m_b, constants::srp::N);
 				m_B = ((m_v * 3) + gmod) % constants::srp::N;
 
-				assert(gmod.getNumBytes() <= 32);
+				ASSERT(gmod.getNumBytes() <= 32);
 
 				m_unk3.setRand(16 * 8);
 				m_loginChallenge = true;
@@ -232,9 +236,10 @@ namespace wowpp
 		// Send packet
 		m_connection->sendSinglePacket(
 			std::bind(
-				auth::server_write::logonChallenge, 
+				auth::server_write::logonChallenge,
 				std::placeholders::_1,
 				result,
+				(auth::SecurityFlags)(auth::security_flags::None /*| auth::security_flags::MatrixInput*/),
 				std::cref(m_B),
 				std::cref(constants::srp::g),
 				std::cref(constants::srp::N),
@@ -247,12 +252,16 @@ namespace wowpp
 		if (m_accountId == 0)
 		{
 			WLOG("Tried to send logon proof before challenge");
+			m_connection->close();
+			destroy();
 			return;
 		}
 
 		if (m_session)
 		{
 			WLOG("Tried to send proof when already proofed!");
+			m_connection->close();
+			destroy();
 			return;
 		}
 		
@@ -279,6 +288,26 @@ namespace wowpp
 			return;
 		}
 
+		// TODO: Read pin input
+
+		// Read Matrix hash
+		if (securityFlags & auth::security_flags::MatrixInput)
+		{
+			SHA1Hash matrixHash;
+			if (!(packet >> io::read_range(matrixHash)))
+			{
+				ELOG("Could not read matrix card hash");
+				destroy();
+				return;
+			}
+
+			// TODO: Make sure that the hash matches...
+			//sha1PrintHex(std::cout, matrixHash);
+			//std::cout << std::endl;
+		}
+
+		// TODO: Token
+
 		SHA1Hash hash;
 
 		// Check if the client version is valid (SUPPORTED_CLIENT_BUILD is set in CMake)
@@ -291,6 +320,7 @@ namespace wowpp
 					auth::server_write::logonChallenge,
 					std::placeholders::_1,
 					auth::auth_result::FailVersionInvalid,
+					auth::security_flags::None,
 					std::cref(m_B),
 					std::cref(constants::srp::g),
 					std::cref(constants::srp::N),
@@ -308,6 +338,7 @@ namespace wowpp
 		{
 			ELOG("Detected invalid A value from client");
 			m_connection->close();
+			destroy();
 			return;
 		}
 
@@ -432,12 +463,16 @@ namespace wowpp
 		if (!auth::client_read::reconnectChallenge(packet, m_version1, m_version2, m_version3, m_build, m_platform, m_system, m_locale, m_userName))
 		{
 			ELOG("Could not read packet CMD_AUTH_RECONNECT_CHALLENGE");
+			m_connection->close();
+			destroy();
 			return;
 		}
 
 		if (m_accountId != 0)
 		{
 			WLOG("Player tried to reconnect again!");
+			m_connection->close();
+			destroy();
 			return;
 		}
 		
@@ -454,6 +489,7 @@ namespace wowpp
 			m_accountId == 0)
 		{
 			WLOG("Unknown account!");
+			m_connection->close();
 			destroy();
 			return;
 		}
@@ -475,18 +511,24 @@ namespace wowpp
 		if (m_accountId == 0 || !m_reconnectProof.getNumBytes() || m_userName.empty())
 		{
 			WLOG("Tried to send logon proof before challenge");
+			m_connection->close();
+			destroy();
 			return;
 		}
 
 		if (m_session)
 		{
 			WLOG("Tried to send proof when already proofed!");
+			m_connection->close();
+			destroy();
 			return;
 		}
 		
 		if (!m_reconnectChallenge || m_loginChallenge)
 		{
 			WLOG("Tried to send reconnect proof without proper challenge request");
+			m_connection->close();
+			destroy();
 			return;
 		}
 
@@ -497,6 +539,8 @@ namespace wowpp
 		if (!auth::client_read::reconnectProof(packet, R1, R2, R3, keyNum))
 		{
 			ELOG("Could not read packet CMD_AUTH_RECONNECT_PROOF");
+			m_connection->close();
+			destroy();
 			return;
 		}
 
@@ -516,6 +560,7 @@ namespace wowpp
 		if (hash != R2)
 		{
 			WLOG("User " << m_userName << " tried to log in, but session is invalid!");
+			m_connection->close();
 			destroy();
 			return;
 		}
@@ -536,13 +581,39 @@ namespace wowpp
 		// Read realm list packet
 		if (!auth::client_read::realmList(packet))
 		{
+			m_connection->close();
+			destroy();
 			return;
 		}
 
 		// Are we authentificated?
 		if (!isAuthentificated())
 		{
+			m_connection->close();
+			destroy();
 			return;
+		}
+
+		// Realm list request spam protection
+		GameTime now = getCurrentTime();
+		if (now < m_nextRealmRequest)
+		{
+			// Increase realm request counter
+			m_realmRequestCount++;
+
+			// Limit to three requests every 10 seconds
+			if (m_realmRequestCount > 3)
+			{
+				m_connection->close();
+				destroy();
+				return;
+			}
+		}
+		else
+		{
+			// Only one realm list request every 10 seconds
+			m_nextRealmRequest = now + constants::OneSecond * 10;
+			m_realmRequestCount = 0;
 		}
 
 		// Collect list of available realms
@@ -557,7 +628,7 @@ namespace wowpp
 		}
 
 		// It seems that vanilla wow does not support more than 255 realms
-		assert(realms.size() < std::numeric_limits<UInt8>::max());
+		ASSERT(realms.size() < std::numeric_limits<UInt8>::max());
 
 		// Send realm list
 		m_connection->sendSinglePacket(

@@ -32,6 +32,7 @@ namespace wowpp
 		    const PrepareParameters &parameters,
 		    const UpdateListProperties &listProperties,
 		    const std::string &source,
+			const std::string &parseDir,
 		    const std::string &destination,
 		    const sff::read::tree::Array<std::string::const_iterator> &entries,
 		    IFileEntryHandler &handler
@@ -52,6 +53,7 @@ namespace wowpp
 				                      listProperties,
 				                      *entry,
 				                      source,
+									  parseDir,
 				                      destination,
 				                      handler
 				                  ));

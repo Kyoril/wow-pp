@@ -45,6 +45,6 @@ namespace wowpp
 
 	private:
 
-		boost::signals2::scoped_connection m_onLootCleared;
+		simple::scoped_connection m_onLootCleared;
 	};
 }

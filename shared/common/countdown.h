@@ -22,7 +22,6 @@
 #pragma once
 
 #include "clock.h"
-#include "simple.hpp"
 
 namespace wowpp
 {

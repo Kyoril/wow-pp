@@ -25,8 +25,13 @@
 
 namespace wowpp
 {
-	class TimerQueue : public boost::noncopyable
+	class TimerQueue
 	{
+	private:
+
+		TimerQueue(const TimerQueue &Other) = delete;
+		TimerQueue &operator=(const TimerQueue &Other) = delete;
+
 	public:
 
 		typedef std::function<void ()> EventCallback;

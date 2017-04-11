@@ -66,12 +66,17 @@ namespace wowpp
 		typedef axis_id::Type AxisID;
 
 		/// 
-		class TransformWidget final : public boost::noncopyable
+		class TransformWidget final
 		{
+		private:
+
+			TransformWidget(const TransformWidget &Other) = delete;
+			TransformWidget &operator=(const TransformWidget &Other) = delete;
+
 		public:
 			
-			typedef boost::signals2::signal<void()> ModeChangeSignal;
-			typedef boost::signals2::signal<void()> CoordinateSystemChangeSignal;
+			typedef simple::signal<void()> ModeChangeSignal;
+			typedef simple::signal<void()> CoordinateSystemChangeSignal;
 
 			ModeChangeSignal modeChanged;
 			CoordinateSystemChangeSignal coordinateSystemChanged;
@@ -285,7 +290,7 @@ namespace wowpp
 			bool m_sleep;
 			Ogre::Vector3 m_camDir;
 			bool m_visible;
-			boost::signals2::scoped_connection m_objectMovedCon;
+			simple::scoped_connection m_objectMovedCon, m_onSelectionChanged;
 
 			// Translation-Mode variables
 			Ogre::ManualObject *m_axisLines;

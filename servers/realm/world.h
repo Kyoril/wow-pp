@@ -26,6 +26,7 @@
 #include "wowpp_protocol/wowpp_world_realm.h"
 #include "game/game_character.h"
 #include "common/linear_set.h"
+#include "game/mail.h"
 
 namespace wowpp
 {
@@ -41,12 +42,16 @@ namespace wowpp
 	/// World connection class.
 	class World final
 			: public pp::IConnectionListener
-			, public boost::noncopyable
 	{
+	private:
+
+		World(const World &Other) = delete;
+		World &operator=(const World &Other) = delete;
+
 	public:
 
 		typedef AbstractConnection<pp::Protocol> Client;
-		typedef boost::signals2::signal<void()> DisconnectedSignal;
+		typedef simple::signal<void()> DisconnectedSignal;
 
 		typedef std::vector<UInt32> MapList;
 		typedef LinearSet<UInt32> InstanceList;
@@ -73,7 +78,7 @@ namespace wowpp
 						String realmName);
 
 		/// Gets the player connection class used to send packets to the client.
-		Client &getConnection() { assert(m_connection); return *m_connection; }
+		Client &getConnection() { ASSERT(m_connection); return *m_connection; }
 		/// Gets the player manager which manages all connected worlds.
 		WorldManager &getManager() const { return m_manager; }
 		/// Determines whether a specific map id is supported by this world node.
@@ -137,5 +142,6 @@ namespace wowpp
 		void handleQuestUpdate(pp::IncomingPacket &packet);
 		void handleCharacterSpawned(pp::IncomingPacket &packet);
 		void handleMailDraft(pp::IncomingPacket &packet);
+		void handleMailGetList(pp::IncomingPacket &packet);
 	};
 }

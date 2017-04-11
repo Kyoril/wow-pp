@@ -30,6 +30,7 @@
 #include "loot_dialog.h"
 #include "choose_trigger_dialog.h"
 #include "creature_spell_dialog.h"
+#include "choose_variables_dialog.h"
 #include "spell_effect_dialog.h"
 #include "game/defines.h"
 #include "import_dialog.h"
@@ -45,9 +46,11 @@ namespace wowpp
 			, m_ui(new Ui::ObjectEditor())
 			, m_selectedUnit(nullptr)
 			, m_selectedSpell(nullptr)
+			, m_selectedSkill(nullptr)
 			, m_selectedQuest(nullptr)
 			, m_selectedObject(nullptr)
 			, m_selectedItem(nullptr)
+			, m_selectionChanging(false)
 		{
 			m_ui->setupUi(this);
 
@@ -86,8 +89,54 @@ namespace wowpp
 			m_objectFilter->setSourceModel(app.getObjectListModel());
 			m_ui->objectsListView->setModel(m_objectFilter);
 
+			m_skillFilter = new QSortFilterProxyModel;
+			m_skillFilter->setSourceModel(app.getSkillListModel());
+			m_ui->skillsListView->setModel(m_skillFilter);
+
 			// Map selection box
 			m_ui->spellTeleportMapBox->setModel(app.getMapListModel());
+
+			// Connect checkbox signals
+			for (UInt32 i = 1; i <= game::race::Max; ++i)
+			{
+				QCheckBox *box = m_ui->spellRaceBox->findChild<QCheckBox*>(QString("race_%1").arg(i));
+				if (box)
+				{
+					connect(box,
+						SIGNAL(stateChanged(int)),
+						this, SLOT(onRaceClassChanged(int)));
+				}
+			}
+			for (UInt32 i = 1; i <= game::char_class::Max; ++i)
+			{
+				QCheckBox *box = m_ui->spellClassBox->findChild<QCheckBox*>(QString("class_%1").arg(i));
+				if (box)
+				{
+					connect(box,
+						SIGNAL(stateChanged(int)),
+						this, SLOT(onRaceClassChanged(int)));
+				}
+			}
+			for (UInt32 i = 1; i <= 30; ++i)
+			{
+				QCheckBox *box = m_ui->mechanicImmunityBox->findChild<QCheckBox*>(QString("mech_flag_%1").arg(i));
+				if (box)
+				{
+					connect(box,
+						SIGNAL(stateChanged(int)),
+						this, SLOT(onMechanicImmunityChanged(int)));
+				}
+			}
+			for (UInt32 i = 1; i <= game::spell_school::End; ++i)
+			{
+				QCheckBox *box = m_ui->schoolImmunityBox->findChild<QCheckBox*>(QString("school_flag_%1").arg(i));
+				if (box)
+				{
+					connect(box,
+						SIGNAL(stateChanged(int)),
+						this, SLOT(onSchoolImmunityChanged(int)));
+				}
+			}
 
 			connect(m_ui->unitsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
@@ -95,6 +144,9 @@ namespace wowpp
 			connect(m_ui->spellsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onSpellSelectionChanged(QItemSelection, QItemSelection)));
+			connect(m_ui->skillsListView->selectionModel(),
+				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+				this, SLOT(onSkillSelectionChanged(QItemSelection, QItemSelection)));
 			connect(m_ui->itemsListView->selectionModel(),
 				SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 				this, SLOT(onItemSelectionChanged(QItemSelection, QItemSelection)));
@@ -124,6 +176,15 @@ namespace wowpp
 
 			QRegExp regExp(m_ui->spellFilter->text(), caseSensitivity, syntax);
 			m_spellFilter->setFilterRegExp(regExp);
+		}
+
+		void ObjectEditor::on_skillFilter_editingFinished()
+		{
+			QRegExp::PatternSyntax syntax = QRegExp::RegExp;
+			Qt::CaseSensitivity caseSensitivity = Qt::CaseInsensitive;
+
+			QRegExp regExp(m_ui->skillFilter->text(), caseSensitivity, syntax);
+			m_skillFilter->setFilterRegExp(regExp);
 		}
 
 		void ObjectEditor::on_itemFilter_editingFinished()
@@ -366,6 +427,8 @@ namespace wowpp
 			if (!unit)
 				return;
 
+			m_selectionChanging = true;
+
 			m_ui->unitQuestWidget->clear();
 			for (const auto &questid : unit->quests())
 			{
@@ -553,8 +616,9 @@ namespace wowpp
 			WOWPP_INDEXED_NUM_PROPERTY("Arcane Resistance", UInt32, UInt32Ref, resistances, 5, false);
 			WOWPP_MIN_MAX_PROPERTY("Loot Gold", UInt32, UInt32Ref, lootgold, false);
 			WOWPP_MIN_MAX_PROPERTY("Experience", UInt32, UInt32Ref, levelxp, false);
-			WOWPP_NUM_PROPERTY("Mechanic Immunity", UInt32, UInt32Ref, mechanicimmunity, false);
-			WOWPP_NUM_PROPERTY("School Immunity", UInt32, UInt32Ref, schoolimmunity, false);
+			//WOWPP_NUM_PROPERTY("Mechanic Immunity", UInt32, UInt32Ref, mechanicimmunity, false);
+			//WOWPP_NUM_PROPERTY("School Immunity", UInt32, UInt32Ref, schoolimmunity, false);
+			WOWPP_NUM_PROPERTY("Kill Credit", UInt32, UInt32Ref, killcredit, false);
 
 #undef WOWPP_MIN_MAX_PROPERTY
 #undef WOWPP_STR_PROPERTY
@@ -574,11 +638,47 @@ namespace wowpp
 				}
 			}
 
+			m_ui->unitVariableWidget->clear();
+			for (const auto &variableId : unit->variables())
+			{
+				const auto *variableEntry = m_application.getProject().variables.getById(variableId);
+				if (variableEntry)
+				{
+					m_ui->unitVariableWidget->addItem(
+						QString(variableEntry->name().c_str()));
+				}
+			}
+
 			m_ui->treeWidget->clear();
 			for (const auto &creatureSpell : unit->creaturespells())
 			{
 				addSpellEntry(creatureSpell);
 			}
+
+			for (size_t i = 0; i < game::spell_school::End; ++i)
+			{
+				UInt32 flag = 1 << i;
+
+				QCheckBox *box = m_ui->schoolImmunityBox->findChild<QCheckBox*>(QString("school_flag_%1").arg(i + 1));
+				if (box)
+				{
+					const bool hasAttribute = (unit->schoolimmunity() & flag) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+			for (size_t i = 0; i < 30; ++i)
+			{
+				UInt32 flag = 1 << i;
+
+				QCheckBox *box = m_ui->mechanicImmunityBox->findChild<QCheckBox*>(QString("mech_flag_%1").arg(i + 1));
+				if (box)
+				{
+					const bool hasAttribute = (unit->mechanicimmunity() & flag) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+
+			m_selectionChanging = false;
 		}
 		
 		void ObjectEditor::on_unitPropertyWidget_doubleClicked(QModelIndex index)
@@ -733,11 +833,13 @@ namespace wowpp
 			if (!spell)
 				return;
 
+			m_selectionChanging = true;
 			m_selectedSpell = spell;
 
 			m_ui->spellIdField->setText(QString::number(spell->id()));
 			m_ui->spellNameField->setText(spell->name().c_str());
 			m_ui->spellMechanicField->setText(QString::number(spell->mechanic()));
+			m_ui->spellRankField->setText(QString::number(spell->rank()));
 
 			// Determine the cast time of this spell
 			Int64 castTime = spell->casttime();
@@ -748,6 +850,7 @@ namespace wowpp
 			m_ui->costField->setText(QString::number(spell->cost()));
 			m_ui->lineEdit_6->setText(QString::number(spell->family()));
 			m_ui->lineEdit_7->setText(QString("0x") + QString::number(spell->familyflags(), 16).toUpper().rightJustified(16, QLatin1Char('0')));
+			m_ui->spellSkillField->setText(QString::number(spell->skill()));
 
 			const bool hasBaseId = (spell->id() != spell->baseid());
 			m_ui->txtBaseSpell->setText(QString("%1").arg(spell->baseid()));
@@ -834,6 +937,7 @@ namespace wowpp
 			m_ui->spellTeleportZBox->setValue(spell->targetz());
 			m_ui->spellTeleportOBox->setValue(spell->targeto());
 
+			// Add linked spells
 			m_ui->spellLinkedSpellList->clear();
 			for (const auto &spellId : spell->additionalspells())
 			{
@@ -841,6 +945,39 @@ namespace wowpp
 				if (linkedSpell)
 				{
 					m_ui->spellLinkedSpellList->addItem(QString("%1 - %2").arg(spellId).arg(linkedSpell->name().c_str()));
+				}
+			}
+
+			// Add spell reagents
+			m_ui->spellReagentList->clear();
+			for (const auto &reagent : spell->reagents())
+			{
+				const auto *reagentItem = m_application.getProject().items.getById(reagent.item());
+				if (reagentItem)
+				{
+					m_ui->spellReagentList->addItem(QString("%1x %2 [%3]").arg(reagent.count()).arg(reagentItem->name().c_str()).arg(reagent.item()));
+				}
+			}
+
+			// Race list
+			for (UInt32 i = 1; i <= game::race::Max; ++i)
+			{
+				QCheckBox *box = m_ui->spellRaceBox->findChild<QCheckBox*>(QString("race_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = spell->racemask() == 0 || (spell->racemask() & (1 << (i - 1))) != 0;
+					box->setChecked(hasAttribute);
+				}
+			}
+
+			// Class list
+			for (UInt32 i = 1; i <= game::char_class::Max; ++i)
+			{
+				QCheckBox *box = m_ui->spellClassBox->findChild<QCheckBox*>(QString("class_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = spell->classmask() == 0 || (spell->classmask() & (1 << (i - 1))) != 0;
+					box->setChecked(hasAttribute);
 				}
 			}
 
@@ -912,6 +1049,47 @@ namespace wowpp
 					}
 
 					button->setText(effectName);
+				}
+			}
+
+			m_selectionChanging = false;
+		}
+
+		void ObjectEditor::onSkillSelectionChanged(const QItemSelection & selection, const QItemSelection & old)
+		{
+			// Get the selected unit
+			m_selectedSkill = nullptr;
+			if (selection.isEmpty())
+				return;
+
+			QItemSelection source = m_skillFilter->mapSelectionToSource(selection);
+			if (source.isEmpty())
+				return;
+
+			int index = source.indexes().first().row();
+			if (index < 0)
+			{
+				return;
+			}
+
+			// Get skill entry
+			auto *skill = m_application.getProject().skills.getTemplates().mutable_entry(index);
+			if (!skill)
+				return;
+
+			m_selectedSkill = skill;
+
+			m_ui->skillIdField->setText(QString::number(skill->id()));
+			m_ui->skillNameField->setText(skill->name().c_str());
+
+			// Add linked spells
+			m_ui->skillLearnedSpellList->clear();
+			for (const auto &spellId : skill->spells())
+			{
+				const auto *linkedSpell = m_application.getProject().spells.getById(spellId);
+				if (linkedSpell)
+				{
+					m_ui->skillLearnedSpellList->addItem(QString("%1 - %2").arg(spellId).arg(linkedSpell->name().c_str()));
 				}
 			}
 		}
@@ -1289,6 +1467,17 @@ namespace wowpp
 #undef WOWPP_STR_PROPERTY
 #undef WOWPP_NUM_PROPERTY
 
+			m_ui->objectVariableWidget->clear();
+			for (const auto &variableId : object->variables())
+			{
+				const auto *variableEntry = m_application.getProject().variables.getById(variableId);
+				if (variableEntry)
+				{
+					m_ui->objectVariableWidget->addItem(
+						QString(variableEntry->name().c_str()));
+				}
+			}
+
 			// Update the view 
 			m_objectViewModel->layoutChanged();
 		}
@@ -1378,6 +1567,186 @@ namespace wowpp
 			}
 		}
 
+		void ObjectEditor::on_unitAddVarBtn_clicked()
+		{
+			if (!m_selectedUnit)
+				return;
+
+			ChooseVariablesDialog dialog(m_application);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+				const auto &selected  = dialog.getSelected();
+				for (const auto *newVar : selected)
+				{
+					if (newVar)
+					{
+						auto it = std::find_if(m_selectedUnit->variables().begin(), m_selectedUnit->variables().end(), [&newVar](const UInt32 &variable) -> bool
+						{
+							return (variable == newVar->id());
+						});
+
+						if (it == m_selectedUnit->variables().end())
+						{
+							m_selectedUnit->mutable_variables()->Add(newVar->id());
+							m_ui->unitVariableWidget->addItem(
+								QString(newVar->name().c_str()));
+
+							m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+						}
+					}
+				}
+			}
+		}
+
+		void ObjectEditor::on_objectAddVarBtn_clicked()
+		{
+			if (!m_selectedObject)
+				return;
+
+			ChooseVariablesDialog dialog(m_application);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+				const auto &selected = dialog.getSelected();
+				for (const auto *newVar : selected)
+				{
+					if (newVar)
+					{
+						auto it = std::find_if(m_selectedObject->variables().begin(), m_selectedObject->variables().end(), [&newVar](const UInt32 &variable) -> bool
+						{
+							return (variable == newVar->id());
+						});
+
+						if (it == m_selectedObject->variables().end())
+						{
+							m_selectedObject->mutable_variables()->Add(newVar->id());
+							m_ui->objectVariableWidget->addItem(
+								QString(newVar->name().c_str()));
+
+							m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Objects, pp::editor_team::data_entry_change_type::Modified);
+						}
+					}
+				}
+			}
+		}
+
+		void ObjectEditor::onRaceClassChanged(int state)
+		{
+			if (!m_selectedSpell)
+				return;
+
+			if (m_selectionChanging)
+				return;
+
+			bool hasMissingEntry = false;
+
+			// Build spells race mask
+			UInt32 raceMask = 0;
+			for (UInt32 i = 1; i <= game::race::Max; ++i)
+			{
+				QCheckBox *box = m_ui->spellRaceBox->findChild<QCheckBox*>(QString("race_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = box->isChecked();
+					if (hasAttribute)
+					{
+						raceMask |= (1 << (i - 1));
+					}
+					else
+					{
+						hasMissingEntry = true;
+					}
+				}
+			}
+
+			if (!hasMissingEntry)
+				raceMask = 0;
+
+			hasMissingEntry = false;
+
+			// Build spells class mask
+			UInt32 classMask = 0;
+			for (UInt32 i = 1; i <= game::char_class::Max; ++i)
+			{
+				QCheckBox *box = m_ui->spellClassBox->findChild<QCheckBox*>(QString("class_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = box->isChecked();
+					if (hasAttribute)
+					{
+						classMask |= (1 << (i - 1));
+					}
+					else
+					{
+						hasMissingEntry = true;
+					}
+				}
+			}
+
+			if (!hasMissingEntry)
+				classMask = 0;
+
+			// Update spell
+			m_selectedSpell->set_racemask(raceMask);
+			m_selectedSpell->set_classmask(classMask);
+			m_application.markAsChanged(m_selectedSpell->id(), pp::editor_team::data_entry_type::Spells, pp::editor_team::data_entry_change_type::Modified);
+		}
+
+		void ObjectEditor::onMechanicImmunityChanged(int state)
+		{
+			if (!m_selectedUnit)
+				return;
+
+			if (m_selectionChanging)
+				return;
+
+			// Build mask
+			UInt32 mask = 0;
+			for (UInt32 i = 1; i <= 30; ++i)
+			{
+				QCheckBox *box = m_ui->mechanicImmunityBox->findChild<QCheckBox*>(QString("mech_flag_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = box->isChecked();
+					if (hasAttribute)
+					{
+						mask |= (1 << (i - 1));
+					}
+				}
+			}
+
+			m_selectedUnit->set_mechanicimmunity(mask);
+			m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+		}
+
+		void ObjectEditor::onSchoolImmunityChanged(int state)
+		{
+			if (!m_selectedUnit)
+				return;
+
+			if (m_selectionChanging)
+				return;
+
+			// Build mask
+			UInt32 mask = 0;
+			for (UInt32 i = 1; i <= game::spell_school::End; ++i)
+			{
+				QCheckBox *box = m_ui->schoolImmunityBox->findChild<QCheckBox*>(QString("school_flag_%1").arg(i));
+				if (box)
+				{
+					const bool hasAttribute = box->isChecked();
+					if (hasAttribute)
+					{
+						mask |= (1 << (i - 1));
+					}
+				}
+			}
+
+			m_selectedUnit->set_schoolimmunity(mask);
+			m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+		}
+
 		void ObjectEditor::on_objectRemoveTriggerBtn_clicked()
 		{
 			if (!m_selectedObject)
@@ -1404,7 +1773,6 @@ namespace wowpp
 				m_application.markAsChanged(m_selectedObject->id(), pp::editor_team::data_entry_type::Objects, pp::editor_team::data_entry_change_type::Modified);
 			}
 		}
-
 
 		void ObjectEditor::on_lootSimulatorButton_clicked()
 		{
@@ -1490,6 +1858,11 @@ namespace wowpp
 				{
 					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
 					unit->set_unitlootentry(0);
+					m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+				}
+				for (const auto &it : m_application.getProject().unitLoot.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::UnitLoot, pp::editor_team::data_entry_change_type::Removed);
 				}
 				m_application.getProject().unitLoot.clear();
 			};
@@ -1518,7 +1891,8 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					m_application.getProject().unitLoot.add(entry);
+					auto *added = m_application.getProject().unitLoot.add(entry);
+					m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::UnitLoot, pp::editor_team::data_entry_change_type::Added);
 
 					lastEntry = entry;
 					lastGroup = groupId;
@@ -1544,6 +1918,7 @@ namespace wowpp
 					else
 					{
 						unitEntry->set_unitlootentry(lootEntry->id());
+						m_application.markAsChanged(unitEntry->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 					}
 				}
 
@@ -1594,6 +1969,11 @@ namespace wowpp
 				{
 					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
 					unit->set_vendorentry(0);
+					m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+				}
+				for (const auto &it : m_application.getProject().vendors.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::Vendors, pp::editor_team::data_entry_change_type::Removed);
 				}
 				m_application.getProject().vendors.clear();
 			};
@@ -1617,7 +1997,8 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					m_application.getProject().vendors.add(entry);
+					auto *added = m_application.getProject().vendors.add(entry);
+					m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::Vendors, pp::editor_team::data_entry_change_type::Added);
 
 					lastEntry = entry;
 					created = true;
@@ -1649,6 +2030,7 @@ namespace wowpp
 					else
 					{
 						unitEntry->set_vendorentry(vendorEntry->id());
+						m_application.markAsChanged(unitEntry->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 					}
 				}
 
@@ -1671,6 +2053,11 @@ namespace wowpp
 				{
 					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
 					unit->set_trainerentry(0);
+					m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+				}
+				for (const auto &it : m_application.getProject().trainers.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::Trainers, pp::editor_team::data_entry_change_type::Removed);
 				}
 				m_application.getProject().trainers.clear();
 			};
@@ -1695,7 +2082,8 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					m_application.getProject().trainers.add(entry);
+					auto *added = m_application.getProject().trainers.add(entry);
+					m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::Trainers, pp::editor_team::data_entry_change_type::Added);
 
 					lastEntry = entry;
 					created = true;
@@ -1741,6 +2129,10 @@ namespace wowpp
 				"`PointMapId`, `PointX`, `PointY`, `PointOpt`, `RequiredRaces`, `RequiredClasses`, `RequiredSkill`, `RequiredSkillValue`"
 				" FROM `wowpp_quests` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
+				for (const auto &it : m_application.getProject().quests.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::Quests, pp::editor_team::data_entry_change_type::Removed);
+				}
 				m_application.getProject().quests.clear();
 			};
 			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
@@ -1761,6 +2153,7 @@ namespace wowpp
 				row.getField(index++, end);
 
 				auto *added = m_application.getProject().quests.add(entry);
+				m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::Quests, pp::editor_team::data_entry_change_type::Added);
 				added->set_name(title.c_str());
 				added->set_method(method);
 				added->set_minlevel(minlevel);
@@ -1977,6 +2370,11 @@ namespace wowpp
 				{
 					auto *object = m_application.getProject().objects.getTemplates().mutable_entry(i);
 					object->set_objectlootentry(0);
+					m_application.markAsChanged(object->id(), pp::editor_team::data_entry_type::Objects, pp::editor_team::data_entry_change_type::Modified);
+				}
+				for (const auto &it : m_application.getProject().objectLoot.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::ObjectLoot, pp::editor_team::data_entry_change_type::Removed);
 				}
 				m_application.getProject().objectLoot.clear();
 			};
@@ -2005,7 +2403,8 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					m_application.getProject().objectLoot.add(entry);
+					auto *added = m_application.getProject().objectLoot.add(entry);
+					m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::ObjectLoot, pp::editor_team::data_entry_change_type::Added);
 
 					lastEntry = entry;
 					lastGroup = groupId;
@@ -2031,6 +2430,7 @@ namespace wowpp
 					else
 					{
 						objectEntry->set_objectlootentry(lootEntry->id());
+						m_application.markAsChanged(objectEntry->id(), pp::editor_team::data_entry_type::Objects, pp::editor_team::data_entry_change_type::Modified);
 					}
 				}
 
@@ -2093,6 +2493,11 @@ namespace wowpp
 				{
 					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
 					unit->set_skinninglootentry(0);
+					m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+				}
+				for (const auto &it : m_application.getProject().skinningLoot.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::SkinningLoot, pp::editor_team::data_entry_change_type::Removed);
 				}
 				m_application.getProject().skinningLoot.clear();
 			};
@@ -2121,7 +2526,8 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					m_application.getProject().skinningLoot.add(entry);
+					auto *added = m_application.getProject().skinningLoot.add(entry);
+					m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::SkinningLoot, pp::editor_team::data_entry_change_type::Added);
 
 					lastEntry = entry;
 					lastGroup = groupId;
@@ -2147,6 +2553,7 @@ namespace wowpp
 					else
 					{
 						unitEntry->set_skinninglootentry(lootEntry->id());
+						m_application.markAsChanged(unitEntry->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 					}
 				}
 
@@ -2203,6 +2610,11 @@ namespace wowpp
 				{
 					auto *object = m_application.getProject().items.getTemplates().mutable_entry(i);
 					object->set_lootentry(0);
+					m_application.markAsChanged(object->id(), pp::editor_team::data_entry_type::Items, pp::editor_team::data_entry_change_type::Modified);
+				}
+				for (const auto &it : m_application.getProject().itemLoot.getTemplates().entry())
+				{
+					m_application.markAsChanged(it.id(), pp::editor_team::data_entry_type::ItemLoot, pp::editor_team::data_entry_change_type::Removed);
 				}
 				m_application.getProject().itemLoot.clear();
 			};
@@ -2231,7 +2643,8 @@ namespace wowpp
 				bool created = false;
 				if (entry > lastEntry)
 				{
-					m_application.getProject().itemLoot.add(entry);
+					auto *added = m_application.getProject().itemLoot.add(entry);
+					m_application.markAsChanged(added->id(), pp::editor_team::data_entry_type::ItemLoot, pp::editor_team::data_entry_change_type::Added);
 
 					lastEntry = entry;
 					lastGroup = groupId;
@@ -2257,6 +2670,7 @@ namespace wowpp
 					else
 					{
 						objectEntry->set_lootentry(lootEntry->id());
+						m_application.markAsChanged(lootEntry->id(), pp::editor_team::data_entry_type::Items, pp::editor_team::data_entry_change_type::Modified);
 					}
 				}
 
@@ -2307,6 +2721,7 @@ namespace wowpp
 			task.countQuery = "SELECT COUNT(*) FROM `creature_template`;";
 			task.selectQuery = "SELECT `entry`, `resistance1`, `resistance2`, `resistance3`, `resistance4`, `resistance5`, `resistance6`, `mechanic_immune_mask` FROM `creature_template` ORDER BY `entry`;";
 			task.beforeImport = [this]() {
+				
 			};
 			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
 				UInt32 entry = 0;
@@ -2321,6 +2736,8 @@ namespace wowpp
 					ELOG("Skipping unit " << entry << " as it couldn't be found!");
 					return true;
 				}
+
+				m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
 
 				UInt32 schoolImmunity = 0;
 
@@ -2358,6 +2775,213 @@ namespace wowpp
 			dialog.exec();
 		}
 
+		void ObjectEditor::on_actionImport_Gold_Loot_triggered()
+		{
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `wowpp_creature_coindrops`;";
+			task.selectQuery = "SELECT `Entry`, `min`, `max` FROM `wowpp_creature_coindrops` WHERE `min` > 0 OR `max` > 0 ORDER BY `Entry`;";
+			task.beforeImport = [this]() {
+				for (int i = 0; i < m_application.getProject().units.getTemplates().entry_size(); ++i)
+				{
+					auto *unit = m_application.getProject().units.getTemplates().mutable_entry(i);
+					if (unit->has_minlootgold() || unit->has_maxlootgold())
+					{
+						m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+					}
+
+					unit->clear_minlootgold();
+					unit->clear_maxlootgold();
+				}
+			};
+			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0, minGold = 0, maxGold = 0;
+				UInt32 index = 0;
+				row.getField(index++, entry);
+				row.getField(index++, minGold);
+				row.getField(index++, maxGold);
+
+				// Find creature
+				auto *unit = m_application.getProject().units.getById(entry);
+				if (!unit)
+				{
+					ELOG("Skipping unit " << entry << " as it couldn't be found!");
+					return true;
+				}
+
+				if (unit->minlootgold() != minGold || unit->maxlootgold() != maxGold)
+				{
+					unit->set_minlootgold(minGold);
+					unit->set_maxlootgold(maxGold);
+					m_application.markAsChanged(unit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+				}
+				return true;
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
+
+		void ObjectEditor::on_actionImport_Items_triggered()
+		{
+			ImportTask task;
+			task.countQuery = "SELECT COUNT(*) FROM `item_template`;";
+			task.selectQuery = "SELECT `entry`, `class`, `subclass`, `name`, `displayid`, `Quality`, `Flags`, `BuyCount`, `BuyPrice`,"
+				"`SellPrice`, `InventoryType`, `AllowableClass`, `AllowableRace`, `ItemLevel`,"
+				"`RequiredLevel`, `RequiredSkill`, `RequiredSkillRank`, `requiredspell`, `requiredhonorrank`,"
+				"`RequiredCityRank`, `RequiredReputationFaction`, `RequiredReputationRank`, `maxcount`, `stackable`,"
+				"`ContainerSlots`, `stat_type1`, `stat_value1`, `stat_type2`, `stat_value2`,"
+				"`stat_type3`, `stat_value3`, `stat_type4`, `stat_value4`, `stat_type5`,"
+				"`stat_value5`, `stat_type6`, `stat_value6`, `stat_type7`, `stat_value7`,"
+				"`stat_type8`, `stat_value8`, `stat_type9`, `stat_value9`, `stat_type10`,"
+				"`stat_value10`, `dmg_min1`, `dmg_max1`, `dmg_type1`, `dmg_min2`,"
+				"`dmg_max2`, `dmg_type2`, `dmg_min3`, `dmg_max3`, `dmg_type3`,"
+				"`dmg_min4`, `dmg_max4`, `dmg_type4`, `dmg_min5`, `dmg_max5`,"
+				"`dmg_type5`, `armor`, `holy_res`, `fire_res`, `nature_res`,"
+				"`frost_res`, `shadow_res`, `arcane_res`, `delay`, `ammo_type`,"
+				"`RangedModRange`, `spellid_1`, `spelltrigger_1`, `spellcharges_1`, `spellppmRate_1`,"
+				"`spellcooldown_1`, `spellcategory_1`, `spellcategorycooldown_1`,"
+				"`spellid_2`, `spelltrigger_2`, `spellcharges_2`, `spellppmRate_2`,"
+				"`spellcooldown_2`, `spellcategory_2`, `spellcategorycooldown_2`,"
+				"`spellid_3`, `spelltrigger_3`, `spellcharges_3`, `spellppmRate_3`,"
+				"`spellcooldown_3`, `spellcategory_3`, `spellcategorycooldown_3`,"
+				"`spellid_4`, `spelltrigger_4`, `spellcharges_4`, `spellppmRate_4`,"
+				"`spellcooldown_4`, `spellcategory_4`, `spellcategorycooldown_4`,"
+				"`spellid_5`, `spelltrigger_5`, `spellcharges_5`, `spellppmRate_5`,"
+				"`spellcooldown_5`, `spellcategory_5`, `spellcategorycooldown_5`,"
+				"`bonding`, `description`, `PageText`, `LanguageID`, `PageMaterial`,"
+				"`startquest`, `lockid`, `Material`, `sheath`, `RandomProperty`,"
+				"`RandomSuffix`, `block`, `itemset`, `MaxDurability`, `area`,"
+				"`Map`, `BagFamily`, `TotemCategory`, `socketColor_1`, `socketContent_1`,"
+				"`socketColor_2`, `socketContent_2`, `socketColor_3`, `socketContent_3`,"
+				"`socketBonus`, `GemProperties`, `RequiredDisenchantSkill`, `ArmorDamageModifier`, `ScriptName`,"
+				"`DisenchantID`, `FoodType`, `minMoneyLoot`, `maxMoneyLoot`, `Duration`, `ExtraFlags`"
+				" FROM `item_template`;";
+			task.beforeImport = [this]() {
+			};
+			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {
+				UInt32 entry = 0;
+				UInt32 index = 0;
+				row.getField(index++, entry);
+
+				bool wasAdded = false;
+				bool wasModified = false;
+
+				// Find item by entry
+				auto *itemEntry = m_application.getProject().items.getById(entry);
+				if (!itemEntry)
+				{
+					// Item doesn't exist yet
+					itemEntry = m_application.getProject().items.add(entry);
+					wasAdded = true;
+					ILOG("New item added: " << entry);
+				}
+
+				Int32 iTmp = 0;
+				String sVal;
+
+#define WOWPP_IMPORT_INT_VAL(name) \
+				iTmp = 0; \
+				row.getField(index++, iTmp); \
+				if (iTmp != itemEntry->name()) { wasModified = true; /*DLOG("Field "#name" changed: " << itemEntry->name() << " | " << iTmp);*/ } \
+				itemEntry->set_##name(iTmp);
+#define WOWPP_IMPORT_STR_VAL(name) \
+				sVal.clear(); \
+				row.getField(index++, sVal); \
+				if (sVal != itemEntry->name()) { wasModified = true; /*DLOG("Field "#name" changed: " << itemEntry->name() << " | " << sVal);*/ } \
+				itemEntry->set_##name(sVal);
+
+				WOWPP_IMPORT_INT_VAL(itemclass);
+				WOWPP_IMPORT_INT_VAL(subclass);
+				WOWPP_IMPORT_STR_VAL(name);
+				WOWPP_IMPORT_INT_VAL(displayid);
+				WOWPP_IMPORT_INT_VAL(quality);
+				WOWPP_IMPORT_INT_VAL(flags);
+				WOWPP_IMPORT_INT_VAL(buycount);
+				WOWPP_IMPORT_INT_VAL(buyprice);
+				WOWPP_IMPORT_INT_VAL(sellprice);
+				WOWPP_IMPORT_INT_VAL(inventorytype);
+				WOWPP_IMPORT_INT_VAL(allowedclasses);
+				WOWPP_IMPORT_INT_VAL(allowedraces);
+				WOWPP_IMPORT_INT_VAL(itemlevel);
+				WOWPP_IMPORT_INT_VAL(requiredlevel);
+				WOWPP_IMPORT_INT_VAL(requiredskill);
+				WOWPP_IMPORT_INT_VAL(requiredskillrank);
+				WOWPP_IMPORT_INT_VAL(requiredspell);
+				WOWPP_IMPORT_INT_VAL(requiredhonorrank);
+				WOWPP_IMPORT_INT_VAL(requiredcityrank);
+				WOWPP_IMPORT_INT_VAL(requiredrep);
+				WOWPP_IMPORT_INT_VAL(requiredreprank);
+				WOWPP_IMPORT_INT_VAL(maxcount);
+				WOWPP_IMPORT_INT_VAL(maxstack);
+				WOWPP_IMPORT_INT_VAL(containerslots);
+				index += 2 * 10;	// Stats
+				index += 3 * 5;		// Damage
+				WOWPP_IMPORT_INT_VAL(armor);
+				WOWPP_IMPORT_INT_VAL(holyres);
+				WOWPP_IMPORT_INT_VAL(fireres);
+				WOWPP_IMPORT_INT_VAL(natureres);
+				WOWPP_IMPORT_INT_VAL(frostres);
+				WOWPP_IMPORT_INT_VAL(shadowres);
+				WOWPP_IMPORT_INT_VAL(arcaneres);
+				WOWPP_IMPORT_INT_VAL(delay);
+				WOWPP_IMPORT_INT_VAL(ammotype);
+				index++;			// RangedModRange
+				index += 7 * 5;		// Spells
+				WOWPP_IMPORT_INT_VAL(bonding);
+				WOWPP_IMPORT_STR_VAL(description);
+				index++;			// PageText
+				index++;			// LanguageID
+				index++;			// PageMaterial
+				WOWPP_IMPORT_INT_VAL(questentry);
+				WOWPP_IMPORT_INT_VAL(lockid);
+				WOWPP_IMPORT_INT_VAL(material);
+				WOWPP_IMPORT_INT_VAL(sheath);
+				WOWPP_IMPORT_INT_VAL(randomproperty);
+				WOWPP_IMPORT_INT_VAL(randomsuffix);
+				WOWPP_IMPORT_INT_VAL(block);
+				WOWPP_IMPORT_INT_VAL(itemset);
+				WOWPP_IMPORT_INT_VAL(durability);
+				WOWPP_IMPORT_INT_VAL(area);
+				WOWPP_IMPORT_INT_VAL(map);
+				WOWPP_IMPORT_INT_VAL(bagfamily);
+				WOWPP_IMPORT_INT_VAL(totemcategory);
+				index += 2 * 3;		// Sockets
+				WOWPP_IMPORT_INT_VAL(socketbonus);
+				WOWPP_IMPORT_INT_VAL(gemproperties);
+				WOWPP_IMPORT_INT_VAL(disenchantskillval);
+				index++;			// ArmorDamageModified (float)
+				index++;			// ScriptName
+				WOWPP_IMPORT_INT_VAL(disenchantid);
+				WOWPP_IMPORT_INT_VAL(foodtype);
+				WOWPP_IMPORT_INT_VAL(minlootgold);
+				WOWPP_IMPORT_INT_VAL(maxlootgold);
+				WOWPP_IMPORT_INT_VAL(duration);
+				WOWPP_IMPORT_INT_VAL(extraflags);
+
+#undef WOWPP_IMPORT_STR_VAL
+#undef WOWPP_IMPORT_INT_VAL
+
+				/*if (!wasAdded && wasModified)
+					ILOG("Item modified: " << entry);*/
+
+				// Mark entry as changed
+				if (wasAdded)
+					m_application.markAsChanged(entry, pp::editor_team::data_entry_type::Items, pp::editor_team::data_entry_change_type::Added);
+				else if (wasModified)
+					m_application.markAsChanged(entry, pp::editor_team::data_entry_type::Items, pp::editor_team::data_entry_change_type::Modified);
+
+				return true;
+			};
+			task.afterImport = [this]() {
+				emit m_application.getItemListModel()->dataChanged(QModelIndex(), QModelIndex());
+			};
+
+			// Do import job
+			ImportDialog dialog(m_application, std::move(task));
+			dialog.exec();
+		}
+
 		void ObjectEditor::on_actionImport_Object_Spawns_triggered()
 		{
 			ImportTask task;
@@ -2368,6 +2992,7 @@ namespace wowpp
 				{
 					auto *map = m_application.getProject().maps.getTemplates().mutable_entry(i);
 					map->clear_objectspawns();
+					m_application.markAsChanged(map->id(), pp::editor_team::data_entry_type::Maps, pp::editor_team::data_entry_change_type::Modified);
 				}
 			};
 			task.onImport = [this](wowpp::MySQL::Row &row) -> bool {

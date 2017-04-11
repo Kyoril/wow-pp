@@ -28,8 +28,13 @@ namespace wowpp
 	class World;
 
 	/// Manages all connected worlds.
-	class WorldManager : public boost::noncopyable
+	class WorldManager final
 	{
+	private:
+
+		WorldManager(const WorldManager &Other) = delete;
+		WorldManager &operator=(const WorldManager &Other) = delete;
+
 	public:
 
 		typedef std::vector<std::unique_ptr<World>> Worlds;

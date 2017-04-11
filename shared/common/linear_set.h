@@ -63,9 +63,9 @@ namespace wowpp
 		add(U &&element)
 		{
 			// Release: O(1), Debug: O(n)
-			assert(!contains(element));
+			ASSERT(!contains(element));
 			optionalAdd(std::forward<U>(element));
-			assert(contains(element));
+			ASSERT(contains(element));
 		}
 
 		template <class U>
@@ -85,9 +85,9 @@ namespace wowpp
 		//O(n)
 		void remove(const T &element)
 		{
-			assert(contains(element));
+			ASSERT(contains(element));
 			optionalRemove(element);
-			assert(!contains(element));
+			ASSERT(!contains(element));
 		}
 
 		//O(n)
@@ -101,12 +101,12 @@ namespace wowpp
 					*i = std::move(m_elements.back());
 					m_elements.pop_back();
 
-					assert(!contains(element));
+					ASSERT(!contains(element));
 					return true;
 				}
 			}
 
-			assert(!contains(element));
+			ASSERT(!contains(element));
 			return false;
 		}
 

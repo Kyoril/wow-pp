@@ -30,8 +30,15 @@ namespace wowpp
 		struct Connection;
 
 
-		struct Select : boost::noncopyable
+		struct Select
 		{
+		private:
+
+			Select(const Select &Other) = delete;
+			Select &operator=(const Select &Other) = delete;
+
+		public:
+
 			explicit Select(Connection &connection, const String &query, bool throwOnError = false);
 			~Select();
 			void freeResult();

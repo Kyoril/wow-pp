@@ -56,7 +56,7 @@ namespace io
 
 		virtual std::size_t overwrite(std::size_t position, const char *src, std::size_t size) override
 		{
-			assert((position + size) <= m_buffer.size());
+			ASSERT((position + size) <= m_buffer.size());
 
 			char *const dest = &m_buffer[0] + position;
 			std::memcpy(dest, src, size);

@@ -30,7 +30,7 @@
 #include "tile_index.h"
 #include "math/vector3.h"
 #include "common/macros.h"
-#include "common/simple.hpp"
+#include "shared/proto_data/variables.pb.h"
 
 namespace wowpp
 {
@@ -226,6 +226,13 @@ namespace wowpp
 		class Project;
 	}
 
+
+	struct VariableInstance
+	{
+		proto::VariableEntry::DataCase dataCase;
+		boost::variant<String, Int64, float> value;
+	};
+
 	/// Base class for any object in the world. This class is abstract and shouldn't be initialized.
 	class GameObject : public std::enable_shared_from_this<GameObject>
 	{
@@ -242,7 +249,7 @@ namespace wowpp
 		/// Fired when the object should be destroyed. The object should be destroyed after this call.
 		std::function<void(GameObject &)> destroy;
 		/// Fired when the object moved, but before it's tile changed. Note that this will trigger a tile change.
-		//boost::signals2::signal<void(GameObject &, const math::Vector3 &, float)> moved;
+		//simple::signal<void(GameObject &, const math::Vector3 &, float)> moved;
 		/// Fired when a tile change is pending for this object, after it has been moved. Note that at this time,
 		/// the object does not belong to any tile and it's position already points to the new tile.
 		/// First parameter is a reference of the old tile, second references the new tile.
@@ -258,6 +265,63 @@ namespace wowpp
 
 		/// Initializes this object, setting up all basic fields etc.
 		virtual void initialize();
+
+	public:
+
+		/// Adds a new variable to the list of variables of this object.
+		/// @param entry Entry id of the variable.
+		void addVariable(UInt32 entry);
+		/// Determines if this object has an instance of the specified variable id.
+		/// @param entry Entry id of the variable.
+		/// @returns True, if this object owns an instance of this variable, false otherwise.
+		const bool hasVariable(UInt32 entry) const;
+		/// Sets the value of a specific variable.
+		/// @param entry Entry id of the variable.
+		/// @param value Value to set.
+		/// @returns false if the object does not own an instance of the variable or the type is not supported.
+		template<typename T>
+		bool setVariable(UInt32 entry, const T &value)
+		{
+			auto it = m_variables.find(entry);
+			if (it == m_variables.end())
+				return false;
+
+			try
+			{
+				it->second.value = value;
+				return true;
+			}
+			catch(...)
+			{
+				return false;
+			}
+		}
+		/// Gets the value of a specific variable instance of this object.
+		/// @param entry Entry id of the variable.
+		/// @param out_value Reference of an object where the value will be copied to.
+		/// @returns false if this object does not own an instance of the variable.
+		template<typename T>
+		bool getVariable(UInt32 entry, T &out_value)
+		{
+			auto it = m_variables.find(entry);
+			if (it == m_variables.end())
+				return false;
+
+			try
+			{
+				out_value = boost::get<T>(it->second.value);
+				return true;
+			}
+			catch(...)
+			{
+				return false;
+			}
+		}
+		/// Removes an instance of a variable from this object.
+		/// @param entry Entry id of the variable.
+		void removeVariable(UInt32 entry);
+
+	public:
 
 		/// Gets the number of values of this object.
 		UInt32 getValueCount() const {
@@ -494,7 +558,9 @@ namespace wowpp
 		bool m_updated;
 		MovementInfo m_movementInfo;
 		WorldInstance *m_worldInstance;
-		boost::signals2::scoped_connection m_worldInstanceDestroyed;
+		simple::scoped_connection m_worldInstanceDestroyed;
+		std::map<UInt32, VariableInstance> m_variables;
+		
 	};
 
 	io::Writer &operator << (io::Writer &w, GameObject const &object);

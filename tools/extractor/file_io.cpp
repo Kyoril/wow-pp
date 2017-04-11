@@ -19,47 +19,62 @@
 // and lore are copyrighted by Blizzard Entertainment, Inc.
 // 
 
-#pragma once
-
-#include "common/typedefs.h"
-#include "binary_io/reader.h"
-#include "binary_io/container_source.h"
-#include "stormlib/src/StormLib.h"
-
-namespace mpq
-{
-	bool loadMPQFile(const std::string &file);
-}
+#include "pch.h"
+#include "file_io.h"
 
 namespace wowpp
 {
-	/// This class represents a file which will be loaded from an MPQ archive.
-	class MPQFile : public boost::noncopyable
+	FileIO::FileIO()
+		: m_fp(0)
+		, m_mode(-1)
 	{
-	public:
+	}
 
-		static boost::mutex MPQMutex;
-		
-	public:
+	FileIO::~FileIO()
+	{
+		if (m_fp) 
+			fclose(m_fp);
+	}
 
-		/// Initializes the file and loads it's content from the loaded MPQ archive.
-		explicit MPQFile(String fileName);
-		virtual ~MPQFile();
+	bool FileIO::openForWrite(const char * path)
+	{
+		if (m_fp) return false;
+		m_fp = fopen(path, "wb");
+		if (!m_fp) return false;
+		m_mode = 1;
+		return true;
+	}
 
-		/// Called to load the file.
-		/// @returns False, if any errors occurred during the loading process.
-		virtual bool load() = 0;
-		/// Returns the file name of this MPQ file inside the archive.
-		const String &getFileName() const { return m_fileName; }
+	bool FileIO::openForRead(const char * path)
+	{
+		if (m_fp) return false;
+		m_fp = fopen(path, "rb");
+		if (!m_fp) return false;
+		m_mode = 2;
+		return true;
+	}
 
-	protected:
+	bool FileIO::isWriting() const
+	{
+		return m_mode == 1;
+	}
 
-		std::unique_ptr<io::ISource> m_source;
-		io::Reader m_reader;
-		std::vector<char> m_buffer;
+	bool FileIO::isReading() const
+	{
+		return m_mode == 2;
+	}
 
-	private:
+	bool FileIO::write(const void * ptr, const size_t size)
+	{
+		if (!m_fp || m_mode != 1) return false;
+		fwrite(ptr, size, 1, m_fp);
+		return true;
+	}
 
-		String m_fileName;
-	};
+	bool FileIO::read(void * ptr, const size_t size)
+	{
+		if (!m_fp || m_mode != 2) return false;
+		size_t readLen = fread(ptr, size, 1, m_fp);
+		return readLen == 1;
+	}
 }

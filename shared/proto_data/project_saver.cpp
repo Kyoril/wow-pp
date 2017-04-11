@@ -24,7 +24,6 @@
 #include <fstream>
 #include <vector>
 #include <boost/filesystem.hpp>
-#include <boost/signals2.hpp>
 #include <boost/date_time.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/uuid/sha1.hpp>
@@ -36,6 +35,7 @@
 #include <exception>
 #include <type_traits>
 #include "common/sha1.h"
+#include "simple/simple.hpp"
 
 #include "project_saver.h"
 #include "simple_file_format/sff_write.h"

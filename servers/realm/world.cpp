@@ -48,7 +48,7 @@ namespace wowpp
 		, m_authed(false)
 		, m_realmName(std::move(realmName))
 	{
-		assert(m_connection);
+		ASSERT(m_connection);
 
 		m_connection->setListener(*this);
 	}
@@ -116,6 +116,9 @@ namespace wowpp
 				break;
 			case world_packet::MailDraft:
 				handleMailDraft(packet);
+				break;
+			case world_packet::MailGetList:
+				handleMailGetList(packet);
 				break;
 			default:
 			{
@@ -522,31 +525,93 @@ namespace wowpp
 
 	void World::handleMailDraft(pp::IncomingPacket & packet)
 	{
-		game::MailData mailDraft;
-		String sender;
-		UInt32 cost;
-		std::vector<std::shared_ptr<GameItem>> items;
-		if (!(pp::world_realm::world_read::mailDraft(packet, mailDraft.unk1, mailDraft.unk2, sender, mailDraft.receiver,
-			mailDraft.subject, mailDraft.body, mailDraft.money, mailDraft.COD, cost, items)))
+		Mail mail;
+		String receiver;
+		if (!(pp::world_realm::world_read::mailDraft(packet, mail, receiver)))
 		{
 			return;
 		}
 
-		auto senderPl = m_playerManager.getPlayerByCharacterName(sender);
-		auto receiverPl = m_playerManager.getPlayerByCharacterName(mailDraft.receiver);
+		auto senderPl = m_playerManager.getPlayerByCharacterGuid(mail.getSenderGuid());
+		auto receiverPl = m_playerManager.getPlayerByCharacterName(receiver);
+		// TODO check if player guid/name exists, not just if it's online
 		if (!receiverPl)
 		{
-			// TODO send error
+			senderPl->sendPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(0, mail::response_type::Send, mail::response_result::RecipientNotFound)));
 			return;
 		}
 
 		if (senderPl->getCharacterId() == receiverPl->getCharacterId())
 		{
+			senderPl->sendPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(0, mail::response_type::Send, mail::response_result::CannotSendToSelf)));
+			return;
+		}
+
+		bool sameFaction = senderPl->getGameCharacter()->isFriendlyTo(receiverPl->getGameCharacter()->getFactionTemplate());
+		if (!sameFaction)
+		{
+			senderPl->sendPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(0, mail::response_type::Send, mail::response_result::NotYourTeam)));
+			return;
+		}
+
+		// 100 is max mails in box
+		if (receiverPl->getMails().size() > 100)
+		{
+			senderPl->sendPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(0, mail::response_type::Send, mail::response_result::RecipientCapReached)));
+			return;
+		}
+
+		// TODO more checks, probably
+
+		auto senderChar = senderPl->getGameCharacter();
+		if (senderChar)
+		{
+			size_t itemsCount = mail.getItems().size();
+			UInt32 cost = itemsCount > 0 ? 30 * itemsCount : 30;
+			UInt32 reqMoney = cost + mail.getMoney();
+			UInt32 plMoney = senderChar->getUInt32Value(character_fields::Coinage);
+			senderChar->setUInt32Value(character_fields::Coinage, plMoney - reqMoney);
+		}
+		
+		senderPl->sendPacket(
+			std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+				MailResult(0, mail::response_type::Send, mail::response_result::Ok)));
+		receiverPl->mailReceived(std::move(mail));
+		// Inform world node? (probably not)
+	}
+
+	void World::handleMailGetList(pp::IncomingPacket & packet)
+	{
+		DatabaseId characterId;
+		if (!(pp::world_realm::world_read::mailGetList(packet, characterId)))
+		{
+			return;
+		}
+
+		auto player = m_playerManager.getPlayerByCharacterId(characterId);
+		if (!player)
+		{
 			// TODO send error
 			return;
 		}
 
-		auto faction = senderPl->getGameCharacter();
+		auto character = player->getGameCharacter();
+		if (!character)
+		{
+			// TODO send error
+			return;
+		}
+
+		player->sendPacket(
+			std::bind(game::server_write::mailListResult, std::placeholders::_1, player->getMails()));
 	}
 
 	void World::characterGroupChanged(UInt64 characterGuid, UInt64 groupId)

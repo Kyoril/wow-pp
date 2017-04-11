@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "sha1.h"
+#include "macros.h"
 #include "utilities.h"
 
 namespace wowpp
@@ -32,8 +33,8 @@ namespace wowpp
 
 	std::streamsize Boost_SHA1HashSink::write(const char *data, std::streamsize length)
 	{
-		assert(data);
-		assert(length >= 0);
+		ASSERT(data);
+		ASSERT(length >= 0);
 
 		if (!m_sha1)
 		{
@@ -47,17 +48,17 @@ namespace wowpp
 	SHA1Hash Boost_SHA1HashSink::finalizeHash()
 	{
 		unsigned int digest[5];
-		assert(sizeof(digest) == 20);
+		ASSERT(sizeof(digest) == 20);
 
 		m_sha1->get_digest(digest);
 
 		SHA1Hash hash;
-		assert(sizeof(digest) == sizeof(hash));
+		ASSERT(sizeof(digest) == sizeof(hash));
 		auto dest = hash.begin();
 		for (const unsigned int digit : digest)
 		{
-			assert(sizeof(digit) == 4);
-			assert(dest != hash.end());
+			ASSERT(sizeof(digit) == 4);
+			ASSERT(dest != hash.end());
 
 			dest[0] = static_cast<unsigned char>(digit >> 24);
 			dest[1] = static_cast<unsigned char>(digit >> 16);

@@ -84,7 +84,7 @@ namespace wowpp
 
 	bool SpellTargetMap::resolvePointers(WorldInstance &instance, GameUnit **out_unitTarget, GameItem **out_itemTarget, GameObject **out_objectTarget, GameObject **out_corpseTarget)
 	{
-		if (out_unitTarget && m_targetMap & game::spell_cast_target_flags::Unit)
+		if (out_unitTarget && (m_targetMap & (game::spell_cast_target_flags::Unit | game::spell_cast_target_flags::Self)))
 		{
 			*out_unitTarget = dynamic_cast<GameUnit *>(instance.findObjectByGUID(m_unitTarget));
 		}

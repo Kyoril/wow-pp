@@ -167,20 +167,20 @@ namespace wowpp
 						<< io::write<NetUInt64>(characterId);
 					out_packet.finish();
 				}
-				void mailDraft(pp::OutgoingPacket & out_packet, UInt32 unk1, UInt32 unk2, String sender, String receiver, String subject, String body, UInt32 money, UInt32 COD, UInt32 cost, const std::vector<std::shared_ptr<GameItem>>& items)
+				void mailDraft(pp::OutgoingPacket & out_packet, Mail mail, String receiver)
 				{
 					out_packet.start(world_packet::MailDraft);
 					out_packet
-						<< io::write<NetUInt32>(unk1)
-						<< io::write<NetUInt32>(unk2)
-						<< io::write_range(sender)
-						<< io::write_range(receiver)
-						<< io::write_range(subject)
-						<< io::write_range(body)
-						<< io::write<NetUInt32>(money)
-						<< io::write<NetUInt32>(COD)
-						<< io::write<NetUInt32>(cost)
-						//<< io::write_dynamic_range<std::shared_ptr<GameItem>>(items)
+						<< mail
+						<< io::write_dynamic_range<NetUInt8>(receiver)
+						;
+					out_packet.finish();
+				}
+				void mailGetList(pp::OutgoingPacket & out_packet, DatabaseId characterId)
+				{
+					out_packet.start(world_packet::MailGetList);
+					out_packet
+						<< io::write<NetDatabaseId>(characterId)
 						;
 					out_packet.finish();
 				}
@@ -428,19 +428,18 @@ namespace wowpp
 						>> io::read<NetUInt64>(out_characterId);
 				}
 				
-				bool mailDraft(io::Reader & packet, UInt32 & out_unk1, UInt32 & out_unk2, String & out_sender, String & out_receiver, String & out_subject, String & out_body, UInt32 & out_money, UInt32 & out_COD, UInt32 & out_cost, const std::vector<std::shared_ptr<GameItem>>& out_items)
+				bool mailDraft(io::Reader & packet, Mail &out_mail, String & out_receiver)
 				{
 					return packet
-						>> io::read<NetUInt32>(out_unk1)
-						>> io::read<NetUInt32>(out_unk2)
-						>> io::read_string(out_sender)
-						>> io::read_string(out_receiver)
-						>> io::read_string(out_subject)
-						>> io::read_string(out_body)
-						>> io::read<NetUInt32>(out_money)
-						>> io::read<NetUInt32>(out_COD)
-						>> io::read<NetUInt32>(out_cost)
-						//>> io::read_container<std::shared_ptr<GameItem>>(out_items)
+						>> out_mail
+						>> io::read_container<NetUInt8>(out_receiver)
+						;
+				}
+
+				bool mailGetList(io::Reader & packet, DatabaseId & out_characterId)
+				{
+					return packet
+						>> io::read<NetDatabaseId>(out_characterId)
 						;
 				}
 			}

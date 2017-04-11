@@ -34,13 +34,18 @@ namespace wowpp
 
 	/// Basic server class which manages connection.
 	template<typename C>
-	class Server : boost::noncopyable
+	class Server
 	{
+	private:
+
+		Server<C>(const Server<C> &Other) = delete;
+		Server &operator=(const Server<C> &Other) = delete;
+
 	public:
 
 		typedef C Connection;
 		typedef boost::asio::ip::tcp::acceptor AcceptorType;
-		typedef boost::signals2::signal<void(const std::shared_ptr<Connection> &)> ConnectionSignal;
+		typedef simple::signal<void(const std::shared_ptr<Connection> &)> ConnectionSignal;
 		typedef std::function<std::shared_ptr<Connection>(boost::asio::io_service &)> ConnectionFactory;
 
 	public:
@@ -54,7 +59,7 @@ namespace wowpp
 			: mCreateConn(std::move(CreateConnection))
 			, mState(new State(std::unique_ptr<AcceptorType>(new AcceptorType(IOService))))
 		{
-			assert(mCreateConn);
+			ASSERT(mCreateConn);
 
 			try
 			{
@@ -97,7 +102,7 @@ namespace wowpp
 		/// Starts waiting for incoming connections to accept.
 		void startAccept()
 		{
-			assert(mState);
+			ASSERT(mState);
 			const std::shared_ptr<Connection> Conn = mCreateConn(mState->Acceptor->get_io_service());
 
 			mState->Acceptor->async_accept(
@@ -123,8 +128,8 @@ namespace wowpp
 
 		void Accepted(std::shared_ptr<Connection> Conn, const boost::system::error_code &Error)
 		{
-			assert(Conn);
-			assert(mState);
+			ASSERT(Conn);
+			ASSERT(mState);
 
 			if (Error)
 			{

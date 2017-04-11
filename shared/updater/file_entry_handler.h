@@ -44,6 +44,7 @@ namespace wowpp
 			    const sff::read::tree::Array<std::string::const_iterator> &entries,
 			    const std::string &type,
 			    const std::string &source,
+				const std::string &parseDir,
 			    const std::string &destination
 			) = 0;
 
@@ -51,6 +52,7 @@ namespace wowpp
 			    const PrepareParameters &parameters,
 			    const sff::read::tree::Table<std::string::const_iterator> &entryDescription,
 			    const std::string &source,
+				const std::string &parseDir,
 			    const std::string &destination,
 			    boost::uintmax_t originalSize,
 			    const SHA1Hash &sha1,

@@ -24,6 +24,7 @@
 #include <QTextStream>
 #include <QFile>
 #include "common/background_worker.h"
+#include "common/crash_handler.h"
 #include "log/log_std_stream.h"
 #include "log/log_entry.h"
 #include "log/default_log_levels.h"
@@ -89,6 +90,9 @@ int main(int argc, char *argv[])
 	{
 		removePreviousExecutable();
 	}
+
+	//constructor enables error handling
+	wowpp::CrashHandler::get().enableDumpFile("EditorCrash.dmp");
 
 	// Create the qt application instance and set it all up
 	QApplication app(argc, argv);

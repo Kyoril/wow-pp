@@ -28,8 +28,13 @@ namespace wowpp
 	class TeamServer;
 
 	/// Manages all connected team servers.
-	class TeamServerManager : public boost::noncopyable
+	class TeamServerManager final
 	{
+	private:
+		
+		TeamServerManager(const TeamServerManager &Other) = delete;
+		TeamServerManager &operator=(const TeamServerManager &Other) = delete;
+
 	public:
 
 		typedef std::vector<std::unique_ptr<TeamServer>> TeamServers;

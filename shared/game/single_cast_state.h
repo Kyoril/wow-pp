@@ -30,9 +30,17 @@
 namespace wowpp
 {
 	typedef std::map<UInt64, HitResult> HitResultMap;
+
 	///
-	class SingleCastState final : public SpellCast::CastState, public std::enable_shared_from_this<SingleCastState>, public boost::noncopyable
+	class SingleCastState final
+		: public SpellCast::CastState
+		, public std::enable_shared_from_this<SingleCastState>
 	{
+	private:
+
+		SingleCastState(const SingleCastState& Other) = delete;
+		SingleCastState &operator=(const SingleCastState &Other) = delete;
+
 	public:
 
 		explicit SingleCastState(
@@ -59,6 +67,68 @@ namespace wowpp
 			return m_casting;
 		}
 
+		template <class T>
+		void sendPacketFromCaster(GameUnit &caster, T generator)
+		{
+			auto *worldInstance = caster.getWorldInstance();
+			if (!worldInstance)
+			{
+				return;
+			}
+
+			TileIndex2D tileIndex;
+			worldInstance->getGrid().getTilePosition(caster.getLocation(), tileIndex[0], tileIndex[1]);
+
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			generator(packet);
+
+			forEachSubscriberInSight(
+				worldInstance->getGrid(),
+				tileIndex,
+				[&buffer, &packet](ITileSubscriber & subscriber)
+			{
+				subscriber.sendPacket(
+					packet,
+					buffer
+				);
+			});
+		}
+
+		template <class T>
+		void sendPacketToCaster(GameUnit &caster, T generator)
+		{
+			auto *worldInstance = caster.getWorldInstance();
+			if (!worldInstance)
+			{
+				return;
+			}
+
+			TileIndex2D tileIndex;
+			worldInstance->getGrid().getTilePosition(caster.getLocation(), tileIndex[0], tileIndex[1]);
+
+			std::vector<char> buffer;
+			io::VectorSink sink(buffer);
+			game::Protocol::OutgoingPacket packet(sink);
+			generator(packet);
+
+			forEachSubscriberInSight(
+				worldInstance->getGrid(),
+				tileIndex,
+				[&buffer, &packet, &caster](ITileSubscriber & subscriber)
+			{
+				if (subscriber.getControlledObject() == &caster)
+				{
+					subscriber.sendPacket(
+						packet,
+						buffer
+					);
+				}
+
+			});
+		}
+
 	public:
 
 		/// Determines if this spell is a channeled spell.
@@ -69,11 +139,17 @@ namespace wowpp
 	private:
 
 		bool consumeItem(bool delayed = true);
+		bool consumeReagents(bool delayed = true);
 		bool consumePower();
 		void applyCooldown(UInt64 cooldownTimeMS, UInt64 catCooldownTimeMS);
 		void applyAllEffects(bool executeInstants, bool executeDelayed);
 		Int32 calculateEffectBasePoints(const proto::SpellEffect &effect);
 		UInt32 getSpellPointsTotal(const proto::SpellEffect &effect, UInt32 spellPower, UInt32 bonusPct);
+		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
+		bool createItems(GameCharacter &target, UInt32 itemId, UInt32 amount = 1);
+
+		// Spell effect handlers implemented in spell_effects.cpp and spell_effects_scripted.cpp
+
 		void spellEffectInstantKill(const proto::SpellEffect &effect);
 		void spellEffectDummy(const proto::SpellEffect &effect);
 		void spellEffectSchoolDamage(const proto::SpellEffect &effect);
@@ -111,8 +187,20 @@ namespace wowpp
 		void spellEffectResurrect(const proto::SpellEffect &effect);
 		void spellEffectResurrectNew(const proto::SpellEffect &effect);
 		void spellEffectKnockBack(const proto::SpellEffect &effect);
+		void spellEffectSkill(const proto::SpellEffect &effect);
+		void spellEffectTransDoor(const proto::SpellEffect &effect);
 
-		void meleeSpecialAttack(const proto::SpellEffect &effect, bool basepointsArePct);
+		// Custom scripted spell effects implemented in spell_effects_scripted.cpp
+		// These are executed from spellEffectDummy and spellEffectScriptEffect
+
+		void spellScriptEffectEnrage(const proto::SpellEffect &effect);
+		void spellScriptEffectExecute(const proto::SpellEffect &effect);
+		void spellScriptEffectLifeTap(const proto::SpellEffect &effect);
+		void spellScriptEffectCreateHealthstone(const proto::SpellEffect &effect);
+
+	private:
+
+		std::shared_ptr<GameItem> getItem() const;
 
 	private:
 
@@ -125,12 +213,12 @@ namespace wowpp
 		bool m_hasFinished;
 		Countdown m_countdown;
 		Countdown m_impactCountdown;
-		boost::signals2::signal<void()> completedEffects;
-		std::unordered_map<UInt64, boost::signals2::scoped_connection> m_completedEffectsExecution;
-		boost::signals2::scoped_connection m_onTargetDied;
-		simple::scoped_connection m_onTargetRemoved;
-		boost::signals2::scoped_connection m_onThreatened, m_damaged;
-		boost::signals2::scoped_connection m_onAttackError, m_removeAurasOnImmunity;
+		simple::signal<void()> completedEffects;
+		std::unordered_map<UInt64, simple::scoped_connection> m_completedEffectsExecution;
+		simple::scoped_connection m_onTargetDied;
+		simple::scoped_connection m_onTargetRemoved, m_damaged;
+		simple::scoped_connection m_onThreatened;
+		simple::scoped_connection m_onAttackError, m_removeAurasOnImmunity;
 		float m_x, m_y, m_z;
 		GameTime m_castTime;
 		GameTime m_castEnd;
@@ -143,6 +231,7 @@ namespace wowpp
 		UInt32 m_delayCounter;
 		std::set<std::weak_ptr<GameObject>, std::owner_less<std::weak_ptr<GameObject>>> m_affectedTargets;
 		bool m_tookCastItem;
+		bool m_tookReagents;
 		UInt32 m_attackerProc;
 		UInt32 m_victimProc;
 		bool m_canTrigger;
@@ -150,10 +239,12 @@ namespace wowpp
 		game::WeaponAttack m_attackType;
 		std::vector<UInt64> m_dynObjectsToDespawn;
 		bool m_instantsCast, m_delayedCast;
+		simple::scoped_connection m_onChannelAuraRemoved;
 
 		void sendEndCast(bool success);
 		void onCastFinished();
-		void onTargetRemovedOrDead();
+		void onTargetKilled(GameUnit *);
+		void onTargetDespawned(GameObject &);
 		void onUserDamaged();
 		void executeMeleeAttack();	// deal damage stored in m_meleeDamage
 

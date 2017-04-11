@@ -37,7 +37,6 @@ namespace wowpp
 		, m_nextMove(ai.getControlled().getTimers())
 		, m_nextUpdate(0)
 	{
-		m_nextMove.ended.connect(std::bind(&CreatureAIIdleState::onChooseNextMove, this));
 	}
 
 	CreatureAIIdleState::~CreatureAIIdleState()
@@ -46,14 +45,20 @@ namespace wowpp
 
 	void CreatureAIIdleState::onEnter()
 	{
+		CreatureAIState::onEnter();
+
+		m_nextMove.ended.connect(std::bind(&CreatureAIIdleState::onChooseNextMove, this));
+
 		auto &controlled = getControlled();
+
+		controlled.getMover().setTerrainMovement(false);
 
 		// Handle incoming threat
 		auto &ai = getAI();
 		m_onThreatened = controlled.threatened.connect(std::bind(&CreatureAI::onThreatened, &ai, std::placeholders::_1, std::placeholders::_2));
 
 		auto *worldInstance = controlled.getWorldInstance();
-		assert(worldInstance);
+		ASSERT(worldInstance);
 
 		// Check if it is a pet
 		UInt64 ownerGUID = controlled.getUInt64Value(unit_fields::SummonedBy);
@@ -179,6 +184,8 @@ namespace wowpp
 
 		onTargetReached.disconnect();
 		m_aggroWatcher.reset();
+
+		CreatureAIState::onLeave();
 	}
 
 	void CreatureAIIdleState::onCreatureMovementChanged()
@@ -211,18 +218,18 @@ namespace wowpp
 
 	void CreatureAIIdleState::onChooseNextMove()
 	{
+		const float dist = 15.0f;
+		const auto &loc = getAI().getHome().position;
+		const Circle clipping(loc.x, loc.y, dist);
+
 		auto *world = getControlled().getWorldInstance();
 		if (world)
 		{
-			auto *mapData = world->getMapData();
-			if (mapData)
+			auto &controlled = getControlled();
+			const auto &point = controlled.getRandomPoint();
+			if (controlled.getMover().moveTo(point, controlled.getSpeed(movement_type::Walk), &clipping))
 			{
-				math::Vector3 targetPoint;
-				if (mapData->getRandomPointOnGround(getAI().getHome().position, 4.0f, targetPoint))
-				{
-					getControlled().getMover().moveTo(targetPoint, getControlled().getSpeed(movement_type::Walk));
-					return;
-				}
+				return;
 			}
 		}
 

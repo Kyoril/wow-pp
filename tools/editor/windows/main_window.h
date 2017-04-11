@@ -25,7 +25,6 @@
 #include <QLabel>
 #include <QSortFilterProxyModel>
 #include "ogre_wrappers/qt_ogre_window.h"
-#include "common/simple.hpp"
 
 // Forwards
 namespace Ui
@@ -81,7 +80,7 @@ namespace wowpp
 			QSortFilterProxyModel *m_unitFilter;
 			QSortFilterProxyModel *m_objectFilter;
 			QLabel *m_pageLabel;
-			boost::signals2::scoped_connection m_onPageChanged;
+			simple::scoped_connection m_onPageChanged;
 			simple::scoped_connection m_onLog;
 		};
 	}
