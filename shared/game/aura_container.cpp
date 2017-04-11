@@ -96,9 +96,8 @@ namespace wowpp
 					}
 					else
 					{
-						// Remove aura - new aura will be added
-						it = m_auras.erase(it);
-						a->misapplyAura();
+						// Remove old aura - new aura will be added
+						removeAura(it);
 						break;
 					}
 				}
