@@ -912,9 +912,12 @@ namespace wowpp
 	{
 		if (apply)
 		{
-			for (UInt8 i = 1; i < 7; ++i)
+			if (m_target.isGameCharacter())
 			{
-				m_target.setFloatValue(character_fields::ModDamageDonePct + i, m_basePoints / 100.0f);
+				for (UInt8 i = 1; i < 7; ++i)
+				{
+					m_target.setFloatValue(character_fields::ModDamageDonePct + i, m_basePoints / 100.0f);
+				}
 			}
 		}
 	}
