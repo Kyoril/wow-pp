@@ -24,6 +24,7 @@
 #include "common/typedefs.h"
 #include <QDialog>
 #include <QItemSelection>
+#include "ogre_wrappers/ogre_dbc_file.h"
 
 // Forwards
 namespace Ui
@@ -68,6 +69,7 @@ namespace wowpp
 			EditorApplication &m_app;
 			proto::UnitSpawnEntry *m_unitSpawn;
 			proto::ObjectSpawnEntry *m_objectSpawn;
+			OgreDBCFilePtr m_emoteDbc;
 		};
 	}
 }

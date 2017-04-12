@@ -26,6 +26,7 @@
 #include "proto_data/project.h"
 #include "common/utilities.h"
 #include "game/game_unit.h"
+#include "ogre_wrappers/ogre_dbc_file_manager.h"
 
 namespace wowpp
 {
@@ -84,6 +85,36 @@ namespace wowpp
 				QTreeWidgetItem *locItem = new QTreeWidgetItem(m_ui->treeWidget_2);
 				locItem->setText(1, QString("%1, %2, %3").arg(m_unitSpawn->positionx()).arg(m_unitSpawn->positiony()).arg(m_unitSpawn->positionz()));
 				locItem->setText(2, "100%");
+
+				try
+				{
+					m_emoteDbc = OgreDBCFileManager::getSingleton().load("DBFilesClient\\Emotes.dbc", "WoW");
+					if (m_emoteDbc.isNull())
+					{
+						m_ui->emoteBox->setEnabled(false);
+					}
+					else
+					{
+						UInt32 selectedRow = 0;
+
+						m_ui->emoteBox->clear();
+						for (UInt32 i = 0; i < m_emoteDbc->getRowCount(); ++i)
+						{
+							UInt32 id = m_emoteDbc->getField<UInt32>(i, 0);
+							if (id == m_unitSpawn->defaultemote())
+								selectedRow = i;
+
+							m_ui->emoteBox->addItem(m_emoteDbc->getField(i, 1).c_str());
+						}
+
+						m_ui->emoteBox->setCurrentIndex(selectedRow);
+						m_ui->emoteBox->setEnabled(true);
+					}
+				}
+				catch (const std::exception &e)
+				{
+					m_ui->emoteBox->setEnabled(false);
+				}
 			}
 			else if (m_objectSpawn)
 			{
@@ -98,6 +129,7 @@ namespace wowpp
 				m_ui->spinBox_4->setValue(m_objectSpawn->maxcount());
 				m_ui->comboBox->setEnabled(false);
 				m_ui->comboBox_2->setEnabled(false);
+				m_ui->emoteBox->setEnabled(false);
 
 				QTreeWidgetItem *item = new QTreeWidgetItem(m_ui->treeWidget);
 				item->setText(0, QString("%1").arg(m_objectSpawn->objectentry()));
@@ -133,6 +165,18 @@ namespace wowpp
 				m_unitSpawn->set_maxcount(m_ui->spinBox_4->value());
 				m_unitSpawn->set_movement(m_ui->comboBox->currentIndex());
 				m_unitSpawn->set_standstate(m_ui->comboBox_2->currentIndex());
+
+				if (!m_emoteDbc.isNull())
+				{
+					UInt32 selectedRow = 0;
+
+					UInt32 index = m_ui->emoteBox->currentIndex();
+					if (index < m_emoteDbc->getRowCount())
+					{
+						UInt32 id = m_emoteDbc->getField<UInt32>(index, 0);
+						m_unitSpawn->set_defaultemote(id);
+					}
+				}
 			}
 			else if (m_objectSpawn)
 			{
