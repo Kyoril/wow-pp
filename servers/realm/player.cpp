@@ -63,6 +63,7 @@ namespace wowpp
 		, m_transfer(math::Vector3(0.0f, 0.0f, 0.0f))
 		, m_transferO(0.0f)
 		, m_nextWhoRequest(0)
+		, m_mailIdGenerator(0)
 	{
 		// Randomize seed
 		std::uniform_int_distribution<UInt32> dist;
@@ -2064,8 +2065,9 @@ namespace wowpp
 
 	void Player::mailReceived(Mail mail)
 	{
+		mail.setMailId(m_mailIdGenerator.generateId());
 		// TODO save to db
-		m_mails.push_back(mail);
+		m_mails.push_front(mail);
 
 		DLOG("Mail stored");
 	}

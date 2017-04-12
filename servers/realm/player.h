@@ -166,7 +166,7 @@ namespace wowpp
 		/// Gets the connected world node
 		World *getWorldNode() { return m_worldNode; }
 		///
-		std::vector<Mail> getMails() { return m_mails; }
+		std::list<Mail> getMails() { return m_mails; }
 		/// Declines a pending group invite (if available).
 		void declineGroupInvite();
 		/// 
@@ -250,7 +250,8 @@ namespace wowpp
 		std::array<UInt32, 8> m_tutorialData;
 		GameTime m_nextWhoRequest;
 		auth::AuthLocale m_locale;
-		std::vector<Mail> m_mails;
+		std::list<Mail> m_mails;
+		IdGenerator<UInt32> m_mailIdGenerator;
 
 	private:
 

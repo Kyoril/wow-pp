@@ -29,6 +29,7 @@ namespace wowpp
 		, m_money(0)
 		, m_COD(0)
 		, m_read(0)
+		, m_mailId(0)
 	{
 	}
 
@@ -44,6 +45,7 @@ namespace wowpp
 		, m_money(mailInfo.money)
 		, m_COD(mailInfo.COD)
 		, m_read(read)
+		, m_mailId(0)
 	{
 	}
 
@@ -70,11 +72,6 @@ namespace wowpp
 
 		// Read items on mail list, 12 being the client limit
 		r >> io::read<UInt8>(out_mail.itemsCount);
-		if (out_mail.itemsCount > 12)
-		{
-			// TODO Error message
-			return r;
-		}
 
 		// Read itemsGuid, skipping item slot in mail
 		for (UInt8 i = 0; i < out_mail.itemsCount; ++i)

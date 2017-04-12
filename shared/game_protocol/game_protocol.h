@@ -1991,7 +1991,7 @@ namespace wowpp
 
 			void mailListResult(
 				game::OutgoingPacket &out_packet,
-				std::vector<Mail> mails
+				std::list<Mail> mails
 				);
 
 			void mailSendResult(

@@ -2934,9 +2934,12 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void mailListResult(game::OutgoingPacket & out_packet, std::vector<Mail> mails)
+			void mailListResult(game::OutgoingPacket & out_packet, std::list<Mail> mails)
 			{
 				out_packet.start(game::server_packet::MailListResult);
+
+				out_packet
+					<< io::write<NetUInt8>(mails.size());
 
 				if (mails.empty())
 				{
@@ -2952,11 +2955,9 @@ namespace wowpp
 						
 						size_t sizePos = out_packet.sink().position();
 						out_packet
-							<< io::write<NetUInt8>(mails.size())
 							// Placeholder for mailSize
 							<< io::write<NetUInt16>(0)
-							// TODO mail id
-							<< io::write<NetUInt32>(0x0E73)
+							<< io::write<NetUInt32>(mail.getMailId())
 							// TODO mail type (auction, etc)
 							<< io::write<NetUInt8>(0)
 							// TODO handle auction or npc mails
@@ -2979,7 +2980,7 @@ namespace wowpp
 						// TODO handle items sent
 
 						UInt16 mailSize = static_cast<UInt16>(out_packet.sink().position() - sizePos);
-						out_packet.writePOD(sizePos + 1, mailSize);
+						out_packet.writePOD(sizePos, mailSize);
 						out_packet.finish();
 					}
 				}

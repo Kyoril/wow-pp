@@ -34,6 +34,50 @@ namespace wowpp
 {
 	namespace mail
 	{
+		namespace stationery
+		{
+			enum Type
+			{
+				Unknown = 1,
+				Default = 41,
+				GM = 61,
+				Auction = 62,
+				Val = 64,
+				Chr = 65
+			};
+		}
+
+		typedef stationery::Type Stationery;
+
+		namespace check_mask
+		{
+			enum Type
+			{
+				None = 0x00,
+				Read = 0x01,
+				Returned = 0x02,
+				Copied = 0x04,
+				PaymentCOD = 0x08,
+				HasBody = 0x10
+			};
+		}
+
+		typedef check_mask::Type CheckMask;
+
+		namespace message_type
+		{
+			enum Type
+			{
+				Normal = 0,
+				Auction = 2,
+				Creature = 3,
+				GameObject = 4,
+				Item = 5
+			};
+		}
+
+		typedef message_type::Type MessageType;
+
 		namespace response_type
 		{
 			enum Type
@@ -142,6 +186,8 @@ namespace wowpp
 		///
 		bool isRead() const { return m_read; }
 		///
+		UInt32 getMailId() const { return m_mailId; }
+		///
 		void setSenderGuid(UInt64 senderGuid) { 
 			m_senderGuid = senderGuid; 
 		}
@@ -165,6 +211,10 @@ namespace wowpp
 		void setReadState(bool read) {
 			m_read = read;
 		}
+		///
+		void setMailId(UInt32 mailId) {
+			m_mailId = mailId;
+		}
 
 
 	private:
@@ -174,6 +224,12 @@ namespace wowpp
 		ItemVector m_items;
 		UInt32 m_money, m_COD;
 		bool m_read;
+		UInt32 m_mailId;
+		/*
+		UInt8 m_messageType;
+		UInt32 m_stationery;
+		UInt32 m_checkMasks;
+		*/
 	};
 
 	io::Writer &operator << (io::Writer &w, const Mail &object);

@@ -1333,12 +1333,13 @@ namespace wowpp
 			return;
 		}
 
+		if (!target->isWorldObject() || reinterpret_cast<WorldObject*>(target)->getUInt32Value(world_object_fields::TypeID) != world_object_type::Mailbox)
+		{
+			return;
+		}
+
 		// TODO distance to mailbox
 		//float distance = m_character->getDistanceTo(target);
-
-		UInt32 cost = mailInfo.itemsCount ? 30 * mailInfo.itemsCount : 30;
-		UInt32 reqMoney = cost + mailInfo.money;
-		UInt32 plMoney = m_character->getUInt32Value(character_fields::Coinage);
 
 		// 12 is the limit of items to send 
 		if (mailInfo.itemsCount > 12)
@@ -1346,14 +1347,6 @@ namespace wowpp
 			sendProxyPacket(
 				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
 						  MailResult(0, mail::response_type::Send, mail::response_result::TooManyAttachments)));
-			return;
-		}
-
-		if (plMoney < reqMoney)
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
-					MailResult(0, mail::response_type::Send, mail::response_result::NotEnoughMoney)));
 			return;
 		}
 
