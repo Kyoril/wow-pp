@@ -2109,7 +2109,7 @@ namespace wowpp
 			}
 		}
 
-		if (isTradeSkill && skillIndex > 0)
+		if (skillIndex > 0)
 		{
 			const auto *skill = m_project.skills.getById(skillIndex);
 			if (skill) {
@@ -2117,6 +2117,11 @@ namespace wowpp
 				addSkill(*skill);
 				UInt16 current = 1, max = 1;
 				getSkillValue(skillIndex, current, max);
+
+				// Riding skill is always maxed out
+				if (skillIndex == 762)
+					current = 75 * skillPoint;
+
 				setSkillValue(skillIndex, current, 75 * skillPoint);
 			}
 		}

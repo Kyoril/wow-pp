@@ -367,7 +367,7 @@ namespace wowpp
 									obj->end();
 								}
 
-								// TODO: Create scene node with proper transformation and attach the render object to it!
+								// Create scene node with proper transformation and attach the render object to it!
 								Ogre::SceneNode *child = m_sceneMgr.getRootSceneNode()->createChildSceneNode(objStrm.str());
 								Ogre::Matrix4 transform(
 									entry.inverse.m[0][0], entry.inverse.m[0][1], entry.inverse.m[0][2], entry.inverse.m[0][3],
