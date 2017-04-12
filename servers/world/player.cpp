@@ -946,13 +946,15 @@ namespace wowpp
 			// tell the realm where our character should be sent to
 			sendProxyPacket(
 				std::bind(game::server_write::transferPending, std::placeholders::_1, map, 0, 0));
+			
+			// Initialize teleport request at realm
 			m_realmConnector.sendTeleportRequest(m_characterId, map, location, o);
 
-			// Remove the character from the world
+			// Remove the character from the world (this will save the character)
 			m_instance.removeGameObject(*m_character);
 			m_character.reset();
-
-			// Notify the realm
+			
+			// Notify realm that our chracter left this world instance (this will commit the pending teleport request)
 			m_realmConnector.notifyWorldInstanceLeft(m_characterId, pp::world_realm::world_left_reason::Teleport);
 
 			// Destroy player instance
