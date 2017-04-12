@@ -506,6 +506,11 @@ namespace wowpp
 		void WorldEditor::addUnitSpawn(proto::UnitSpawnEntry & spawn, bool select)
 		{
 			const auto *unit = m_project.units.getById(spawn.unitentry());
+			if (!unit)
+			{
+				WLOG("Spawn point of non-existant unit " << spawn.unitentry() << " found");
+				return;
+			}
 			ASSERT(unit);
 
 			UInt32 row = m_displayDbc->getRowByIndex(unit->malemodel());
@@ -599,6 +604,8 @@ namespace wowpp
 				node->attachObject(ent);
 				node->setPosition(spawn.positionx(), spawn.positiony(), spawn.positionz());
 				node->setOrientation(Ogre::Quaternion(Ogre::Radian(spawn.rotation()), Ogre::Vector3::UNIT_Z));
+				if (unit->scale() != 0.0f)
+					node->setScale(Ogre::Vector3(unit->scale()));
 				m_spawnNodes.push_back(ogre_utils::SceneNodePtr(node));
 			}
 			catch (const Ogre::Exception &)

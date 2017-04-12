@@ -74,7 +74,7 @@ namespace wowpp
 
 				QTreeWidgetItem *item = new QTreeWidgetItem(m_ui->treeWidget);
 				item->setText(0, QString("%1").arg(m_unitSpawn->unitentry()));
-				const auto *unitEntry = m_app.getProject().objects.getById(m_unitSpawn->unitentry());
+				const auto *unitEntry = m_app.getProject().units.getById(m_unitSpawn->unitentry());
 				if (unitEntry)
 					item->setText(1, unitEntry->name().c_str());
 				else
