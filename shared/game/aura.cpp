@@ -1348,6 +1348,11 @@ namespace wowpp
 		}
 	}
 
+	UInt64 Aura::getCasterGuid() const
+	{
+		return (m_caster.get() ? m_caster->getGuid() : 0);
+	}
+
 	void Aura::applyAura()
 	{
 		// Check if this aura is permanent (until user cancel's it)

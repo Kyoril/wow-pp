@@ -937,20 +937,9 @@ namespace wowpp
 			}
 			else if (targetUnit->isAlive())
 			{
+				bool positive = caster.isHostileTo(*targetUnit);
 				UInt32 auraDispelType = effect.miscvaluea();
-				for (UInt32 i = 0; i < totalPoints; i++)
-				{
-					bool positive = caster.isHostileTo(*targetUnit);
-					Aura *aura = targetUnit->getAuras().popBack(auraDispelType, positive);
-					if (aura)
-					{
-						aura->misapplyAura();
-					}
-					else
-					{
-						break;
-					}
-				}
+				targetUnit->getAuras().removeAurasDueToDispel(auraDispelType, totalPoints);
 			}
 
 			if (m_hitResults.find(targetUnit->getGuid()) == m_hitResults.end())

@@ -46,6 +46,7 @@ namespace wowpp
 		void removeAllAurasDueToSpell(UInt32 spellId);
 		void removeAllAurasDueToItem(UInt64 itemGuid);
 		void removeAllAurasDueToMechanic(UInt32 immunityMask);
+		UInt32 removeAurasDueToDispel(UInt32 dispelType, UInt32 count);
 		void removeAurasByType(UInt32 auraType);
 		Aura *popBack(UInt8 dispelType, bool positive);
 		void removeAllAurasDueToInterrupt(game::SpellAuraInterruptFlags flags);

@@ -63,6 +63,8 @@ namespace wowpp
 		GameUnit *getCaster() {
 			return m_caster.get();
 		}
+		/// Gets the caster guid (or 0 if no caster was set).
+		UInt64 getCasterGuid() const;
 		UInt64 getItemGuid() const {
 			return m_itemGuid;
 		}

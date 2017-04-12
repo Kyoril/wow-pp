@@ -476,6 +476,56 @@ namespace wowpp
 		}
 	}
 
+	UInt32 AuraContainer::removeAurasDueToDispel(UInt32 dispelType, UInt32 count)
+	{
+		UInt32 successCount = 0;
+
+		// Repeat the procedure below N times
+		for (UInt32 i = 0; i < count; ++i)
+		{
+			// We need these variables to remember some aura attributes. One spell can cause multiple
+			// auras on a target. So we have to find all auras, whose spell matches the dispel type,
+			// but also whose spell ids are the same as the first match and whose caster guid matches
+			UInt64 casterGuid = 0;
+			UInt32 spell = 0;
+
+			// Aura iteration
+			for (auto it = m_auras.begin(); it != m_auras.end(); )
+			{
+				// If this aura matches the dispel criteria...
+				if ((*it)->getSpell().dispel() == dispelType)
+				{
+					// Did we find a spell?
+					if (spell == 0)
+					{
+						// Remember spell attributes
+						spell = (*it)->getSpell().id();
+						casterGuid = (*it)->getCasterGuid();
+						removeAura(it);
+
+						// We removed at least one spell's auras
+						successCount++;
+						continue;
+					}
+					else if (spell == (*it)->getSpell().id())
+					{
+						// Same spell - validate that it's the same caster
+						if (casterGuid == (*it)->getCasterGuid())
+						{
+							removeAura(it);
+							continue;
+						}
+					}
+				}
+
+				// Next aura
+				++it;
+			}
+
+			return successCount;
+		}
+	}
+
 	void AuraContainer::removeAurasByType(UInt32 auraType)
 	{
 		// We need to remove all auras by their spell
