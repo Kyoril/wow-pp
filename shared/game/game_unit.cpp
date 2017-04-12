@@ -2736,7 +2736,7 @@ namespace wowpp
 			}
 		}
 
-		return ((m_factionTemplate->friendmask() & faction.selfmask()) != 0) || ((m_factionTemplate->selfmask() & faction.friendmask()) != 0);
+		return ((m_factionTemplate->friendmask() & faction.selfmask()) != 0)/* || ((m_factionTemplate->selfmask() & faction.friendmask()) != 0)*/;
 	}
 
 	bool GameUnit::isFriendlyTo(GameUnit &unit)
@@ -2769,7 +2769,19 @@ namespace wowpp
 			}
 		}
 
-		return ((m_factionTemplate->enemymask() & faction.selfmask()) != 0) || ((m_factionTemplate->selfmask() & faction.enemymask()) != 0);
+		if (m_factionTemplate->enemymask() != 0 &&
+			(m_factionTemplate->enemymask() & faction.selfmask()) != 0)
+			return true;
+
+		// Not sure about this check, as it would only mean that the target is hostile against us, but
+		// not that WE are hostile AGAINST IT
+		// This causes some horde npcs, which are displayed as neutral, to attack alliance players and 
+		// vice versa (dark portal in blasted lands, the orc warlord for example).
+		/*if (faction.enemymask() != 0 &&
+			((m_factionTemplate->selfmask() & faction.enemymask()) != 0))
+			return true;*/
+
+		return false;
 	}
 
 	bool GameUnit::isHostileTo(GameUnit &unit)
