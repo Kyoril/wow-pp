@@ -887,45 +887,47 @@ namespace wowpp
 		sendPacket(
 			std::bind(game::server_write::bindPointUpdate, std::placeholders::_1, homeMap, zoneId, std::cref(homePos)));
 
-		if (isLoginEnter)
+		// TODO: Change this
+		std::vector<const proto::SpellEntry*> spellBookList;
+		for (const auto *spell : m_gameCharacter->getSpells())
 		{
-			// TODO: Change this
-			std::vector<const proto::SpellEntry*> spellBookList;
-			for (const auto *spell : m_gameCharacter->getSpells())
+			if (spell->rank() != 0)
 			{
-				if (spell->rank() != 0)
+				if (!canStackSpellRanksInSpellBook(*spell))
 				{
-					if (!canStackSpellRanksInSpellBook(*spell))
+					// Skip spells where lower ranked spell is not learned
+					if (spell->prevspell())
 					{
-						// Skip spells where lower ranked spell is not learned
-						if (spell->prevspell())
-						{
-							if (!m_gameCharacter->hasSpell(spell->prevspell()))
-								continue;
-						}
+						if (!m_gameCharacter->hasSpell(spell->prevspell()))
+							continue;
+					}
 
-						// Skip lower-ranked spells
-						if (spell->nextspell())
-						{
-							if (m_gameCharacter->hasSpell(spell->nextspell()))
-								continue;
-						}
+					// Skip lower-ranked spells
+					if (spell->nextspell())
+					{
+						if (m_gameCharacter->hasSpell(spell->nextspell()))
+							continue;
 					}
 				}
-
-				spellBookList.push_back(spell);
 			}
 
-			// Send spells
-			sendPacket(
-				std::bind(game::server_write::initialSpells, std::placeholders::_1, std::cref(m_project), std::cref(spellBookList), std::cref(m_gameCharacter->getCooldowns())));
+			spellBookList.push_back(spell);
+		}
 
+		// Send spells
+		sendPacket(
+			std::bind(game::server_write::initialSpells, std::placeholders::_1, std::cref(m_project), std::cref(spellBookList), std::cref(m_gameCharacter->getCooldowns())));
+
+		if (isLoginEnter)
+		{
 			// Send tutorial flags (which tutorials have been viewed etc.)
 			sendPacket(
 				std::bind(game::server_write::tutorialFlags, std::placeholders::_1, std::cref(m_tutorialData)));
 
+			/*
 			sendPacket(
 				std::bind(game::server_write::unlearnSpells, std::placeholders::_1));
+			*/
 
 			auto raceEntry = m_gameCharacter->getRaceEntry();
 			ASSERT(raceEntry);
