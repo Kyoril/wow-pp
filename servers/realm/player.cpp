@@ -63,7 +63,8 @@ namespace wowpp
 		, m_transfer(math::Vector3(0.0f, 0.0f, 0.0f))
 		, m_transferO(0.0f)
 		, m_nextWhoRequest(0)
-		, m_mailIdGenerator(0)
+		, m_mailIdGenerator(1)
+		, m_unreadMails(0)
 	{
 		// Randomize seed
 		std::uniform_int_distribution<UInt32> dist;
@@ -334,6 +335,8 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(MinimapPing, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(ItemNameQuery, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(CreatureQuery, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(MailQueryNextTime, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(MailGetBody, game::session_status::LoggedIn)
 
 #undef WOWPP_HANDLE_PACKET
 #undef QUOTE
@@ -1687,6 +1690,32 @@ namespace wowpp
 		}
 	}
 
+	void Player::handleMailQueryNextTime(game::IncomingPacket & packet)
+	{
+		if (!game::client_read::mailQueryNextTime(packet))
+		{
+			return;
+		}
+
+		sendPacket(
+			std::bind(game::server_write::mailQueryNextTime, std::placeholders::_1, m_unreadMails, getMails()));
+	}
+
+	void Player::handleMailGetBody(game::IncomingPacket & packet)
+	{
+		UInt32 mailTextId, mailId;
+
+		if (!game::client_read::mailGetBody(packet, mailTextId, mailId))
+		{
+			return;
+		}
+
+		String body = getMail(mailId)->getBody();
+
+		sendPacket(
+			std::bind(game::server_write::mailSendBody, std::placeholders::_1, mailTextId, body));
+	}
+
 	/*
 	void Player::saveCharacter()
 	{
@@ -2003,6 +2032,19 @@ namespace wowpp
 		m_group = group;
 	}
 
+	Mail * Player::getMail(UInt32 mailId)
+	{
+		for (auto &mail : m_mails)
+		{
+			if (mail.getMailId() == mailId)
+			{
+				return &mail;
+			}
+		}
+
+		return nullptr;
+	}
+
 	void Player::declineGroupInvite()
 	{
 		if (!m_group || !m_gameCharacter)
@@ -2070,8 +2112,12 @@ namespace wowpp
 		mail.setMailId(m_mailIdGenerator.generateId());
 		// TODO save to db
 		m_mails.push_front(mail);
+		m_unreadMails++;
 
 		DLOG("Mail stored");
+
+		sendPacket(
+			std::bind(game::server_write::mailReceived, std::placeholders::_1, mail.getMailId()));
 	}
 
 	void Player::handleRequestPartyMemberStats(game::IncomingPacket &packet)

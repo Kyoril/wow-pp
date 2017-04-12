@@ -32,6 +32,9 @@ namespace io
 
 namespace wowpp
 {
+	static constexpr UInt8 MaxItemsInMail = 12;
+	static constexpr UInt8 MaxMailsInBox = 100;
+
 	namespace mail
 	{
 		namespace stationery
@@ -147,7 +150,7 @@ namespace wowpp
 		String receiver, subject, body;
 		UInt32 money, COD;
 		UInt8 itemsCount;
-		std::array<ObjectGuid, 12> itemsGuids;
+		std::array<ObjectGuid, MaxItemsInMail> itemsGuids;
 
 		MailData()
 			: money(0)

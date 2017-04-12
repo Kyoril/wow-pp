@@ -143,5 +143,6 @@ namespace wowpp
 		void handleCharacterSpawned(pp::IncomingPacket &packet);
 		void handleMailDraft(pp::IncomingPacket &packet);
 		void handleMailGetList(pp::IncomingPacket &packet);
+		void handleMailMarkAsRead(pp::IncomingPacket &packet);
 	};
 }

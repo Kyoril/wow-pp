@@ -249,6 +249,7 @@ namespace wowpp
 		void handleToggleCloak(game::Protocol::IncomingPacket &packet);
 		void handleMailSend(game::Protocol::IncomingPacket &packet);
 		void handleMailGetList(game::Protocol::IncomingPacket &packet);
+		void handleMailMarkAsRead(game::Protocol::IncomingPacket &packet);
 		void handleResurrectResponse(game::Protocol::IncomingPacket &packet);
 		void handleCancelChanneling(game::Protocol::IncomingPacket &packet);
 		void handlePlayedTime(game::Protocol::IncomingPacket &packet);

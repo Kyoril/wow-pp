@@ -2964,7 +2964,8 @@ namespace wowpp
 							<< io::write<NetUInt64>(mail.getSenderGuid())
 							<< io::write<NetUInt32>(mail.getCOD())
 							// TODO letter item id
-							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(1)
+							// unknown
 							<< io::write<NetUInt32>(0)
 							// TODO stationery mail (GM, auction, etc, 41 is default)
 							<< io::write<NetUInt32>(41)
@@ -3007,6 +3008,71 @@ namespace wowpp
 						<< io::write<NetUInt32>(mailResult.itemsCount);
 				}
 
+				out_packet.finish();
+			}
+
+			void mailQueryNextTime(game::OutgoingPacket & out_packet, UInt32 unreadMails, std::list<Mail> & mails)
+			{
+				out_packet.start(game::server_packet::MailQueryNextTime);
+				if (unreadMails > 0)
+				{
+					out_packet
+						<< io::write<NetUInt32>(0);
+						// Placeholder for mail count
+					const UInt32 mailCountPos = out_packet.sink().position();
+					out_packet
+						<< io::write<NetUInt32>(0);
+
+					UInt32 mailCount = 0;
+
+					for (auto &mail : mails)
+					{
+						// TODO: check if it has been read / delivered
+
+						out_packet
+							<< io::write<NetUInt64>(mail.getSenderGuid())
+							// TODO: check mail type
+							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(0)
+							// TODO stationery mail (GM, auction, etc, 41 is default)
+							<< io::write<NetUInt32>(41)
+							// unknown constant 
+							<< io::write<NetUInt32>(0xC6000000);
+
+						mailCount++;
+						if (mailCount == 2)
+						{
+							break;
+						}
+					}
+					out_packet.writePOD(mailCountPos, mailCount);
+				}
+				else
+				{
+					out_packet
+						// unknown constant 
+						<< io::write<NetUInt32>(0xC7A8C000)
+						<< io::write<NetUInt32>(0);
+				}
+
+				out_packet.finish();
+			}
+
+			void mailReceived(game::OutgoingPacket & out_packet, UInt32 mailId)
+			{
+				out_packet.start(game::server_packet::MailReceived);
+				out_packet
+					<< io::write<NetUInt32>(mailId);
+				out_packet.finish();
+			}
+
+			void mailSendBody(game::OutgoingPacket & out_packet, UInt32 mailTextId, const String & body)
+			{
+				out_packet.start(game::server_packet::MailSendBody);
+				out_packet
+					<< io::write<NetUInt32>(mailTextId)
+					<< io::write_range(body)
+					<< io::write<NetUInt8>(0);
 				out_packet.finish();
 			}
 
@@ -4045,6 +4111,27 @@ namespace wowpp
 					>> io::read<NetUInt64>(out_mailboxGuid);
 			}
 
+			bool mailGetBody(io::Reader & packet, UInt32 & out_mailTextId, UInt32 & out_mailId)
+			{
+				UInt32 skipped = 0;
+				return packet
+					>> io::read<NetUInt32>(out_mailTextId)
+					>> io::read<NetUInt32>(out_mailId)
+					>> io::read<NetUInt32>(skipped);
+			}
+
+			bool mailMarkAsRead(io::Reader & packet, ObjectGuid & out_mailboxGuid, UInt32 & out_mailId)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_mailboxGuid)
+					>> io::read<NetUInt32>(out_mailId);
+			}
+
+			bool mailQueryNextTime(io::Reader & packet)
+			{
+				return packet;
+			}
+
 			bool resurrectResponse(io::Reader & packet, UInt64 &out_guid, UInt8 &out_status)
 			{
 				return packet
@@ -4056,7 +4143,7 @@ namespace wowpp
 			{
 				packet.skip(packet.getSource()->size());
 
-				return true;
+				return packet;
 			}
 			bool itemNameQuery(io::Reader & packet, UInt32 & out_entry, UInt64 & out_guid)
 			{

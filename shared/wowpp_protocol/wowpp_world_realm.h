@@ -94,7 +94,9 @@ namespace wowpp
 					/// Sent by the world server when a player sends a mail.
 					MailDraft,
 					/// Sent by the world server when a player requests its mails.
-					MailGetList
+					MailGetList,
+					/// Sent by the world server when a player marks a mail as read.
+					MailMarkAsRead
 				};
 			}
 
@@ -128,7 +130,9 @@ namespace wowpp
 					/// One or more items have been deleted. Only slots are specified here.
 					ItemsRemoved,
 					/// The player character has learned a new spell. This is currently only sent using the WebAPI.
-					SpellLearned
+					SpellLearned,
+					/// Sent by the realm when money needs to be changed on a character.
+					MoneyChange
 				};
 			}
 
@@ -278,6 +282,12 @@ namespace wowpp
 					pp::OutgoingPacket &out_packet,
 					DatabaseId characterId
 				);
+
+				void mailMarkAsRead(
+					pp::OutgoingPacket &out_packet,
+					DatabaseId characterId,
+					UInt32 mailId
+				);
 			}
 
 			/// Contains methods for writing packets from the realm server.
@@ -363,6 +373,12 @@ namespace wowpp
 					pp::OutgoingPacket &out_packet,
 					UInt64 characterId,
 					UInt32 spellId
+				);
+				void moneyChange(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					UInt32 money,
+					bool remove
 				);
 			}
 
@@ -482,6 +498,12 @@ namespace wowpp
 					io::Reader &packet,
 					DatabaseId &out_characterId
 				);
+
+				bool mailMarkAsRead(
+					io::Reader &packet,
+					DatabaseId &out_characterId,
+					UInt32 &out_mailId
+				);
 			}
 
 			/// Contains methods for reading packets coming from the realm server.
@@ -571,6 +593,12 @@ namespace wowpp
 					io::Reader &packet,
 					UInt64 &out_characterId,
 					UInt32 &out_spellId
+				);
+				bool moneyChange(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					UInt32 &out_money,
+					bool &out_remove
 				);
 			}
 		}

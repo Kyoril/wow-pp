@@ -120,6 +120,9 @@ namespace wowpp
 			case world_packet::MailGetList:
 				handleMailGetList(packet);
 				break;
+			case world_packet::MailMarkAsRead:
+				handleMailMarkAsRead(packet);
+				break;
 			default:
 			{
 				WLOG("Unknown packet received from world " << m_address
@@ -532,6 +535,8 @@ namespace wowpp
 			return;
 		}
 
+		capitalize(receiver);
+
 		auto senderPl = m_playerManager.getPlayerByCharacterGuid(mail.getSenderGuid());
 		auto receiverPl = m_playerManager.getPlayerByCharacterName(receiver);
 		// TODO check if player guid/name exists, not just if it's online
@@ -560,8 +565,7 @@ namespace wowpp
 			return;
 		}
 
-		// 100 is max mails in box
-		if (receiverPl->getMails().size() > 100)
+		if (receiverPl->getMails().size() > MaxMailsInBox)
 		{
 			senderPl->sendPacket(
 				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
@@ -587,7 +591,8 @@ namespace wowpp
 				return;
 			}
 
-			senderChar->setUInt32Value(character_fields::Coinage, plMoney - reqMoney);
+			m_connection->sendSinglePacket(
+				std::bind(pp::world_realm::realm_write::moneyChange, std::placeholders::_1, senderPl->getCharacterId(), reqMoney, true));
 
 			senderPl->sendPacket(
 				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
@@ -607,19 +612,47 @@ namespace wowpp
 		auto player = m_playerManager.getPlayerByCharacterId(characterId);
 		if (!player)
 		{
-			// TODO send error
 			return;
 		}
 
 		auto character = player->getGameCharacter();
 		if (!character)
 		{
-			// TODO send error
 			return;
 		}
 
 		player->sendPacket(
 			std::bind(game::server_write::mailListResult, std::placeholders::_1, player->getMails()));
+	}
+
+	void World::handleMailMarkAsRead(pp::IncomingPacket & packet)
+	{
+		DatabaseId characterId;
+		UInt32 mailId;
+		if (!(pp::world_realm::world_read::mailMarkAsRead(packet, characterId, mailId)))
+		{
+			return;
+		}
+
+		auto player = m_playerManager.getPlayerByCharacterId(characterId);
+		if (!player)
+		{
+			return;
+		}
+
+		auto character = player->getGameCharacter();
+		if (!character)
+		{
+			return;
+		}
+
+		Mail * mail = player->getMail(mailId);
+		if (mail)
+		{
+			// TODO: change state properly (mask)
+			player->readMail();
+			mail->setReadState(true);
+		}
 	}
 
 	void World::characterGroupChanged(UInt64 characterGuid, UInt64 groupId)

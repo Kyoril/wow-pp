@@ -125,6 +125,9 @@ namespace wowpp
 			case pp::world_realm::realm_packet::SpellLearned:
 				handleSpellLearned(packet);
 				break; 
+			case pp::world_realm::realm_packet::MoneyChange:
+				handleMoneyChange(packet);
+				break;
 			default:
 				// Log about unknown or unhandled packet
 				const auto &realm = m_config.realms[m_realmEntryIndex];
@@ -607,6 +610,46 @@ namespace wowpp
 		}
 	}
 
+	void RealmConnector::handleMoneyChange(pp::Protocol::IncomingPacket & packet)
+	{
+		DatabaseId characterId;
+		UInt32 money;
+		bool remove;
+		if (!(pp::world_realm::realm_read::moneyChange(packet, characterId, money, remove)))
+		{
+			return;
+		}
+
+		auto player = m_playerManager.getPlayerByCharacterId(characterId);
+		if (!player)
+		{
+			return;
+		}
+
+		auto character = player->getCharacter();
+		if (!character)
+		{
+			return;
+		}
+
+		UInt32 charMoney = character->getUInt32Value(character_fields::Coinage);
+		if (remove)
+		{
+			if (charMoney < money)
+			{
+				character->setUInt32Value(character_fields::Coinage, 0);
+			}
+			else
+			{
+				character->setUInt32Value(character_fields::Coinage, charMoney - money);
+			}
+		}
+		else
+		{
+			character->setUInt32Value(character_fields::Coinage, charMoney + money);
+		}
+	}
+
 	void RealmConnector::handleProxyPacket(pp::Protocol::IncomingPacket &packet)
 	{
 		DatabaseId characterId;
@@ -721,6 +764,7 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(ToggleCloak)
 			WOWPP_HANDLE_PLAYER_PACKET(MailSend)
 			WOWPP_HANDLE_PLAYER_PACKET(MailGetList)
+			WOWPP_HANDLE_PLAYER_PACKET(MailMarkAsRead)
 			WOWPP_HANDLE_PLAYER_PACKET(ResurrectResponse)
 			WOWPP_HANDLE_PLAYER_PACKET(CancelChanneling)
 			WOWPP_HANDLE_PLAYER_PACKET(PlayedTime)
@@ -1395,9 +1439,14 @@ namespace wowpp
 			std::bind(pp::world_realm::world_write::mailDraft, std::placeholders::_1, std::move(mail), std::move(receiver)));
 	}
 
-	void RealmConnector::sendGetMailList(DatabaseId characterId)
+	void RealmConnector::sendMailGetList(DatabaseId characterId)
 	{
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::world_write::mailGetList, std::placeholders::_1, characterId));
+	}
+	void RealmConnector::sendMailMarkAsRead(DatabaseId characterId, UInt32 mailId)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::world_write::mailMarkAsRead, std::placeholders::_1, characterId, mailId));
 	}
 }

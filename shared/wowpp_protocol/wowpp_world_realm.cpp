@@ -184,6 +184,15 @@ namespace wowpp
 						;
 					out_packet.finish();
 				}
+				void mailMarkAsRead(pp::OutgoingPacket & out_packet, DatabaseId characterId, UInt32 mailId)
+				{
+					out_packet.start(world_packet::MailMarkAsRead);
+					out_packet
+						<< io::write<NetDatabaseId>(characterId)
+						<< io::write<NetUInt32>(mailId)
+						;
+					out_packet.finish();
+				}
 			}
 
 			namespace realm_write
@@ -308,6 +317,15 @@ namespace wowpp
 					out_packet
 						<< io::write<NetUInt64>(characterId)
 						<< io::write<NetUInt32>(spellId);
+					out_packet.finish();
+				}
+				void moneyChange(pp::OutgoingPacket & out_packet, UInt64 characterId, UInt32 money, bool remove)
+				{
+					out_packet.start(realm_packet::MoneyChange);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write<NetUInt32>(money)
+						<< io::write<NetUInt8>(remove);
 					out_packet.finish();
 				}
 			}
@@ -442,6 +460,14 @@ namespace wowpp
 						>> io::read<NetDatabaseId>(out_characterId)
 						;
 				}
+
+				bool mailMarkAsRead(io::Reader & packet, DatabaseId & out_characterId, UInt32 & out_mailId)
+				{
+					return packet
+						>> io::read<NetDatabaseId>(out_characterId)
+						>> io::read<NetUInt32>(out_mailId)
+						;
+				}
 			}
 
 			namespace realm_read
@@ -563,6 +589,13 @@ namespace wowpp
 					return packet
 						>> io::read<NetUInt64>(out_characterId)
 						>> io::read<NetUInt32>(out_spellId);
+				}
+				bool moneyChange(io::Reader & packet, UInt64 & out_characterId, UInt32 & out_money, bool & out_remove)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read<NetUInt32>(out_money)
+						>> io::read<NetUInt8>(out_remove);
 				}
 			}
 		}

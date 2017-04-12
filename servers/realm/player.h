@@ -166,7 +166,10 @@ namespace wowpp
 		/// Gets the connected world node
 		World *getWorldNode() { return m_worldNode; }
 		///
-		std::list<Mail> getMails() { return m_mails; }
+		std::list<Mail> &getMails() { return m_mails; }
+		///
+		Mail *getMail(UInt32 mailId);
+
 		/// Declines a pending group invite (if available).
 		void declineGroupInvite();
 		/// 
@@ -175,6 +178,8 @@ namespace wowpp
 		void spawnedNotification();
 		/// Called when character receives a (valid) mail
 		void mailReceived(Mail mail);
+		/// Called when character reads a mail
+		void readMail() { m_unreadMails--; }
 
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.
@@ -252,6 +257,7 @@ namespace wowpp
 		auth::AuthLocale m_locale;
 		std::list<Mail> m_mails;
 		IdGenerator<UInt32> m_mailIdGenerator;
+		UInt32 m_unreadMails;
 
 	private:
 
@@ -316,5 +322,7 @@ namespace wowpp
 		void handleMinimapPing(game::IncomingPacket &packet);
 		void handleItemNameQuery(game::IncomingPacket &packet);
 		void handleCreatureQuery(game::IncomingPacket &packet);
+		void handleMailQueryNextTime(game::IncomingPacket &packet);
+		void handleMailGetBody(game::IncomingPacket &packet);
 	};
 }

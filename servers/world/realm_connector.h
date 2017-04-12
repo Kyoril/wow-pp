@@ -107,7 +107,9 @@ namespace wowpp
 		///
 		void sendMailDraft(Mail mail, String &receiver);
 		///
-		void sendGetMailList(DatabaseId characterId);
+		void sendMailGetList(DatabaseId characterId);
+		///
+		void sendMailMarkAsRead(DatabaseId characterId, UInt32 mailId);
 
 
 	private:
@@ -133,6 +135,7 @@ namespace wowpp
 		void handleRemoveIgnore(pp::Protocol::IncomingPacket &packet);
 		void handleItemData(pp::Protocol::IncomingPacket &packet);
 		void handleSpellLearned(pp::Protocol::IncomingPacket &packet);
+		void handleMoneyChange(pp::Protocol::IncomingPacket &packet);
 
 	private:
 

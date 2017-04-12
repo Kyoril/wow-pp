@@ -1341,8 +1341,7 @@ namespace wowpp
 		// TODO distance to mailbox
 		//float distance = m_character->getDistanceTo(target);
 
-		// 12 is the limit of items to send 
-		if (mailInfo.itemsCount > 12)
+		if (mailInfo.itemsCount > MaxItemsInMail)
 		{
 			sendProxyPacket(
 				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
@@ -1461,9 +1460,38 @@ namespace wowpp
 		// TODO distance to mailbox
 		//float distance = m_character->getDistanceTo(target);
 
-		m_realmConnector.sendGetMailList(m_characterId);
+		m_realmConnector.sendMailGetList(m_characterId);
 
 		DLOG("CMSG_MAIL_GET_LIST receiver from client");
+	}
+
+	void Player::handleMailMarkAsRead(game::Protocol::IncomingPacket & packet)
+	{
+		ObjectGuid currentMailbox;
+		UInt32 mailId;
+
+		if (!game::client_read::mailMarkAsRead(packet, currentMailbox, mailId))
+		{
+			return;
+		}
+
+		auto *world = m_character->getWorldInstance();
+		if (!world)
+		{
+			return;
+		}
+
+		auto *target = world->findObjectByGUID(currentMailbox);
+		if (!target)
+		{
+			// Checks if object exists and if it's a mailbox (TODO)
+			return;
+		}
+
+		// TODO distance to mailbox
+		//float distance = m_character->getDistanceTo(target);
+
+		m_realmConnector.sendMailMarkAsRead(m_characterId, mailId);
 	}
 
 	void Player::handleResurrectResponse(game::Protocol::IncomingPacket & packet)

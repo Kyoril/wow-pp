@@ -1035,6 +1035,22 @@ namespace wowpp
 				ObjectGuid &out_mailboxGuid
 				);
 
+			bool mailGetBody(
+				io::Reader &packet,
+				UInt32 &out_mailTextId,
+				UInt32 &out_mailId
+				);
+
+			bool mailMarkAsRead(
+				io::Reader &packet,
+				ObjectGuid &out_mailboxGuid,
+				UInt32 &out_mailId
+				);
+
+			bool mailQueryNextTime(
+				io::Reader &packet
+				);
+
 			bool resurrectResponse(
 				io::Reader &packet,
 				UInt64 &out_guid,
@@ -1997,6 +2013,23 @@ namespace wowpp
 			void mailSendResult(
 				game::OutgoingPacket &out_packet,
 				MailResult mailResult
+				);
+
+			void mailQueryNextTime(
+				game::OutgoingPacket &out_packet,
+				UInt32 unreadMails,
+				std::list<Mail> &mails
+				);
+
+			void mailReceived(
+				game::OutgoingPacket &out_packet,
+				UInt32 mailId
+				);
+
+			void mailSendBody(
+				game::OutgoingPacket &out_packet,
+				UInt32 mailTextId,
+				const String &body
 				);
 
 			void moveSetCanFly(

@@ -99,6 +99,7 @@ namespace wowpp
 			<< io::write<NetUInt32>(object.m_money)
 			<< io::write<NetUInt32>(object.m_COD)
 			<< io::write<NetUInt8>(object.m_read ? 1 : 0)
+			<< io::write<NetUInt32>(object.m_mailId)
 			;
 		// TODO items
 
@@ -114,6 +115,7 @@ namespace wowpp
 			>> io::read<NetUInt32>(object.m_money)
 			>> io::read<NetUInt32>(object.m_COD)
 			>> io::read<NetUInt8>(object.m_read)
+			>> io::read<NetUInt32>(object.m_mailId)
 			;
 
 		return r;
