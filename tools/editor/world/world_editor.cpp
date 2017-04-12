@@ -340,6 +340,30 @@ namespace wowpp
 								const auto &verts = tree->getVertices();
 								const auto &inds = tree->getIndices();
 
+								std::vector<math::Vector3> normals;
+								normals.resize(verts.size());
+
+								// Code for smooth normal generation
+								for (UInt32 i = 0; i < inds.size(); i += 3)
+								{
+									auto& v0 = verts[inds[i + 0]];
+									auto& v1 = verts[inds[i + 1]];
+									auto& v2 = verts[inds[i + 2]];
+
+									math::Vector3 u = v1 - v0;
+									math::Vector3 v = v2 - v0;
+									math::Vector3 n = u.cross(v);
+									n.normalize();
+
+									normals[inds[i + 0]] += n;
+									normals[inds[i + 1]] += n;
+									normals[inds[i + 2]] += n;
+								}
+
+								for (uint i = 0; i < normals.size(); ++i) {
+									normals[i].normalize();
+								}
+
 								// Build unique object name
 								std::ostringstream objStrm;
 								objStrm << "WMO_" << entry.uniqueId;
@@ -350,10 +374,12 @@ namespace wowpp
 									obj->begin("LineOfSightBlock", Ogre::RenderOperation::OT_TRIANGLE_LIST);
 									obj->estimateVertexCount(verts.size());
 									obj->estimateIndexCount(inds.size() * 3);
-									for (auto &vert : verts)
+
+									for (UInt32 i = 0; i < verts.size(); ++i)
 									{
-										obj->position(vert.x, vert.y, vert.z);
+										obj->position(verts[i].x, verts[i].y, verts[i].z);
 										obj->colour(Ogre::ColourValue(0.5f, 0.5f, 0.5f));
+										obj->normal(normals[i].x, normals[i].y, normals[i].z);
 									}
 
 									UInt32 triIndex = 0;

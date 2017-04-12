@@ -228,6 +228,8 @@ void QtOgreWindow::initialize()
 	pass->setVertexColourTracking(Ogre::TVC_DIFFUSE);
 	pass = teq->createPass();
 	pass->setPolygonMode(Ogre::PM_WIREFRAME);
+	pass->setDepthBias(0.5f);
+	pass->setPointSize(3.0f);
 	pass->setSceneBlending(Ogre::SceneBlendType::SBT_MODULATE);
 	pass->setDiffuse(0.0f, 0.0f, 0.0f, 1.0f);
 	pass->setAmbient(0.0f, 0.0f, 0.0f);
