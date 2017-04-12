@@ -276,7 +276,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		bool isPositive = Aura::isPositive(m_spell, effect);
+		bool isPositive = AuraEffect::isPositive(m_spell, effect);
 		UInt8 school = m_spell.schoolmask();
 
 		if (isPositive)
@@ -347,7 +347,7 @@ namespace wowpp
 					if (effect.aura() == game::aura_type::PeriodicDamage &&
 						m_spell.attributes(4) & game::spell_attributes_ex_d::StackDotModifier)
 					{
-						targetUnit->getAuras().forEachAuraOfType(game::aura_type::PeriodicDamage, [&totalPoints, this](Aura &aura) -> bool
+						targetUnit->getAuras().forEachAuraOfType(game::aura_type::PeriodicDamage, [&totalPoints, this](AuraEffect &aura) -> bool
 						{
 							if (aura.getSpell().id() == m_spell.id())
 							{
@@ -380,10 +380,10 @@ namespace wowpp
 			}
 			else if (targetUnit->isAlive())
 			{
-				std::shared_ptr<Aura> aura = std::make_shared<Aura>(m_spell, effect, totalPoints, caster, *targetUnit, m_target, m_itemGuid, false, [&universe](std::function<void()> work)
+				std::shared_ptr<AuraEffect> aura = std::make_shared<AuraEffect>(m_spell, effect, totalPoints, caster, *targetUnit, m_target, m_itemGuid, false, [&universe](std::function<void()> work)
 				{
 					universe.post(work);
-				}, [&universe](Aura & self)
+				}, [&universe](AuraEffect & self)
 				{
 					// Prevent aura from being deleted before being removed from the list
 					auto strong = self.shared_from_this();
@@ -1852,7 +1852,7 @@ namespace wowpp
 				UInt32 auraDispelType = effect.miscvaluea();
 				for (UInt32 i = 0; i < totalPoints; i++)
 				{
-					Aura *stolenAura = targetUnit->getAuras().popBack(auraDispelType, true);
+					AuraEffect *stolenAura = targetUnit->getAuras().popBack(auraDispelType, true);
 					if (stolenAura)
 					{
 						proto::SpellEntry spell(stolenAura->getSpell());
@@ -1862,10 +1862,10 @@ namespace wowpp
 
 						auto *world = caster.getWorldInstance();
 						auto &universe = world->getUniverse();
-						std::shared_ptr<Aura> aura = std::make_shared<Aura>(spell, effect, basepoints, caster, caster, m_target, m_itemGuid, false, [&universe](std::function<void()> work)
+						std::shared_ptr<AuraEffect> aura = std::make_shared<AuraEffect>(spell, effect, basepoints, caster, caster, m_target, m_itemGuid, false, [&universe](std::function<void()> work)
 						{
 							universe.post(work);
-						}, [](Aura & self)
+						}, [](AuraEffect & self)
 						{
 							// Prevent aura from being deleted before being removed from the list
 							auto strong = self.shared_from_this();
@@ -2045,8 +2045,8 @@ namespace wowpp
 					break;
 				}
 
-				Aura *sealAura = nullptr;
-				m_cast.getExecuter().getAuras().forEachAuraOfType(game::aura_type::Dummy, [this, &sealAura](Aura &aura) -> bool {
+				AuraEffect *sealAura = nullptr;
+				m_cast.getExecuter().getAuras().forEachAuraOfType(game::aura_type::Dummy, [this, &sealAura](AuraEffect &aura) -> bool {
 					if (aura.getCaster() == &m_cast.getExecuter() &&
 						aura.getEffect().index() > 0 &&	// Never the first effect!
 						isSealSpell(aura.getSpell()))

@@ -2444,7 +2444,7 @@ namespace wowpp
 		const float totalArmor = getModifierValue(unit_mods::Armor, unit_mod_type::TotalValue);
 		const float totalPct = getModifierValue(unit_mods::Armor, unit_mod_type::TotalPct);
 
-		getAuras().forEachAuraOfType(game::aura_type::ModResistanceOfStatPercent, [&baseArmor, this](Aura &aura) -> bool {
+		getAuras().forEachAuraOfType(game::aura_type::ModResistanceOfStatPercent, [&baseArmor, this](AuraEffect &aura) -> bool {
 			baseArmor += getUInt32Value(unit_fields::Stat0 + aura.getEffect().miscvalueb()) * aura.getBasePoints() / 100.0f;
 			return true;
 		});
@@ -3484,7 +3484,7 @@ namespace wowpp
 		// Reset all auras
 		for (UInt32 i = 0; i < 56; ++i)
 		{
-			object.setUInt32Value(unit_fields::Aura + i, 0);
+			object.setUInt32Value(unit_fields::AuraEffect + i, 0);
 		}
 
 		// Reset all buffs

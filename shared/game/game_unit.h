@@ -28,7 +28,7 @@
 #include "movement_info.h"
 #include "spell_cast.h"
 #include "spell_target_map.h"
-#include "aura.h"
+#include "aura_effect.h"
 #include "aura_container.h"
 #include "common/macros.h"
 #include "common/linear_set.h"
@@ -90,7 +90,7 @@ namespace wowpp
 			VirtualItemInfo				= 0x22 + object_fields::ObjectFieldCount,
 			UnitFlags					= 0x28 + object_fields::ObjectFieldCount,
 			UnitFlags2					= 0x29 + object_fields::ObjectFieldCount,
-			Aura						= 0x2A + object_fields::ObjectFieldCount,
+			AuraEffect						= 0x2A + object_fields::ObjectFieldCount,
 			AuraList					= 0x58 + object_fields::ObjectFieldCount,
 			AuraFlags					= 0x62 + object_fields::ObjectFieldCount,
 			AuraLevels					= 0x70 + object_fields::ObjectFieldCount,
@@ -927,7 +927,7 @@ namespace wowpp
 
 		typedef std::array<float, unit_mod_type::End> UnitModTypeArray;
 		typedef std::array<UnitModTypeArray, unit_mods::End> UnitModArray;
-		typedef std::vector<std::shared_ptr<Aura>> AuraVector;
+		typedef std::vector<std::shared_ptr<AuraEffect>> AuraVector;
 		typedef LinearSet<GameUnit *> AttackingUnitSet;
 		typedef LinearSet<UInt32> MechanicImmunitySet;
 

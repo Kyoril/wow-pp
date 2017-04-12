@@ -32,7 +32,7 @@ namespace wowpp
 	class GameUnit;
 
 	/// Represents an instance of a spell aura.
-	class Aura : public std::enable_shared_from_this<Aura>
+	class AuraEffect : public std::enable_shared_from_this<AuraEffect>
 	{
 		typedef std::function<void(std::function<void()>)> PostFunction;
 
@@ -42,8 +42,8 @@ namespace wowpp
 
 	public:
 
-		/// Initializes a new instance of the Aura class.
-		explicit Aura(const proto::SpellEntry &spell, 
+		/// Initializes a new instance of the AuraEffect class.
+		explicit AuraEffect(const proto::SpellEntry &spell, 
 					  const proto::SpellEffect &effect, 
 					  Int32 basePoints, 
 					  GameUnit &caster, 
@@ -52,8 +52,8 @@ namespace wowpp
 					  UInt64 itemGuid,
 					  bool isPersistent,
 					  PostFunction post, 
-					  std::function<void(Aura &)> onDestroy);
-		~Aura();
+					  std::function<void(AuraEffect &)> onDestroy);
+		~AuraEffect();
 
 		/// Gets the unit target.
 		GameUnit &getTarget() {
@@ -152,7 +152,7 @@ namespace wowpp
 
 	protected:
 
-		// Aura effect handlers implemented in aura_effects.cpp
+		// AuraEffect effect handlers implemented in aura_effects.cpp
 
 		/// 0
 		void handleModNull(bool apply);
@@ -333,7 +333,7 @@ namespace wowpp
 		bool m_expired;
 		UInt8 m_slot;
 		PostFunction m_post;
-		std::function<void(Aura &)> m_destroy;
+		std::function<void(AuraEffect &)> m_destroy;
 		UInt32 m_totalTicks;
 		Int32 m_duration;
 		UInt64 m_itemGuid;

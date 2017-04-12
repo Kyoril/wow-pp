@@ -39,7 +39,7 @@
 #include "common/make_unique.h"
 #include "game_creature.h"
 #include "universe.h"
-#include "aura.h"
+#include "aura_effect.h"
 #include "unit_mover.h"
 #include "game_dyn_object.h"
 #include "log/default_log_levels.h"
@@ -1075,7 +1075,7 @@ namespace wowpp
 
 			for (const auto &effect : m_spell.effects())
 			{
-				if (Aura::isPositive(m_spell, effect))
+				if (AuraEffect::isPositive(m_spell, effect))
 				{
 					isPositive = true;
 				}

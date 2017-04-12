@@ -20,7 +20,7 @@
 //
 
 #include "pch.h"
-#include "aura.h"
+#include "aura_effect.h"
 #include "common/clock.h"
 #include "game_unit.h"
 #include "game_character.h"
@@ -36,7 +36,7 @@
 
 namespace wowpp
 {
-	Aura::Aura(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, SpellTargetMap targetMap, UInt64 itemGuid, bool isPersistent, PostFunction post, std::function<void(Aura &)> onDestroy)
+	AuraEffect::AuraEffect(const proto::SpellEntry &spell, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, SpellTargetMap targetMap, UInt64 itemGuid, bool isPersistent, PostFunction post, std::function<void(AuraEffect &)> onDestroy)
 		: m_spell(spell)
 		, m_effect(effect)
 		, m_target(target)
@@ -66,9 +66,9 @@ namespace wowpp
 		}
 
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
-		m_onExpire = m_expireCountdown.ended.connect(this, &Aura::onExpired);
+		m_onExpire = m_expireCountdown.ended.connect(this, &AuraEffect::onExpired);
 		if (!m_isPersistent)
-			m_onTick = m_tickCountdown.ended.connect(this, &Aura::onTick);
+			m_onTick = m_tickCountdown.ended.connect(this, &AuraEffect::onTick);
 
 		// Adjust aura duration
 		if (m_caster &&
@@ -100,15 +100,15 @@ namespace wowpp
 		m_totalTicks = (m_effect.amplitude() == 0 ? 0 : m_duration / m_effect.amplitude());
 	}
 
-	Aura::~Aura()
+	AuraEffect::~AuraEffect()
 	{
 	}
 
-	void Aura::setBasePoints(Int32 basePoints) {
+	void AuraEffect::setBasePoints(Int32 basePoints) {
 		m_basePoints = basePoints;
 	}
 
-	UInt32 Aura::getEffectSchoolMask()
+	UInt32 AuraEffect::getEffectSchoolMask()
 	{
 		UInt32 effectSchoolMask = m_spell.schoolmask();
 		if (m_effect.aura() == game::aura_type::ProcTriggerSpell ||
@@ -124,7 +124,7 @@ namespace wowpp
 		return effectSchoolMask;
 	}
 
-	bool Aura::isStealthAura() const
+	bool AuraEffect::isStealthAura() const
 	{
 		for (Int32 i = 0; i < m_spell.effects_size(); ++i)
 		{
@@ -138,12 +138,12 @@ namespace wowpp
 		return false;
 	}
 
-	void Aura::update()
+	void AuraEffect::update()
 	{
 		onTick();
 	}
 
-	void Aura::updateStackCount(Int32 points)
+	void AuraEffect::updateStackCount(Int32 points)
 	{
 		if (m_spell.stackamount() != m_stackCount)
 		{
@@ -172,7 +172,7 @@ namespace wowpp
 		handleModifier(true);
 	}
 
-	void Aura::updateAuraApplication()
+	void AuraEffect::updateAuraApplication()
 	{
 		UInt32 stackCount = m_procCharges > 0 ? m_procCharges * m_stackCount : m_stackCount;
 
@@ -184,7 +184,7 @@ namespace wowpp
 		m_target.setUInt32Value(unit_fields::AuraApplications + index, val);
 	}
 
-	void Aura::handleModifier(bool apply)
+	void AuraEffect::handleModifier(bool apply)
 	{
 		namespace aura = game::aura_type;
 
@@ -398,7 +398,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleProcModifier(UInt8 attackType, bool canRemove, UInt32 amount, GameUnit *target/* = nullptr*/)
+	void AuraEffect::handleProcModifier(UInt8 attackType, bool canRemove, UInt32 amount, GameUnit *target/* = nullptr*/)
 	{
 		namespace aura = game::aura_type;
 
@@ -481,12 +481,12 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleTakenDamage(GameUnit *attacker)
+	void AuraEffect::handleTakenDamage(GameUnit *attacker)
 	{
 
 	}
 
-	void Aura::handleDummyProc(GameUnit *victim, UInt32 amount)
+	void AuraEffect::handleDummyProc(GameUnit *victim, UInt32 amount)
 	{
 		if (!victim)
 		{
@@ -584,7 +584,7 @@ namespace wowpp
 		*/
 	}
 
-	void Aura::handleDamageShieldProc(GameUnit *attacker)
+	void AuraEffect::handleDamageShieldProc(GameUnit *attacker)
 	{
 		attacker->dealDamage(m_basePoints, m_spell.schoolmask(), game::DamageType::Indirect, &m_target, 0.0f);
 
@@ -606,7 +606,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleTriggerSpellProc(GameUnit *target, UInt32 amount)
+	void AuraEffect::handleTriggerSpellProc(GameUnit *target, UInt32 amount)
 	{
 		if (!target)
 		{
@@ -648,7 +648,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::calculatePeriodicDamage(UInt32 & out_damage, UInt32 & out_absorbed, UInt32 & out_resisted)
+	void AuraEffect::calculatePeriodicDamage(UInt32 & out_damage, UInt32 & out_absorbed, UInt32 & out_resisted)
 	{
 		out_damage = m_basePoints;
 
@@ -661,7 +661,7 @@ namespace wowpp
 			m_target.calculateArmorReducedDamage(m_caster->getLevel(), out_damage);
 	}
 
-	void Aura::periodicLeechEffect()
+	void AuraEffect::periodicLeechEffect()
 	{
 		// If target is immune to this damage school, do nothing
 		if (m_spell.schoolmask() != 0 && m_target.isImmune(m_spell.schoolmask()))
@@ -717,7 +717,7 @@ namespace wowpp
 		}
 	}
 
-	bool Aura::hasPositiveTarget(const proto::SpellEffect &effect)
+	bool AuraEffect::hasPositiveTarget(const proto::SpellEffect &effect)
 	{
 		if (effect.targetb() == game::targets::UnitAreaEnemySrc) {
 			return false;
@@ -736,7 +736,7 @@ namespace wowpp
 		}
 	}
 
-	bool Aura::isPositive() const
+	bool AuraEffect::isPositive() const
 	{
 		return isPositive(m_spell, m_effect);
 
@@ -750,7 +750,7 @@ namespace wowpp
 		return true;*/
 	}
 
-	bool Aura::isPositive(const proto::SpellEntry &spell, const proto::SpellEffect &effect)
+	bool AuraEffect::isPositive(const proto::SpellEntry &spell, const proto::SpellEffect &effect)
 	{
 		// Passive spells are always considered positive
 		if (spell.attributes(0) & game::spell_attributes::Passive)
@@ -1003,7 +1003,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::onExpired()
+	void AuraEffect::onExpired()
 	{
 		// Expired
 		m_expired = true;
@@ -1022,7 +1022,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::onTick()
+	void AuraEffect::onTick()
 	{
 		// No more ticks
 		if (m_totalTicks > 0 &&
@@ -1348,12 +1348,12 @@ namespace wowpp
 		}
 	}
 
-	UInt64 Aura::getCasterGuid() const
+	UInt64 AuraEffect::getCasterGuid() const
 	{
 		return (m_caster.get() ? m_caster->getGuid() : 0);
 	}
 
-	void Aura::applyAura()
+	void AuraEffect::applyAura()
 	{
 		// Check if this aura is permanent (until user cancel's it)
 		if (m_duration > 0)
@@ -1406,7 +1406,7 @@ namespace wowpp
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Damage) != 0)
 		{
 			auto strongThis = shared_from_this();
-			std::weak_ptr<Aura> weakThis(strongThis);
+			std::weak_ptr<AuraEffect> weakThis(strongThis);
 
 			// Subscribe for damage event in next pass, since we don't want to break this aura by it's own damage
 			// (this happens for rogue spell Gouge as it deals damage)
@@ -1446,7 +1446,7 @@ namespace wowpp
 		if ((m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Cast) != 0)
 		{
 			auto strongThis = shared_from_this();
-			std::weak_ptr<Aura> weakThis(strongThis);
+			std::weak_ptr<AuraEffect> weakThis(strongThis);
 
 			m_post([weakThis]() {
 				auto strong = weakThis.lock();
@@ -1544,7 +1544,7 @@ namespace wowpp
 		handleModifier(true);
 	}
 
-	void Aura::misapplyAura()
+	void AuraEffect::misapplyAura()
 	{
 		// Stop watching for these
 		m_onExpire.disconnect();
@@ -1570,7 +1570,7 @@ namespace wowpp
 		// Remove aura slot
 		if (m_slot != 0xFF)
 		{
-			m_target.setUInt32Value(unit_fields::Aura + m_slot, 0);
+			m_target.setUInt32Value(unit_fields::AuraEffect + m_slot, 0);
 		}
 
 		handleModifier(false);
@@ -1590,14 +1590,14 @@ namespace wowpp
 		misapplied();
 	}
 
-	void Aura::startPeriodicTimer()
+	void AuraEffect::startPeriodicTimer()
 	{
 		// Start timer
 		m_tickCountdown.setEnd(
 			getCurrentTime() + m_effect.amplitude());
 	}
 
-	void Aura::setSlot(UInt8 newSlot)
+	void AuraEffect::setSlot(UInt8 newSlot)
 	{
 		if (newSlot != m_slot)
 		{
@@ -1610,7 +1610,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::onTargetMoved(const math::Vector3 &oldPosition, float oldO)
+	void AuraEffect::onTargetMoved(const math::Vector3 &oldPosition, float oldO)
 	{
 		// Determine flags
 		const bool removeOnMove = (m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::Move) != 0;
@@ -1640,15 +1640,15 @@ namespace wowpp
 		}
 	}
 
-	void Aura::onForceRemoval()
+	void AuraEffect::onForceRemoval()
 	{
 		setRemoved(nullptr);
 	}
 
-	void Aura::setRemoved(GameUnit *remover)
+	void AuraEffect::setRemoved(GameUnit *remover)
 	{
-		std::shared_ptr<Aura> strongThis = shared_from_this();
-		std::weak_ptr<Aura> weak(strongThis);
+		std::shared_ptr<AuraEffect> strongThis = shared_from_this();
+		std::weak_ptr<AuraEffect> weak(strongThis);
 		m_post([weak]
 		{
 			auto strong = weak.lock();
@@ -1659,7 +1659,7 @@ namespace wowpp
 		});
 	}
 
-	bool Aura::checkProc(bool active, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt8 attackType, bool isVictim)
+	bool AuraEffect::checkProc(bool active, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt8 attackType, bool isVictim)
 	{
 		UInt32 eventProcFlag;
 		if (m_spell.proccustomflags())
@@ -1786,7 +1786,7 @@ namespace wowpp
 		return true;
 	}
 	
-	void wowpp::Aura::handlePeriodicBase()
+	void wowpp::AuraEffect::handlePeriodicBase()
 	{
 		// Toggle periodic flag
 		m_isPeriodic = true;

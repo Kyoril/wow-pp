@@ -1547,7 +1547,7 @@ namespace wowpp
 					UInt64 auramask = 0;
 					for (UInt32 i = 0; i < 56; ++i)
 					{
-						if (character.getUInt32Value(unit_fields::Aura + i) != 0)
+						if (character.getUInt32Value(unit_fields::AuraEffect + i) != 0)
 						{
 							auramask |= (UInt64(1) << i);
 						}
@@ -1556,7 +1556,7 @@ namespace wowpp
 					        << io::write<NetUInt64>(auramask);
 					for (UInt32 i = 0; i < 56; ++i)
 					{
-						UInt32 aura = character.getUInt32Value(unit_fields::Aura + i);
+						UInt32 aura = character.getUInt32Value(unit_fields::AuraEffect + i);
 						if (aura != 0)
 						{
 							out_packet
@@ -1665,7 +1665,7 @@ namespace wowpp
 					UInt64 auramask = 0;
 					for (UInt32 i = 0; i < 56; ++i)
 					{
-						if (character.getUInt32Value(unit_fields::Aura + i) != 0)
+						if (character.getUInt32Value(unit_fields::AuraEffect + i) != 0)
 						{
 							auramask |= (UInt64(1) << i);
 						}
@@ -1674,7 +1674,7 @@ namespace wowpp
 					        << io::write<NetUInt64>(auramask);
 					for (UInt32 i = 0; i < 56; ++i)
 					{
-						UInt32 aura = character.getUInt32Value(unit_fields::Aura + i);
+						UInt32 aura = character.getUInt32Value(unit_fields::AuraEffect + i);
 						if (aura != 0)
 						{
 							out_packet

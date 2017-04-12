@@ -420,7 +420,7 @@ namespace wowpp
 			}
 
 			// Notify auras about movement
-			getAuras().forEachAura([&lastPosition, &lastO](Aura &aura) -> bool {
+			getAuras().forEachAura([&lastPosition, &lastO](AuraEffect &aura) -> bool {
 				aura.onTargetMoved(lastPosition, lastO);
 				return true;
 			});
@@ -1295,7 +1295,7 @@ namespace wowpp
 
 	void GameUnit::applyDamageDoneBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 & damage)
 	{
-		getAuras().forEachAuraOfType(game::aura_type::ModDamageDone, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+		getAuras().forEachAuraOfType(game::aura_type::ModDamageDone, [&damage, schoolMask, tickCount](AuraEffect &aura) -> bool {
 			if (aura.getEffect().miscvaluea() & schoolMask)
 			{
 				Int32 bonus = aura.getBasePoints();
@@ -1319,7 +1319,7 @@ namespace wowpp
 			return true;
 		});
 
-		getAuras().forEachAuraOfType(game::aura_type::ModDamagePercentDone, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+		getAuras().forEachAuraOfType(game::aura_type::ModDamagePercentDone, [&damage, schoolMask, tickCount](AuraEffect &aura) -> bool {
 			if (aura.getEffect().miscvaluea() & schoolMask)
 			{
 				Int32 bonus = aura.getBasePoints();
@@ -1340,7 +1340,7 @@ namespace wowpp
 
 	void GameUnit::applyDamageTakenBonus(UInt32 schoolMask, UInt32 tickCount, UInt32 & damage)
 	{
-		getAuras().forEachAuraOfType(game::aura_type::ModDamageTaken, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+		getAuras().forEachAuraOfType(game::aura_type::ModDamageTaken, [&damage, schoolMask, tickCount](AuraEffect &aura) -> bool {
 			if (aura.getEffect().miscvaluea() & schoolMask)
 			{
 				Int32 bonus = aura.getBasePoints();
@@ -1364,7 +1364,7 @@ namespace wowpp
 			return true;
 		});
 
-		getAuras().forEachAuraOfType(game::aura_type::ModDamagePercentTaken, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+		getAuras().forEachAuraOfType(game::aura_type::ModDamagePercentTaken, [&damage, schoolMask, tickCount](AuraEffect &aura) -> bool {
 			if (aura.getEffect().miscvaluea() & schoolMask)
 			{
 				Int32 bonus = aura.getBasePoints();
@@ -1382,7 +1382,7 @@ namespace wowpp
 			return true;
 		});
 
-		getAuras().forEachAuraOfType(game::aura_type::ModMeleeDamageTakenPct, [&damage, schoolMask, tickCount](Aura &aura) -> bool {
+		getAuras().forEachAuraOfType(game::aura_type::ModMeleeDamageTakenPct, [&damage, schoolMask, tickCount](AuraEffect &aura) -> bool {
 			if (aura.getEffect().miscvaluea() & schoolMask)
 			{
 				Int32 bonus = aura.getBasePoints();
@@ -1424,7 +1424,7 @@ namespace wowpp
 			break;
 		}
 
-		getAuras().forEachAuraOfType(game::aura_type::ModHealingPct, [&healing, tickCount](Aura &aura) -> bool {
+		getAuras().forEachAuraOfType(game::aura_type::ModHealingPct, [&healing, tickCount](AuraEffect &aura) -> bool {
 			Int32 bonus = aura.getBasePoints();
 			if (tickCount > 1)
 			{
@@ -1462,7 +1462,7 @@ namespace wowpp
 			break;
 		}
 
-		getAuras().forEachAuraOfType(game::aura_type::ModHealingDonePct, [&healing, tickCount](Aura &aura) -> bool {
+		getAuras().forEachAuraOfType(game::aura_type::ModHealingDonePct, [&healing, tickCount](AuraEffect &aura) -> bool {
 			Int32 bonus = aura.getBasePoints();
 			if (tickCount > 1)
 			{
@@ -1503,7 +1503,7 @@ namespace wowpp
 			break;
 		}
 
-		getAuras().forEachAuraOfType(game::aura_type::ModHealingDonePct, [&healing, tickCount](Aura &aura) -> bool {
+		getAuras().forEachAuraOfType(game::aura_type::ModHealingDonePct, [&healing, tickCount](AuraEffect &aura) -> bool {
 			Int32 bonus = aura.getBasePoints();
 			if (tickCount > 1)
 			{
@@ -2299,7 +2299,7 @@ namespace wowpp
 			Int8 &resistMod = mechanicResistance[effect.index()];
 			UInt32 mechanic = effect.mechanic() ? effect.mechanic() : spell.mechanic();
 
-			m_auras.forEachAuraOfType(game::aura_type::ModMechanicResistance, [&resistMod, mechanic](Aura &aura) -> bool {
+			m_auras.forEachAuraOfType(game::aura_type::ModMechanicResistance, [&resistMod, mechanic](AuraEffect &aura) -> bool {
 				if (aura.getEffect().miscvaluea() == mechanic)
 				{
 					resistMod += aura.getBasePoints();

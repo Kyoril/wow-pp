@@ -26,29 +26,29 @@
 namespace wowpp
 {
 	class GameUnit;
-	class Aura;
+	class AuraEffect;
 
 	/// Holds and manages instances of auras for one unit.
 	class AuraContainer final
 	{
 	private:
 
-		typedef simple::stable_list<std::shared_ptr<Aura>> AuraList;
+		typedef simple::stable_list<std::shared_ptr<AuraEffect>> AuraList;
 
 	public:
 
 		explicit AuraContainer(GameUnit &owner);
 
-		bool addAura(std::shared_ptr<Aura> aura);
+		bool addAura(std::shared_ptr<AuraEffect> aura);
 		void removeAura(AuraList::iterator &it);
-		void removeAura(Aura &aura);
+		void removeAura(AuraEffect &aura);
 		void handleTargetDeath();
 		void removeAllAurasDueToSpell(UInt32 spellId);
 		void removeAllAurasDueToItem(UInt64 itemGuid);
 		void removeAllAurasDueToMechanic(UInt32 immunityMask);
-		UInt32 removeAurasDueToDispel(UInt32 dispelType, UInt32 count);
+		UInt32 removeAurasDueToDispel(UInt32 dispelType, bool dispelPositive, UInt32 count = 1);
 		void removeAurasByType(UInt32 auraType);
-		Aura *popBack(UInt8 dispelType, bool positive);
+		AuraEffect *popBack(UInt8 dispelType, bool positive);
 		void removeAllAurasDueToInterrupt(game::SpellAuraInterruptFlags flags);
 		void removeAllAuras();
 
@@ -65,8 +65,8 @@ namespace wowpp
 		Int32 getTotalBasePoints(game::AuraType type) const;
 		float getTotalMultiplier(game::AuraType type) const;
 
-		void forEachAura(std::function<bool(Aura &)> functor);
-		void forEachAuraOfType(game::AuraType type, std::function<bool(Aura &)> functor);
+		void forEachAura(std::function<bool(AuraEffect &)> functor);
+		void forEachAuraOfType(game::AuraType type, std::function<bool(AuraEffect &)> functor);
 
 		/// Used for debugging.
 		void logAuraInfos();
@@ -77,7 +77,7 @@ namespace wowpp
 		AuraList m_auras;
 		std::map<UInt16, UInt16> m_auraTypeCount;
 
-		AuraList::iterator findAura(Aura &aura);
+		AuraList::iterator findAura(AuraEffect &aura);
 
 	};
 

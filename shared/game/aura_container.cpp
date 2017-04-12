@@ -21,7 +21,7 @@
 
 #include "pch.h"
 #include "aura_container.h"
-#include "aura.h"
+#include "aura_effect.h"
 #include "game_unit.h"
 #include "log/default_log_levels.h"
 #include "common/linear_set.h"
@@ -33,7 +33,7 @@ namespace wowpp
 	{
 	}
 
-	bool AuraContainer::addAura(std::shared_ptr<Aura> aura)
+	bool AuraContainer::addAura(std::shared_ptr<AuraEffect> aura)
 	{
 		// Find the new aura slot to be used
 		UInt8 newSlot = 0xFF;
@@ -112,7 +112,7 @@ namespace wowpp
 				{
 					for (UInt8 i = 0; i < 40; ++i)
 					{
-						if (m_owner.getUInt32Value(unit_fields::Aura + i) == 0)
+						if (m_owner.getUInt32Value(unit_fields::AuraEffect + i) == 0)
 						{
 							newSlot = i;
 							break;
@@ -123,7 +123,7 @@ namespace wowpp
 				{
 					for (UInt8 i = 40; i < 56; ++i)
 					{
-						if (m_owner.getUInt32Value(unit_fields::Aura + i) == 0)
+						if (m_owner.getUInt32Value(unit_fields::AuraEffect + i) == 0)
 						{
 							newSlot = i;
 							break;
@@ -135,7 +135,7 @@ namespace wowpp
 			if (newSlot != 0xFF)
 			{
 				aura->setSlot(newSlot);
-				m_owner.setUInt32Value(unit_fields::Aura + newSlot, aura->getSpell().id());
+				m_owner.setUInt32Value(unit_fields::AuraEffect + newSlot, aura->getSpell().id());
 
 				UInt32 index = newSlot / 4;
 				UInt32 byte = (newSlot % 4) * 8;
@@ -183,7 +183,7 @@ namespace wowpp
 		return true;
 	}
 
-	AuraContainer::AuraList::iterator AuraContainer::findAura(Aura &aura)
+	AuraContainer::AuraList::iterator AuraContainer::findAura(AuraEffect &aura)
 	{
 		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
 		{
@@ -217,7 +217,7 @@ namespace wowpp
 		strong->misapplyAura();
 	}
 
-	void AuraContainer::removeAura(Aura &aura)
+	void AuraContainer::removeAura(AuraEffect &aura)
 	{
 		auto it = findAura(aura);
 		if (it != m_auras.end())
@@ -258,7 +258,7 @@ namespace wowpp
 		UInt32 ownerMana = m_owner.getUInt32Value(unit_fields::Power1);
 		UInt32 manaShielded = 0;
 
-		std::list<std::shared_ptr<Aura>> toRemove;
+		std::list<std::shared_ptr<AuraEffect>> toRemove;
 		for (auto &it : m_auras)
 		{
 			if (it->getEffect().aura() == game::aura_type::SchoolAbsorb
@@ -385,7 +385,7 @@ namespace wowpp
 		return multiplier;
 	}
 
-	void AuraContainer::forEachAura(std::function<bool(Aura&)> functor)
+	void AuraContainer::forEachAura(std::function<bool(AuraEffect&)> functor)
 	{
 		for (auto &aura : m_auras)
 		{
@@ -396,7 +396,7 @@ namespace wowpp
 		}
 	}
 
-	void AuraContainer::forEachAuraOfType(game::AuraType type, std::function<bool(Aura&)> functor)
+	void AuraContainer::forEachAuraOfType(game::AuraType type, std::function<bool(AuraEffect&)> functor)
 	{
 		// Performance check before iteration
 		if (!hasAura(type))
@@ -476,7 +476,7 @@ namespace wowpp
 		}
 	}
 
-	UInt32 AuraContainer::removeAurasDueToDispel(UInt32 dispelType, UInt32 count)
+	UInt32 AuraContainer::removeAurasDueToDispel(UInt32 dispelType, bool dispelPositive, UInt32 count/* = 1*/)
 	{
 		UInt32 successCount = 0;
 
@@ -489,7 +489,7 @@ namespace wowpp
 			UInt64 casterGuid = 0;
 			UInt32 spell = 0;
 
-			// Aura iteration
+			// AuraEffect iteration
 			for (auto it = m_auras.begin(); it != m_auras.end(); )
 			{
 				// If this aura matches the dispel criteria...
@@ -521,9 +521,9 @@ namespace wowpp
 				// Next aura
 				++it;
 			}
-
-			return successCount;
 		}
+
+		return successCount;
 	}
 
 	void AuraContainer::removeAurasByType(UInt32 auraType)
@@ -544,14 +544,14 @@ namespace wowpp
 		}
 	}
 
-	Aura *AuraContainer::popBack(UInt8 dispelType, bool positive)
+	AuraEffect *AuraContainer::popBack(UInt8 dispelType, bool positive)
 	{
 		auto it = m_auras.rbegin();
 		while (it != m_auras.rend())
 		{
 			if ((*it)->isPositive() == positive && (*it)->getSpell().dispel() == dispelType)
 			{
-				std::shared_ptr<Aura> aura = *it;
+				std::shared_ptr<AuraEffect> aura = *it;
 				m_auras.erase(std::next(it).base());
 				aura->misapplyAura();
 
@@ -589,7 +589,7 @@ namespace wowpp
 		auto it = m_auras.begin();
 		while(it != m_auras.end())
 		{
-			std::shared_ptr<Aura> aura = *it;
+			std::shared_ptr<AuraEffect> aura = *it;
 			it = m_auras.erase(it);
 
 			aura->misapplyAura();

@@ -25,7 +25,7 @@
 #include "common/timer_queue.h"
 #include "common/countdown.h"
 #include "tiled_unit_watcher.h"
-#include "aura.h"
+#include "aura_effect.h"
 
 namespace wowpp
 {
@@ -113,7 +113,7 @@ namespace wowpp
 		void updatePeriodicTimer();
 
 	protected:
-		typedef std::unordered_map<GameUnit *, std::shared_ptr<Aura>> AuraMap;
+		typedef std::unordered_map<GameUnit *, std::shared_ptr<AuraEffect>> AuraMap;
 
 		std::unique_ptr<UnitWatcher> m_unitWatcher;
 		TimerQueue &m_timers;

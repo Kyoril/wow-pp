@@ -20,7 +20,7 @@
 //
 
 #include "pch.h"
-#include "aura.h"
+#include "aura_effect.h"
 #include "common/clock.h"
 #include "game_unit.h"
 #include "game_character.h"
@@ -38,13 +38,13 @@
 namespace wowpp
 {
 
-	void Aura::handleModNull(bool apply)
+	void AuraEffect::handleModNull(bool apply)
 	{
 		// Nothing to do here
 		DLOG("AURA_TYPE_MOD_NULL: Nothing to do");
 	}
 
-	void Aura::handlePeriodicDamage(bool apply)
+	void AuraEffect::handlePeriodicDamage(bool apply)
 	{
 		if (apply)
 		{
@@ -52,7 +52,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleDummy(bool apply)
+	void AuraEffect::handleDummy(bool apply)
 	{
 		if (isSealSpell(m_spell))
 		{
@@ -60,17 +60,17 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModConfuse(bool apply)
+	void AuraEffect::handleModConfuse(bool apply)
 	{
 		m_target.notifyConfusedChanged();
 	}
 
-	void Aura::handleModFear(bool apply)
+	void AuraEffect::handleModFear(bool apply)
 	{
 		m_target.notifyFearChanged();
 	}
 
-	void Aura::handlePeriodicHeal(bool apply)
+	void AuraEffect::handlePeriodicHeal(bool apply)
 	{
 		if (apply)
 		{
@@ -78,7 +78,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModThreat(bool apply)
+	void AuraEffect::handleModThreat(bool apply)
 	{
 		if (!m_target.isGameCharacter())
 		{
@@ -89,12 +89,12 @@ namespace wowpp
 		character.modifyThreatModifier(m_effect.miscvaluea(), static_cast<float>(m_basePoints) / 100.0f, apply);
 	}
 
-	void Aura::handleModStun(bool apply)
+	void AuraEffect::handleModStun(bool apply)
 	{
 		m_target.notifyStunChanged();
 	}
 
-	void Aura::handleModDamageDone(bool apply)
+	void AuraEffect::handleModDamageDone(bool apply)
 	{
 		if (!m_target.isGameCharacter())
 		{
@@ -118,12 +118,12 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModDamageTaken(bool apply)
+	void AuraEffect::handleModDamageTaken(bool apply)
 	{
 		//TODO
 	}
 
-	void Aura::handleDamageShield(bool apply)
+	void AuraEffect::handleDamageShield(bool apply)
 	{
 		if (apply)
 		{
@@ -137,7 +137,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModStealth(bool apply)
+	void AuraEffect::handleModStealth(bool apply)
 	{
 		if (apply)
 		{
@@ -161,7 +161,7 @@ namespace wowpp
 		m_target.notifyStealthChanged();
 	}
 
-	void Aura::handleObsModHealth(bool apply)
+	void AuraEffect::handleObsModHealth(bool apply)
 	{
 		if (apply)
 		{
@@ -169,7 +169,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleObsModMana(bool apply)
+	void AuraEffect::handleObsModMana(bool apply)
 	{
 		if (apply)
 		{
@@ -177,7 +177,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModResistance(bool apply)
+	void AuraEffect::handleModResistance(bool apply)
 	{
 		bool isAbility = m_spell.attributes(0) & game::spell_attributes::Ability;
 
@@ -191,7 +191,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handlePeriodicTriggerSpell(bool apply)
+	void AuraEffect::handlePeriodicTriggerSpell(bool apply)
 	{
 		if (apply)
 		{
@@ -199,7 +199,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handlePeriodicEnergize(bool apply)
+	void AuraEffect::handlePeriodicEnergize(bool apply)
 	{
 		if (apply)
 		{
@@ -207,12 +207,12 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModRoot(bool apply)
+	void AuraEffect::handleModRoot(bool apply)
 	{
 		m_target.notifyRootChanged();
 	}
 
-	void Aura::handleModStat(bool apply)
+	void AuraEffect::handleModStat(bool apply)
 	{
 		Int32 stat = m_effect.miscvaluea();
 		if (stat < -2 || stat > 4)
@@ -233,22 +233,22 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleRunSpeedModifier(bool apply)
+	void AuraEffect::handleRunSpeedModifier(bool apply)
 	{
 		m_target.notifySpeedChanged(movement_type::Run);
 	}
 
-	void Aura::handleSwimSpeedModifier(bool apply)
+	void AuraEffect::handleSwimSpeedModifier(bool apply)
 	{
 		m_target.notifySpeedChanged(movement_type::Swim);
 	}
 
-	void Aura::handleFlySpeedModifier(bool apply)
+	void AuraEffect::handleFlySpeedModifier(bool apply)
 	{
 		m_target.notifySpeedChanged(movement_type::Flight);
 	}
 
-	void Aura::handleModShapeShift(bool apply)
+	void AuraEffect::handleModShapeShift(bool apply)
 	{
 		UInt8 form = m_effect.miscvaluea();
 		if (apply)
@@ -359,7 +359,7 @@ namespace wowpp
 				case game::shapeshift_form::DireBear:
 				{
 					UInt32 ProcChance = 0;
-					m_target.getAuras().forEachAuraOfType(game::aura_type::Dummy, [&ProcChance](Aura &aura) -> bool
+					m_target.getAuras().forEachAuraOfType(game::aura_type::Dummy, [&ProcChance](AuraEffect &aura) -> bool
 					{
 						switch (aura.getSpell().id())
 						{
@@ -490,7 +490,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleTrackCreatures(bool apply)
+	void AuraEffect::handleTrackCreatures(bool apply)
 	{
 		// Only affects player characters
 		if (!m_target.isGameCharacter())
@@ -501,7 +501,7 @@ namespace wowpp
 			apply ? UInt32(UInt32(1) << creatureType) : 0);
 	}
 
-	void Aura::handleTrackResources(bool apply)
+	void AuraEffect::handleTrackResources(bool apply)
 	{
 		// Only affects player characters
 		if (!m_target.isGameCharacter())
@@ -512,17 +512,17 @@ namespace wowpp
 			apply ? UInt32(UInt32(1) << resourceType) : 0);
 	}
 
-	void Aura::handleModParryPercent(bool apply)
+	void AuraEffect::handleModParryPercent(bool apply)
 	{
 		m_target.updateParryPercentage();
 	}
 
-	void Aura::handleModDodgePercent(bool apply)
+	void AuraEffect::handleModDodgePercent(bool apply)
 	{
 		m_target.updateDodgePercentage();
 	}
 
-	void Aura::handleModCritPercent(bool apply)
+	void AuraEffect::handleModCritPercent(bool apply)
 	{
 		if (m_target.isGameCharacter())
 		{
@@ -548,7 +548,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handlePeriodicLeech(bool apply)
+	void AuraEffect::handlePeriodicLeech(bool apply)
 	{
 		if (apply)
 		{
@@ -556,7 +556,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleTransform(bool apply)
+	void AuraEffect::handleTransform(bool apply)
 	{
 		if (apply)
 		{
@@ -584,7 +584,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModCastingSpeed(bool apply)
+	void AuraEffect::handleModCastingSpeed(bool apply)
 	{
 		float castSpeed = m_target.getFloatValue(unit_fields::ModCastSpeed);
 		float amount = apply ? (100.0f - m_basePoints) / 100.0f : 100.0f / (100.0f - m_basePoints);
@@ -592,12 +592,12 @@ namespace wowpp
 		m_target.setFloatValue(unit_fields::ModCastSpeed, castSpeed * amount);
 	}
 
-	void Aura::handleModHealingPct(bool apply)
+	void AuraEffect::handleModHealingPct(bool apply)
 	{
 		//TODO
 	}
 
-	void Aura::handleModTargetResistance(bool apply)
+	void AuraEffect::handleModTargetResistance(bool apply)
 	{
 		if (m_target.isGameCharacter() && (m_effect.miscvaluea() & game::spell_school_mask::Normal))
 		{
@@ -614,7 +614,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModEnergyPercentage(bool apply)
+	void AuraEffect::handleModEnergyPercentage(bool apply)
 	{
 		Int32 powerType = m_effect.miscvaluea();
 		if (powerType < 0 || powerType >= game::power_type::Count_ - 1)
@@ -628,13 +628,13 @@ namespace wowpp
 		m_target.updateMaxPower(game::PowerType(powerType));
 	}
 
-	void Aura::handleModHealthPercentage(bool apply)
+	void AuraEffect::handleModHealthPercentage(bool apply)
 	{
 		m_target.updateModifierValue(UnitMods(unit_mods::Health), unit_mod_type::TotalPct, m_basePoints, apply);
 		m_target.updateMaxHealth();
 	}
 
-	void Aura::handleModManaRegenInterrupt(bool apply)
+	void AuraEffect::handleModManaRegenInterrupt(bool apply)
 	{
 		if (m_target.isGameCharacter())
 		{
@@ -642,7 +642,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModHealingDone(bool apply)
+	void AuraEffect::handleModHealingDone(bool apply)
 	{
 		if (!m_target.isGameCharacter())
 		{
@@ -653,7 +653,7 @@ namespace wowpp
 		m_target.setUInt32Value(character_fields::ModHealingDonePos, spellHeal + (apply ? m_basePoints : -m_basePoints));
 	}
 
-	void Aura::handleModTotalStatPercentage(bool apply)
+	void AuraEffect::handleModTotalStatPercentage(bool apply)
 	{
 		Int32 stat = m_effect.miscvaluea();
 		if (stat < -2 || stat > 4)
@@ -672,22 +672,22 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModHaste(bool apply)
+	void AuraEffect::handleModHaste(bool apply)
 	{
 		m_target.updateModifierValue(unit_mods::AttackSpeed, unit_mod_type::BasePct, -m_basePoints, apply);
 	}
 
-	void Aura::handleModRangedHaste(bool apply)
+	void AuraEffect::handleModRangedHaste(bool apply)
 	{
 		m_target.updateModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::BasePct, -m_basePoints, apply);
 	}
 
-	void Aura::handleModRangedAmmoHaste(bool apply)
+	void AuraEffect::handleModRangedAmmoHaste(bool apply)
 	{
 		m_target.updateModifierValue(unit_mods::AttackSpeedRanged, unit_mod_type::TotalPct, -m_basePoints, apply);
 	}
 
-	void Aura::handleModBaseResistancePct(bool apply)
+	void AuraEffect::handleModBaseResistancePct(bool apply)
 	{
 		// Apply all resistances
 		for (UInt8 i = 0; i < 7; ++i)
@@ -699,12 +699,12 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModResistanceExclusive(bool apply)
+	void AuraEffect::handleModResistanceExclusive(bool apply)
 	{
 		handleModResistance(apply);
 	}
 
-	void Aura::handleModResistanceOfStatPercent(bool apply)
+	void AuraEffect::handleModResistanceOfStatPercent(bool apply)
 	{
 		if (!m_target.isGameCharacter())
 		{
@@ -714,7 +714,7 @@ namespace wowpp
 		m_target.updateArmor();
 	}
 
-	void Aura::handleModRating(bool apply)
+	void AuraEffect::handleModRating(bool apply)
 	{
 		if (!m_target.isGameCharacter())
 		{
@@ -728,7 +728,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleFly(bool apply)
+	void AuraEffect::handleFly(bool apply)
 	{
 		// Determined to prevent falling when one aura is still left
 		const bool hasFlyAura = m_target.getAuras().hasAura(game::aura_type::Fly);
@@ -755,7 +755,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModAttackPower(bool apply)
+	void AuraEffect::handleModAttackPower(bool apply)
 	{
 		bool isAbility = m_spell.attributes(0) & game::spell_attributes::Ability;
 
@@ -769,7 +769,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModResistancePct(bool apply)
+	void AuraEffect::handleModResistancePct(bool apply)
 	{
 		// Apply all resistances
 		for (UInt8 i = 0; i < 7; ++i)
@@ -781,12 +781,12 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModTotalThreat(bool apply)
+	void AuraEffect::handleModTotalThreat(bool apply)
 	{
 		//TODO
 	}
 
-	void Aura::handleWaterWalk(bool apply)
+	void AuraEffect::handleWaterWalk(bool apply)
 	{
 		auto *world = m_target.getWorldInstance();
 		if (world)
@@ -802,7 +802,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleFeatherFall(bool apply)
+	void AuraEffect::handleFeatherFall(bool apply)
 	{
 		auto *world = m_target.getWorldInstance();
 		if (world)
@@ -818,7 +818,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleHover(bool apply)
+	void AuraEffect::handleHover(bool apply)
 	{
 		auto *world = m_target.getWorldInstance();
 		if (world)
@@ -834,7 +834,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleAddModifier(bool apply)
+	void AuraEffect::handleAddModifier(bool apply)
 	{
 		if (m_effect.miscvaluea() >= spell_mod_op::Max_)
 		{
@@ -865,12 +865,12 @@ namespace wowpp
 		reinterpret_cast<GameCharacter&>(m_target).modifySpellMod(mod, apply);
 	}
 
-	void Aura::handleSchoolAbsorb(bool apply)
+	void AuraEffect::handleSchoolAbsorb(bool apply)
 	{
 		//ToDo: Add talent modifiers
 	}
 
-	void Aura::handleModPowerCostSchoolPct(bool apply)
+	void AuraEffect::handleModPowerCostSchoolPct(bool apply)
 	{
 		const float amount = m_basePoints / 100.0f;
 		for (UInt8 i = 0; i < 7; ++i)
@@ -884,7 +884,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleMechanicImmunity(bool apply)
+	void AuraEffect::handleMechanicImmunity(bool apply)
 	{
 		UInt32 mask = m_effect.miscvaluea();
 		//if (mask == 0) mask = m_spell.mechanic();
@@ -900,7 +900,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleMounted(bool apply)
+	void AuraEffect::handleMounted(bool apply)
 	{
 		if (apply)
 		{
@@ -913,7 +913,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModDamagePercentDone(bool apply)
+	void AuraEffect::handleModDamagePercentDone(bool apply)
 	{
 		if (apply)
 		{
@@ -927,7 +927,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleModPowerRegen(bool apply)
+	void AuraEffect::handleModPowerRegen(bool apply)
 	{
 		if (m_target.isGameCharacter())
 		{
@@ -935,7 +935,7 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleChannelDeathItem(bool apply)
+	void AuraEffect::handleChannelDeathItem(bool apply)
 	{
 		if (!apply && !m_target.isAlive())
 		{
@@ -962,12 +962,12 @@ namespace wowpp
 		}
 	}
 
-	void Aura::handleManaShield(bool apply)
+	void AuraEffect::handleManaShield(bool apply)
 	{
 		//ToDo: Add talent modifiers
 	}
 
-	void Aura::handlePeriodicDummy(bool apply)
+	void AuraEffect::handlePeriodicDummy(bool apply)
 	{
 		// if drinking
 		for (int i = 0; i < m_spell.effects_size(); ++i)
