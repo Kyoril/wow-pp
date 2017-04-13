@@ -1051,6 +1051,12 @@ namespace wowpp
 				io::Reader &packet
 				);
 
+			bool mailTakeMoney(
+				io::Reader &packet,
+				ObjectGuid &out_mailboxGuid,
+				UInt32 &out_mailId
+				);
+
 			bool resurrectResponse(
 				io::Reader &packet,
 				UInt64 &out_guid,

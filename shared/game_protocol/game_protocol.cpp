@@ -2952,33 +2952,51 @@ namespace wowpp
 					for (auto &mail : mails)
 					{
 						std::vector<std::shared_ptr<GameItem>> items = mail.getItems();
-						
+						UInt8 messageType = mail.getMessageType();
+						UInt32 mailId = mail.getMailId();
+
 						size_t sizePos = out_packet.sink().position();
 						out_packet
 							// Placeholder for mailSize
 							<< io::write<NetUInt16>(0)
-							<< io::write<NetUInt32>(mail.getMailId())
-							// TODO mail type (auction, etc)
-							<< io::write<NetUInt8>(0)
-							// TODO handle auction or npc mails
-							<< io::write<NetUInt64>(mail.getSenderGuid())
+							<< io::write<NetUInt32>(mailId)
+							<< io::write<NetUInt8>(messageType);
+						
+						switch (messageType)
+						{
+							case mail::message_type::Normal:
+								out_packet << io::write<NetUInt64>(mail.getSenderGuid());
+								break;
+							case mail::message_type::Creature:
+							case mail::message_type::GameObject:
+							case mail::message_type::Auction:
+								// TODO handle these (NetUInt32)
+								break;
+							case mail::message_type::Item:
+								out_packet << io::write<NetUInt32>(0);
+								break;
+							default:
+								out_packet << io::write<NetUInt32>(0);
+								break;
+						}
+
+						out_packet
 							<< io::write<NetUInt32>(mail.getCOD())
-							// TODO letter item id
-							<< io::write<NetUInt32>(1)
+							// TODO letter item id (sending mailId for body, client stores them based on id)
+							<< io::write<NetUInt32>(mailId)
 							// unknown
 							<< io::write<NetUInt32>(0)
-							// TODO stationery mail (GM, auction, etc, 41 is default)
-							<< io::write<NetUInt32>(41)
+							<< io::write<NetUInt32>(mail.getStationery())
 							<< io::write<NetUInt32>(mail.getMoney())
-							// TODO check status (COD, read, etc)
-							<< io::write<NetUInt32>(mail.isRead())
+							<< io::write<NetUInt32>(mail.getCheckMasks())
 							// TODO time until expires
-							<< io::write<float>(10.0f)
+							<< io::write<float>(30.0f)
 							// TOOD mail template from dbc
-							<< io::write<UInt32>(0)
+							<< io::write<NetUInt32>(0)
 							<< io::write_range(mail.getSubject()) << io::write<NetUInt8>(0)
-							<< io::write<UInt8>(items.size());
-						// TODO handle items sent
+							// TODO handle items sent
+							<< io::write<NetUInt8>(0);
+						//	<< io::write<NetUInt8>(items.size());
 
 						UInt16 mailSize = static_cast<UInt16>(out_packet.sink().position() - sizePos);
 						out_packet.writePOD(sizePos, mailSize);
@@ -3027,7 +3045,10 @@ namespace wowpp
 
 					for (auto &mail : mails)
 					{
-						// TODO: check if it has been read / delivered
+						if (mail.hasCheckMask(mail::check_mask::Read))
+						{
+							continue;
+						}
 
 						out_packet
 							<< io::write<NetUInt64>(mail.getSenderGuid())
@@ -4113,11 +4134,10 @@ namespace wowpp
 
 			bool mailGetBody(io::Reader & packet, UInt32 & out_mailTextId, UInt32 & out_mailId)
 			{
-				UInt32 skipped = 0;
 				return packet
 					>> io::read<NetUInt32>(out_mailTextId)
 					>> io::read<NetUInt32>(out_mailId)
-					>> io::read<NetUInt32>(skipped);
+					>> io::skip(sizeof(UInt32));
 			}
 
 			bool mailMarkAsRead(io::Reader & packet, ObjectGuid & out_mailboxGuid, UInt32 & out_mailId)
@@ -4130,6 +4150,13 @@ namespace wowpp
 			bool mailQueryNextTime(io::Reader & packet)
 			{
 				return packet;
+			}
+
+			bool mailTakeMoney(io::Reader & packet, ObjectGuid & out_mailboxGuid, UInt32 & out_mailId)
+			{
+				return packet
+					>> io::read<NetObjectGuid>(out_mailboxGuid)
+					>> io::read<NetUInt32>(out_mailId);
 			}
 
 			bool resurrectResponse(io::Reader & packet, UInt64 &out_guid, UInt8 &out_status)

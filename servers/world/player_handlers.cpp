@@ -1349,6 +1349,17 @@ namespace wowpp
 			return;
 		}
 
+		UInt32 cost = mailInfo.itemsCount > 0 ? 30 * mailInfo.itemsCount : 30;
+		UInt32 reqMoney = cost + mailInfo.money;
+		UInt32 plMoney = m_character->getUInt32Value(character_fields::Coinage);
+		if (plMoney < reqMoney)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(0, mail::response_type::Send, mail::response_result::NotEnoughMoney)));
+			return;
+		}
+
 		auto &inventory = m_character->getInventory();
 		UInt16 itemSlot = 0;
 		std::vector<std::shared_ptr<GameItem>> items;
@@ -1426,7 +1437,7 @@ namespace wowpp
 
 		// mail subject of more comprobations
 
-		Mail mail(m_character->getGuid(), items, mailInfo, false);
+		Mail mail(m_character->getGuid(), items, mailInfo, mailInfo.body.empty() ? mail::check_mask::Copied : mail::check_mask::HasBody);
 
 		m_realmConnector.sendMailDraft(std::move(mail), mailInfo.receiver);
 

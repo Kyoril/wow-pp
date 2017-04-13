@@ -28,8 +28,10 @@ namespace wowpp
 		: m_senderGuid(0)
 		, m_money(0)
 		, m_COD(0)
-		, m_read(0)
 		, m_mailId(0)
+		, m_messageType(mail::message_type::Normal)
+		, m_stationery(mail::stationery::Default)
+		, m_checkMasks(mail::check_mask::None)
 	{
 	}
 
@@ -37,15 +39,19 @@ namespace wowpp
 		const UInt64 & senderGuid,
 		ItemVector & itemVector,
 		const MailData & mailInfo,
-		bool read)
+		UInt32 checkMasks,
+		UInt8 messageType,
+		UInt32 stationery)
 		: m_senderGuid(senderGuid)
 		, m_subject(mailInfo.subject)
 		, m_body(mailInfo.body)
 		, m_items(std::move(itemVector))
 		, m_money(mailInfo.money)
 		, m_COD(mailInfo.COD)
-		, m_read(read)
 		, m_mailId(0)
+		, m_messageType(messageType)
+		, m_stationery(stationery)
+		, m_checkMasks(checkMasks)
 	{
 	}
 
@@ -98,8 +104,10 @@ namespace wowpp
 			<< io::write_dynamic_range<NetUInt8>(object.m_body)
 			<< io::write<NetUInt32>(object.m_money)
 			<< io::write<NetUInt32>(object.m_COD)
-			<< io::write<NetUInt8>(object.m_read ? 1 : 0)
 			<< io::write<NetUInt32>(object.m_mailId)
+			<< io::write<NetUInt8>(object.m_messageType)
+			<< io::write<NetUInt32>(object.m_stationery)
+			<< io::write<NetUInt32>(object.m_checkMasks)
 			;
 		// TODO items
 
@@ -114,8 +122,10 @@ namespace wowpp
 			>> io::read_container<NetUInt8>(object.m_body)
 			>> io::read<NetUInt32>(object.m_money)
 			>> io::read<NetUInt32>(object.m_COD)
-			>> io::read<NetUInt8>(object.m_read)
 			>> io::read<NetUInt32>(object.m_mailId)
+			>> io::read<NetUInt8>(object.m_messageType)
+			>> io::read<NetUInt32>(object.m_stationery)
+			>> io::read<NetUInt32>(object.m_checkMasks)
 			;
 
 		return r;

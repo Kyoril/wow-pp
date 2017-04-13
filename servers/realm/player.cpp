@@ -337,6 +337,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(CreatureQuery, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MailQueryNextTime, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MailGetBody, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(MailTakeMoney, game::session_status::LoggedIn)
 
 #undef WOWPP_HANDLE_PACKET
 #undef QUOTE
@@ -1713,7 +1714,38 @@ namespace wowpp
 		String body = getMail(mailId)->getBody();
 
 		sendPacket(
-			std::bind(game::server_write::mailSendBody, std::placeholders::_1, mailTextId, body));
+			std::bind(game::server_write::mailSendBody, std::placeholders::_1, /*TODO: change to mailTextId*/mailId, body));
+	}
+
+	void Player::handleMailTakeMoney(game::IncomingPacket & packet)
+	{
+		ObjectGuid mailboxGuid;
+		UInt32 mailId;
+
+		if (!game::client_read::mailTakeMoney(packet, mailboxGuid, mailId))
+		{
+			return;
+		}
+
+		// TODO check distance to mailbox, etc
+
+		// TODO check state + delivery time
+		auto mail = getMail(mailId);
+		if (!mail)
+		{
+			sendPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(mailId, mail::response_type::MoneyTaken, mail::response_result::Internal)));
+			return;
+		}
+
+		sendPacket(
+			std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+				MailResult(mailId, mail::response_type::MoneyTaken, mail::response_result::Ok)));
+
+		m_worldNode->changeMoney(m_characterId, mail->getMoney(), false);
+		mail->setMoney(0);
+		// TODO change mail state
 	}
 
 	/*
@@ -2118,6 +2150,14 @@ namespace wowpp
 
 		sendPacket(
 			std::bind(game::server_write::mailReceived, std::placeholders::_1, mail.getMailId()));
+	}
+
+	void Player::readMail()
+	{
+		if (m_unreadMails > 0)
+		{
+			m_unreadMails--;
+		}
 	}
 
 	void Player::handleRequestPartyMemberStats(game::IncomingPacket &packet)

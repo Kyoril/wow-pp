@@ -179,7 +179,7 @@ namespace wowpp
 		/// Called when character receives a (valid) mail
 		void mailReceived(Mail mail);
 		/// Called when character reads a mail
-		void readMail() { m_unreadMails--; }
+		void readMail();
 
 		/// Sends an encrypted packet to the game client
 		/// @param generator Packet writer function pointer.
@@ -257,7 +257,7 @@ namespace wowpp
 		auth::AuthLocale m_locale;
 		std::list<Mail> m_mails;
 		IdGenerator<UInt32> m_mailIdGenerator;
-		UInt32 m_unreadMails;
+		UInt8 m_unreadMails;
 
 	private:
 
@@ -324,5 +324,6 @@ namespace wowpp
 		void handleCreatureQuery(game::IncomingPacket &packet);
 		void handleMailQueryNextTime(game::IncomingPacket &packet);
 		void handleMailGetBody(game::IncomingPacket &packet);
+		void handleMailTakeMoney(game::IncomingPacket &packet);
 	};
 }

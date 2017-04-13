@@ -169,11 +169,14 @@ namespace wowpp
 
 	public:
 		Mail();
+
 		explicit Mail(
 			const UInt64 &senderGuid,
 			ItemVector &itemVector,
 			const MailData &mailInfo,
-			bool read = false);
+			UInt32 checkMasks = mail::check_mask::None,
+			UInt8 messageType = mail::message_type::Normal,
+			UInt32 stationery = mail::stationery::Default);
 		///
 		UInt64 getSenderGuid() const { return m_senderGuid; }
 		///
@@ -187,9 +190,13 @@ namespace wowpp
 		///
 		UInt32 getMoney() const { return m_money; }
 		///
-		bool isRead() const { return m_read; }
-		///
 		UInt32 getMailId() const { return m_mailId; }
+		///
+		UInt8 getMessageType() const { return m_messageType; }
+		///
+		UInt32 getStationery() const { return m_stationery; }
+		///
+		UInt32 getCheckMasks() const { return m_checkMasks; }
 		///
 		void setSenderGuid(UInt64 senderGuid) { 
 			m_senderGuid = senderGuid; 
@@ -211,12 +218,18 @@ namespace wowpp
 			m_COD = COD;
 		}
 		///
-		void setReadState(bool read) {
-			m_read = read;
-		}
-		///
 		void setMailId(UInt32 mailId) {
 			m_mailId = mailId;
+		}
+
+		///
+		void addCheckMask(UInt32 mask) {
+			m_checkMasks = m_checkMasks | mask;
+		}
+		///
+		bool hasCheckMask(UInt32 mask)
+		{
+			return m_checkMasks & mask;
 		}
 
 
@@ -226,13 +239,10 @@ namespace wowpp
 		// TODO change items
 		ItemVector m_items;
 		UInt32 m_money, m_COD;
-		bool m_read;
 		UInt32 m_mailId;
-		/*
 		UInt8 m_messageType;
 		UInt32 m_stationery;
 		UInt32 m_checkMasks;
-		*/
 	};
 
 	io::Writer &operator << (io::Writer &w, const Mail &object);

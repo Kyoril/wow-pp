@@ -582,14 +582,6 @@ namespace wowpp
 
 			UInt32 cost = itemsCount > 0 ? 30 * itemsCount : 30;
 			UInt32 reqMoney = cost + mail.getMoney();
-			UInt32 plMoney = senderChar->getUInt32Value(character_fields::Coinage);
-			if (plMoney < reqMoney)
-			{
-				senderPl->sendPacket(
-					std::bind(game::server_write::mailSendResult, std::placeholders::_1,
-						MailResult(0, mail::response_type::Send, mail::response_result::NotEnoughMoney)));
-				return;
-			}
 
 			m_connection->sendSinglePacket(
 				std::bind(pp::world_realm::realm_write::moneyChange, std::placeholders::_1, senderPl->getCharacterId(), reqMoney, true));
@@ -651,7 +643,7 @@ namespace wowpp
 		{
 			// TODO: change state properly (mask)
 			player->readMail();
-			mail->setReadState(true);
+			mail->addCheckMask(mail::check_mask::Read);
 		}
 	}
 
@@ -687,6 +679,12 @@ namespace wowpp
 	{
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::realm_write::spellLearned, std::placeholders::_1, characterGuid, spellId));
+	}
+
+	void World::changeMoney(UInt64 characterDbId, UInt32 money, bool remove)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::moneyChange, std::placeholders::_1, characterDbId, money, remove));
 	}
 
 }
