@@ -31,6 +31,7 @@
 #include "game_character.h"
 #include "common/make_unique.h"
 #include "unit_finder.h"
+#include "aura_spell_slot.h"
 
 namespace wowpp
 {
@@ -116,52 +117,43 @@ namespace wowpp
 		Circle circle(m_position.x, m_position.y, getFloatValue(dyn_object_fields::Radius));
 		m_unitWatcher = worldInstance->getUnitFinder().watchUnits(circle, [this](GameUnit & target, bool isInside) -> bool
 		{
+			// Make sure that we don't apply the same aura twice
 			if (isInside && m_auras.find(&target) != m_auras.end())
-			{
 				return false;
-			}
 
-			if (!target.isAlive())
-			{
+			// Don't apply this aura on dead targets
+			if (isInside && !target.isAlive())
 				return false;
-			}
-
-			if (!target.isInLineOfSight(*this))
-			{
-				return false;
-			}
 
 			if (target.hasFlag(unit_fields::UnitFlags, game::unit_flags::NotAttackable | game::unit_flags::NotSelectable | game::unit_flags::OOCNotAttackable))
-			{
 				return false;
-			}
 
 			if (m_effect.targetb() == game::targets::DestDynObjAlly || m_effect.targetb() == game::targets::UnitAreaAllyDst)
 			{
 				if (!m_caster.isFriendlyTo(target))
-				{
 					return false;
-				}
 			}
 			else if (m_caster.isGameCharacter())
 			{
 				if (m_caster.isFriendlyTo(target))
-				{
 					return false;
-				}
 			}
 			else
 			{
 				if (!m_caster.isHostileTo(target))
-				{
 					return false;
-				}
 			}
 
-			if (target.isImmune(m_entry.schoolmask()) || target.isImmuneAgainstMechanic(1 << m_entry.mechanic()) || target.isImmuneAgainstMechanic(1 << m_effect.mechanic()))
+			if (target.isImmune(m_entry.schoolmask()) ||
+				target.isImmuneAgainstMechanic(1 << m_entry.mechanic()) ||
+				target.isImmuneAgainstMechanic(1 << m_effect.mechanic()))
 			{
 				return false;
 			}
+
+			// Don't apply if target is not in line of sight
+			if (isInside && !target.isInLineOfSight(*this))
+				return false;
 
 			if (isInside)
 			{
@@ -171,45 +163,53 @@ namespace wowpp
 
 				auto *world = m_caster.getWorldInstance();
 				auto &universe = world->getUniverse();
-				std::shared_ptr<AuraEffect> aura = std::make_shared<AuraEffect>(m_entry, m_effect, m_effect.basepoints(), m_caster, target, targetMap, 0, true, [&universe](std::function<void()> work)
-				{
+
+				// Create an aura spell slot
+				auto auraSlot = std::make_shared<AuraSpellSlot>(universe.getTimers(), m_entry);
+				auraSlot->setOwner(std::static_pointer_cast<GameUnit>(target.shared_from_this()));
+				auraSlot->setCaster(std::static_pointer_cast<GameUnit>(m_caster.shared_from_this()));
+
+				std::shared_ptr<AuraEffect> aura = std::make_shared<AuraEffect>(m_entry, m_effect, m_effect.basepoints(), m_caster, target, targetMap, 0, true, [&universe](std::function<void()> work) {
 					universe.post(work);
-				}, [&universe](AuraEffect & self)
-				{
-					// Prevent aura from being deleted before being removed from the list
-					auto strong = self.shared_from_this();
-					universe.post([strong]()
-					{
-						strong->getTarget().getAuras().removeAura(*strong);
-					});
+				}, [&universe, auraSlot](AuraEffect & self) {
+					self.getTarget().getAuras().removeAura(*auraSlot);
 				});
 
-				const bool success = target.getAuras().addAura(aura);
-				if (success)
+				// Add the effect
+				auraSlot->addAuraEffect(aura);
+				if (target.getAuras().addAura(auraSlot))
 				{
-					m_auras[&target] = std::move(aura);
+					m_auras[&target] = std::move(auraSlot);
 				}
 			}
 			else
 			{
-				m_auras.erase(&target);
-				target.getAuras().removeAllAurasDueToSpell(m_entry.id());
+				auto auraIt = m_auras.find(&target);
+				if (auraIt != m_auras.end())
+				{
+					target.getAuras().removeAura(*auraIt->second);
+					auraIt = m_auras.erase(auraIt);
+				}
 			}
 
 			return false;
 		});
 		m_unitWatcher->start();
 		
-		updatePeriodicTimer();
 		m_onTick = m_tickCountdown.ended.connect([this]()
 		{
 			for (auto const &aura : m_auras)
 			{
-				aura.second->update();
+				aura.second->forEachEffect([](std::shared_ptr<AuraEffect> effect) -> bool {
+					effect->update();
+					return true;
+				});
 			}
 
 			updatePeriodicTimer();
 		});
+
+		updatePeriodicTimer();
 	}
 
 	void DynObject::updatePeriodicTimer()

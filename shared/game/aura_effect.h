@@ -144,6 +144,8 @@ namespace wowpp
 
 		/// Executed when the target of this aura moved.
 		void onTargetMoved(const math::Vector3 &oldPosition, float oldO);
+		/// Executed when the aura expires.
+		void onExpired();
 
 	protected:
 		
@@ -302,8 +304,6 @@ namespace wowpp
 
 		/// Starts the periodic tick timer.
 		void startPeriodicTimer();
-		/// Executed when the aura expires.
-		void onExpired();
 		/// Executed when this aura ticks.
 		void onTick();
 		///
@@ -317,7 +317,7 @@ namespace wowpp
 
 		const proto::SpellEntry &m_spell;
 		const proto::SpellEffect &m_effect;
-		simple::scoped_connection m_onExpire, m_onTick, m_takenDamage;
+		simple::scoped_connection m_onTick, m_takenDamage;
 		simple::scoped_connection m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onTargetKilled;
 		simple::scoped_connection m_procKilled, m_onDamageBreak, m_onProc, m_onTakenAutoAttack;
 		std::shared_ptr<GameUnit> m_caster;
@@ -327,7 +327,6 @@ namespace wowpp
 		GameTime m_applyTime;
 		Int32 m_basePoints;
 		UInt8 m_procCharges;
-		Countdown m_expireCountdown;
 		Countdown m_tickCountdown;
 		bool m_isPeriodic;
 		bool m_expired;

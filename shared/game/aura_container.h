@@ -27,58 +27,80 @@ namespace wowpp
 {
 	class GameUnit;
 	class AuraEffect;
+	class AuraSpellSlot;
 
 	/// Holds and manages instances of auras for one unit.
 	class AuraContainer final
 	{
 	private:
 
-		typedef simple::stable_list<std::shared_ptr<AuraEffect>> AuraList;
+		typedef std::shared_ptr<AuraSpellSlot> AuraPtr;
+		typedef simple::stable_list<AuraPtr> AuraList;
 
 	public:
 
+		/// Initializes a new AuraContainer for a specific owner unit.
 		explicit AuraContainer(GameUnit &owner);
 
-		bool addAura(std::shared_ptr<AuraEffect> aura);
+		/// Adds a new aura to the list of active auras.
+		bool addAura(AuraPtr aura);
+		/// Removes a specific auras.
 		void removeAura(AuraList::iterator &it);
-		void removeAura(AuraEffect &aura);
+		/// Removes a specific aura slot instance.
+		void removeAura(AuraSpellSlot &aura);
+		/// Called when the owner dies and will remove all aura slots which aren't 
+		/// marked death persistent.
 		void handleTargetDeath();
+		/// Removes all auras of a specific spell id.
 		void removeAllAurasDueToSpell(UInt32 spellId);
+		/// Removes all auras caused by a specific item instance.
 		void removeAllAurasDueToItem(UInt64 itemGuid);
+		/// Removes all auras which apply a specific mechanic.
 		void removeAllAurasDueToMechanic(UInt32 immunityMask);
+		/// Removes a certain amount of auras which match a specific dispel type 
+		/// (Magic, Curse, Poison etc.)
 		UInt32 removeAurasDueToDispel(UInt32 dispelType, bool dispelPositive, UInt32 count = 1);
+		/// Removes all aura slots which own a specific aura effect type.
 		void removeAurasByType(UInt32 auraType);
-		AuraEffect *popBack(UInt8 dispelType, bool positive);
+		/// Removes all auras which are marked to be removed by specific interrupt flags.
 		void removeAllAurasDueToInterrupt(game::SpellAuraInterruptFlags flags);
+		/// Removes all auras.
 		void removeAllAuras();
+		/// Outputs debug infos about all auras in this container.
+		void logAuraInfos();
 
+		/// Gets a reference on the owning unit.
 		GameUnit &getOwner() {
 			return m_owner;
 		}
-		/*size_t getSize() const {
-			return m_auras.size();
-		}*/
+		/// Determines if at least one aura with a certain aura effect is active.
 		bool hasAura(game::AuraType type) const;
+		/// Consumes absorb effects from as many auras as possible, one after another.
 		UInt32 consumeAbsorb(UInt32 damage, UInt8 school);
+		/// 
 		Int32 getMaximumBasePoints(game::AuraType type) const;
+		/// 
 		Int32 getMinimumBasePoints(game::AuraType type) const;
+		/// 
 		Int32 getTotalBasePoints(game::AuraType type) const;
+		/// 
 		float getTotalMultiplier(game::AuraType type) const;
 
+		/// Executes a function callback for every aura effect.
 		void forEachAura(std::function<bool(AuraEffect &)> functor);
+		/// Executes a function callback for every aura effect of a specific type.
 		void forEachAuraOfType(game::AuraType type, std::function<bool(AuraEffect &)> functor);
 
-		/// Used for debugging.
-		void logAuraInfos();
+	private:
+
+		/// Gets an iteratore of a specific aura slot.
+		AuraList::iterator findAura(AuraSpellSlot &aura);
 
 	private:
 
 		GameUnit &m_owner;
 		AuraList m_auras;
 		std::map<UInt16, UInt16> m_auraTypeCount;
-
-		AuraList::iterator findAura(AuraEffect &aura);
-
 	};
 
 }

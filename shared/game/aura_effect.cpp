@@ -44,7 +44,6 @@ namespace wowpp
 		, m_applyTime(getCurrentTime())
 		, m_basePoints(basePoints)
 		, m_procCharges(spell.proccharges())
-		, m_expireCountdown(target.getTimers())
 		, m_tickCountdown(target.getTimers())
 		, m_isPeriodic(false)
 		, m_expired(false)
@@ -59,14 +58,12 @@ namespace wowpp
 		, m_stackCount(1)
 	{
 		m_caster = std::static_pointer_cast<GameUnit>(caster.shared_from_this());
-
 		if (spell.duration() != spell.maxduration() && m_caster->isGameCharacter())
 		{
 			m_duration += static_cast<Int32>((spell.maxduration() - m_duration) * (std::static_pointer_cast<GameCharacter>(m_caster)->getComboPoints() / 5.0f));
 		}
 
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
-		m_onExpire = m_expireCountdown.ended.connect(this, &AuraEffect::onExpired);
 		if (!m_isPersistent)
 			m_onTick = m_tickCountdown.ended.connect(this, &AuraEffect::onTick);
 
@@ -165,8 +162,8 @@ namespace wowpp
 		if (m_duration > 0)
 		{
 			// Get spell duration
-			m_expireCountdown.setEnd(
-				getCurrentTime() + m_duration);
+			/*m_expireCountdown.setEnd(
+				getCurrentTime() + m_duration);*/
 		}
 
 		handleModifier(true);
@@ -174,6 +171,9 @@ namespace wowpp
 
 	void AuraEffect::updateAuraApplication()
 	{
+		if (m_slot == 0xFF)
+			return;
+
 		UInt32 stackCount = m_procCharges > 0 ? m_procCharges * m_stackCount : m_stackCount;
 
 		UInt32 index = m_slot / 4;
@@ -1359,8 +1359,8 @@ namespace wowpp
 		if (m_duration > 0)
 		{
 			// Get spell duration
-			m_expireCountdown.setEnd(
-				getCurrentTime() + m_duration);
+			/*m_expireCountdown.setEnd(
+				getCurrentTime() + m_duration);*/
 		}
 
 		if (m_spell.attributes(0) & game::spell_attributes::BreakableByDamage)
@@ -1547,7 +1547,6 @@ namespace wowpp
 	void AuraEffect::misapplyAura()
 	{
 		// Stop watching for these
-		m_onExpire.disconnect();
 		m_onTick.disconnect();
 
 		// Disconnect signals
@@ -1565,7 +1564,6 @@ namespace wowpp
 
 		// Cancel countdowns (if running)
 		m_tickCountdown.cancel();
-		m_expireCountdown.cancel();
 
 		// Remove aura slot
 		if (m_slot != 0xFF)

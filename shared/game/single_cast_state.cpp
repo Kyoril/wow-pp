@@ -605,7 +605,7 @@ namespace wowpp
 
 				strongThis->sendEndCast(true);
 				strongThis->applyAllEffects(true, true);
-
+				
 				return true;
 			});
 		}
@@ -1199,6 +1199,12 @@ namespace wowpp
 		if (!m_instantsCast || !m_delayedCast)
 		{
 			return;
+		}
+
+		for (auto &pair : m_auraSlots)
+		{
+			if (pair.second->getOwner())
+				pair.second->getOwner()->getAuras().addAura(pair.second);
 		}
 
 		completedEffects();
