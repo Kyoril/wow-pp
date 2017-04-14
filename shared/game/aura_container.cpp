@@ -49,8 +49,7 @@ namespace wowpp
 				{
 					// Only overwrite if higher or equal base rank
 					const bool sameSpell = ((*it)->getSpell().baseid() == aura->getSpell().baseid());
-
-					if (sameSpell && (*it)->getSpell().rank() <= aura->getSpell().rank())
+					if ((sameSpell && (*it)->getSpell().rank() <= aura->getSpell().rank()) || !sameSpell)
 					{
 						newSlot = (*it)->getSlot();
 						removeAura(it);
