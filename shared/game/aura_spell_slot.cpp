@@ -60,8 +60,9 @@ namespace wowpp
 		}
 
 		// Set expiration countdown (if any)
-		if (m_totalDuration > 0)
+		if (m_totalDuration > 0) {
 			m_expireCountdown.setEnd(getCurrentTime() + m_totalDuration);
+		}
 
 		m_applied = true;
 
@@ -305,14 +306,15 @@ namespace wowpp
 
 	void AuraSpellSlot::onExpiration()
 	{
-		if (!m_owner)
+		if (!m_owner) {
 			return;
+		}
 
 		// Notify all effects about the expiration
 		for (auto effect : m_effects)
 		{
 			if (!effect)
-				return;
+				break;
 
 			effect->onExpired();
 		}

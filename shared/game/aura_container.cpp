@@ -170,6 +170,9 @@ namespace wowpp
 		{
 			removeAura(it);
 		}
+		else {
+			WLOG("Could not find aura to remove!");
+		}
 	}
 
 	void AuraContainer::handleTargetDeath()

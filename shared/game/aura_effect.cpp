@@ -729,6 +729,8 @@ namespace wowpp
 
 	void AuraEffect::onExpired()
 	{
+		ASSERT(!m_expired && "AuraEffect already expired");
+
 		// Expired
 		m_expired = true;
 
