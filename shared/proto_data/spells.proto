@@ -117,6 +117,7 @@ message SpellEntry {
 	optional uint32 rank = 61;
 	optional uint32 prevspell = 62;
 	optional uint32 nextspell = 63;
+	optional uint32 positive = 64;
 }
 
 message Spells {
