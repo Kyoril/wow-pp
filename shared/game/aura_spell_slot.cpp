@@ -259,6 +259,8 @@ namespace wowpp
 		const bool sameCaster = (other.getCaster() == getCaster());
 		// Check if same item guid
 		const bool sameItem = (other.getItemGuid() == getItemGuid());
+		// Check if same family
+		const bool sameFamily = (other.getSpell().family() == m_spell.family());
 
 		// Same spell by same item?
 		if (getItemGuid() != 0 && sameItem && sameSpellId)
@@ -273,7 +275,17 @@ namespace wowpp
 			return false;
 
 		// Now check spell family
-
+		if (sameFamily)
+		{
+			// Warlock curses should overwrite each other if from same caster
+			if (m_spell.family() == game::spell_family::Warlock && sameFamily &&										// Warlock spell family?
+				sameCaster && getCaster() &&																			// Same known caster?
+				m_spell.dispel() == game::aura_dispel_type::Curse && other.getSpell().dispel() == m_spell.dispel())		// Curse dispel type?
+			{
+				// Curses do overwrite
+				return true;
+			}
+		}
 
 		return false;
 	}
