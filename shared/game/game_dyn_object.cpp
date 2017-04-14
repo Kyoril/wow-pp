@@ -169,14 +169,9 @@ namespace wowpp
 				auraSlot->setOwner(std::static_pointer_cast<GameUnit>(target.shared_from_this()));
 				auraSlot->setCaster(std::static_pointer_cast<GameUnit>(m_caster.shared_from_this()));
 
-				std::shared_ptr<AuraEffect> aura = std::make_shared<AuraEffect>(m_entry, m_effect, m_effect.basepoints(), m_caster, target, targetMap, 0, true, [&universe](std::function<void()> work) {
-					universe.post(work);
-				}, [&universe, auraSlot](AuraEffect & self) {
-					self.getTarget().getAuras().removeAura(*auraSlot);
-				});
-
-				// Add the effect
+				std::shared_ptr<AuraEffect> aura = std::make_shared<AuraEffect>(*auraSlot, m_effect, m_effect.basepoints(), m_caster, target, targetMap, true);
 				auraSlot->addAuraEffect(aura);
+
 				if (target.getAuras().addAura(auraSlot))
 				{
 					m_auras[&target] = std::move(auraSlot);

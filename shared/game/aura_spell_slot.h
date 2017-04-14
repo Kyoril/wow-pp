@@ -61,6 +61,7 @@ namespace wowpp
 
 		/// Creates a new, empty aura spell slot.
 		explicit AuraSpellSlot(TimerQueue &timers, const proto::SpellEntry &spell, UInt64 itemGuid = 0);
+		virtual ~AuraSpellSlot();
 
 		/// Applies all aura effects. After calling this method, aura effects may not
 		/// be modified before misapplyEffects is called!

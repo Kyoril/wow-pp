@@ -34,6 +34,7 @@
 #include "shared/proto_data/items.pb.h"
 #include "shared/proto_data/classes.pb.h"
 #include "experience.h"
+#include "aura_spell_slot.h"
 
 namespace wowpp
 {
@@ -54,7 +55,7 @@ namespace wowpp
 
 	void AuraEffect::handleDummy(bool apply)
 	{
-		if (isSealSpell(m_spell))
+		if (isSealSpell(m_spellSlot.getSpell()))
 		{
 			m_target.modifyAuraState(game::aura_state::Judgement, apply);
 		}
@@ -179,14 +180,18 @@ namespace wowpp
 
 	void AuraEffect::handleModResistance(bool apply)
 	{
-		bool isAbility = m_spell.attributes(0) & game::spell_attributes::Ability;
+		bool isAbility = m_spellSlot.getSpell().attributes(0) & game::spell_attributes::Ability;
 
 		// Apply all resistances
 		for (UInt8 i = 0; i < 7; ++i)
 		{
 			if (m_effect.miscvaluea() & Int32(1 << i))
 			{
-				m_target.updateModifierValue(UnitMods(unit_mods::ResistanceStart + i), isPassive() && isAbility ? unit_mod_type::BaseValue : unit_mod_type::TotalValue, m_basePoints, apply);
+				m_target.updateModifierValue(
+					UnitMods(unit_mods::ResistanceStart + i), 
+					m_spellSlot.isPassive() && isAbility ? unit_mod_type::BaseValue : unit_mod_type::TotalValue, 
+					m_basePoints, 
+					apply);
 			}
 		}
 	}
@@ -221,14 +226,18 @@ namespace wowpp
 			return;
 		}
 
-		bool isAbility = m_spell.attributes(0) & game::spell_attributes::Ability;
+		bool isAbility = m_spellSlot.getSpell().attributes(0) & game::spell_attributes::Ability;
 
 		// Apply all stats
 		for (Int32 i = 0; i < 5; ++i)
 		{
 			if (stat < 0 || stat == i)
 			{
-				m_target.updateModifierValue(GameUnit::getUnitModByStat(i), isPassive() && isAbility ? unit_mod_type::BaseValue : unit_mod_type::TotalValue, m_basePoints, apply);
+				m_target.updateModifierValue(
+					GameUnit::getUnitModByStat(i), 
+					m_spellSlot.isPassive() && isAbility ? unit_mod_type::BaseValue : unit_mod_type::TotalValue, 
+					m_basePoints, 
+					apply);
 			}
 		}
 	}
@@ -361,7 +370,7 @@ namespace wowpp
 					UInt32 ProcChance = 0;
 					m_target.getAuras().forEachAuraOfType(game::aura_type::Dummy, [&ProcChance](AuraEffect &aura) -> bool
 					{
-						switch (aura.getSpell().id())
+						switch (aura.getSlot().getSpell().id())
 						{
 							// Furor ranks
 							case 17056:	// Rank 1
@@ -535,11 +544,11 @@ namespace wowpp
 
 				if (item)
 				{
-					character.applyWeaponCritMod(item, static_cast<game::WeaponAttack>(i), m_spell, static_cast<float>(m_basePoints), apply);
+					character.applyWeaponCritMod(item, static_cast<game::WeaponAttack>(i), m_spellSlot.getSpell(), static_cast<float>(m_basePoints), apply);
 				}
 			}
 
-			if (m_spell.itemclass() == -1)
+			if (m_spellSlot.getSpell().itemclass() == -1)
 			{
 				character.handleBaseCRMod(base_mod_group::CritPercentage, base_mod_type::Flat, static_cast<float>(m_basePoints), apply);
 				character.handleBaseCRMod(base_mod_group::OffHandCritPercentage, base_mod_type::Flat, static_cast<float>(m_basePoints), apply);
@@ -757,9 +766,9 @@ namespace wowpp
 
 	void AuraEffect::handleModAttackPower(bool apply)
 	{
-		bool isAbility = m_spell.attributes(0) & game::spell_attributes::Ability;
+		bool isAbility = m_spellSlot.getSpell().attributes(0) & game::spell_attributes::Ability;
 
-		if (isPassive() && isAbility)
+		if (m_spellSlot.isPassive() && isAbility)
 		{
 			m_target.updateModifierValue(unit_mods::AttackPower, unit_mod_type::BaseValue, m_basePoints, apply);
 		}
@@ -853,14 +862,14 @@ namespace wowpp
 		mod.op = SpellModOp(m_effect.miscvaluea());
 		mod.value = m_basePoints;
 		mod.type = SpellModType(m_effect.aura());
-		mod.spellId = m_spell.id();
+		mod.spellId = m_spellSlot.getSpell().id();
 		mod.effectId = m_effect.index();
 		mod.charges = 0;
 		mod.mask = m_effect.affectmask();
 		if (mod.mask == 0) mod.mask = m_effect.itemtype();
 		if (mod.mask == 0)
 		{
-			WLOG("INVALID MOD MASK FOR SPELL " << m_spell.id() << " / EFFECT " << m_effect.index());
+			WLOG("INVALID MOD MASK FOR SPELL " << m_spellSlot.getSpell().id() << " / EFFECT " << m_effect.index());
 		}
 		reinterpret_cast<GameCharacter&>(m_target).modifySpellMod(mod, apply);
 	}
@@ -970,9 +979,10 @@ namespace wowpp
 	void AuraEffect::handlePeriodicDummy(bool apply)
 	{
 		// if drinking
-		for (int i = 0; i < m_spell.effects_size(); ++i)
+		auto &spell = m_spellSlot.getSpell();
+		for (int i = 0; i < spell.effects_size(); ++i)
 		{
-			auto effect = m_spell.effects(i);
+			auto effect = spell.effects(i);
 			if (effect.type() == game::spell_effects::ApplyAura && effect.aura() == game::aura_type::ModPowerRegen)
 			{
 				float amplitude = m_effect.amplitude() / 1000.0f;

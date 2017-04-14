@@ -30,6 +30,7 @@ namespace wowpp
 	// Forwards
 	class GameObject;
 	class GameUnit;
+	class AuraSpellSlot;
 
 	/// Represents an instance of a spell aura.
 	class AuraEffect : public std::enable_shared_from_this<AuraEffect>
@@ -43,17 +44,14 @@ namespace wowpp
 	public:
 
 		/// Initializes a new instance of the AuraEffect class.
-		explicit AuraEffect(const proto::SpellEntry &spell, 
-					  const proto::SpellEffect &effect, 
-					  Int32 basePoints, 
-					  GameUnit &caster, 
-					  GameUnit &target, 
-					  SpellTargetMap targetMap, 
-					  UInt64 itemGuid,
-					  bool isPersistent,
-					  PostFunction post, 
-					  std::function<void(AuraEffect &)> onDestroy);
-		~AuraEffect();
+		explicit AuraEffect(
+			AuraSpellSlot &slot, 
+			const proto::SpellEffect &effect,
+			Int32 basePoints, 
+			GameUnit &caster, 
+			GameUnit &target, 
+			SpellTargetMap targetMap,
+			bool isPersistent);
 
 		/// Gets the unit target.
 		GameUnit &getTarget() {
@@ -65,9 +63,6 @@ namespace wowpp
 		}
 		/// Gets the caster guid (or 0 if no caster was set).
 		UInt64 getCasterGuid() const;
-		UInt64 getItemGuid() const {
-			return m_itemGuid;
-		}
 		/// Applies this aura and initializes everything.
 		void applyAura();
 		/// This method is the counterpart of applyAura(). It exists so that
@@ -78,32 +73,9 @@ namespace wowpp
 		void handleModifier(bool apply);
 		///
 		void handleProcModifier(UInt8 attackType, bool canRemove, UInt32 amount, GameUnit *attacker = nullptr);
-		/// Determines whether this is a passive spell aura.
-		bool isPassive() const {
-			return (m_spell.attributes(0) & game::spell_attributes::Passive) != 0;
-		}
-		/// Determines whether the target may be positive
-		static bool hasPositiveTarget(const proto::SpellEffect &effect);
-		/// Determines whether this is a positive spell aura.
-		/// @returns true if this is a positive aura, false otherwise.
-		bool isPositive() const;
-		/// Determines whether an aura by a given spell and effect is positive.
-		/// @param spell The spell template to check.
-		/// @param effect The spell effect to check.
-		/// @returns true if an aura of this spell would be a positive aura, false otherwise.
-		static bool isPositive(const proto::SpellEntry &spell, const proto::SpellEffect &effect);
-		/// Gets the current aura slot.
-		UInt8 getSlot() const {
-			return m_slot;
-		}
-		/// Sets the new aura slot to be used.
-		void setSlot(UInt8 newSlot);
-		/// Forced aura remove.
-		void onForceRemoval();
 
-		/// Gets the spell which created this aura and hold's it's values.
-		const proto::SpellEntry &getSpell() const {
-			return m_spell;
+		AuraSpellSlot &getSlot() {
+			return m_spellSlot;
 		}
 		/// Gets the spell effect which created this aura.
 		const proto::SpellEffect &getEffect() const {
@@ -306,8 +278,6 @@ namespace wowpp
 		void startPeriodicTimer();
 		/// Executed when this aura ticks.
 		void onTick();
-		///
-		void setRemoved(GameUnit *remover);
 		/// 
 		bool checkProc(bool active, GameUnit *target, UInt32 procFlag, UInt32 procEx, proto::SpellEntry const *procSpell, UInt8 attackType, bool isVictim);
 		/// Starts periodic ticks.
@@ -315,7 +285,7 @@ namespace wowpp
 
 	private:
 
-		const proto::SpellEntry &m_spell;
+		AuraSpellSlot &m_spellSlot;
 		const proto::SpellEffect &m_effect;
 		simple::scoped_connection m_onTick, m_takenDamage;
 		simple::scoped_connection m_targetMoved, m_targetEnteredWater, m_targetStartedAttacking, m_targetStartedCasting, m_onTargetKilled;
@@ -330,12 +300,8 @@ namespace wowpp
 		Countdown m_tickCountdown;
 		bool m_isPeriodic;
 		bool m_expired;
-		UInt8 m_slot;
-		PostFunction m_post;
-		std::function<void(AuraEffect &)> m_destroy;
 		UInt32 m_totalTicks;
 		Int32 m_duration;
-		UInt64 m_itemGuid;
 		bool m_isPersistent;
 		UInt32 m_stackCount;
 	};

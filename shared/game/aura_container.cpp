@@ -123,7 +123,6 @@ namespace wowpp
 
 		// Apply aura effects
 		aura->applyEffects();
-
 		return true;
 	}
 
@@ -144,7 +143,7 @@ namespace wowpp
 	{
 		// Make sure that the aura is not destroy when releasing
 		ASSERT(it != m_auras.end());
-		auto strong = *it;
+		auto strong = (*it);
 		
 		// Remove the aura from the list of auras
 		it = m_auras.erase(it);

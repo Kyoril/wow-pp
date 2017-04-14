@@ -40,6 +40,11 @@ namespace wowpp
 		m_expireCountdown.ended.connect(this, &AuraSpellSlot::onExpiration);
 	}
 
+	AuraSpellSlot::~AuraSpellSlot()
+	{
+		ASSERT(!m_applied && "AuraSpellSlot instance destroyed without being misapplied before");
+	}
+
 	void AuraSpellSlot::applyEffects()
 	{
 		ASSERT(!m_applied && "Aura effects already applied");
@@ -98,6 +103,7 @@ namespace wowpp
 		ASSERT(m_owner && "Valid owner required");
 
 		m_applied = false;
+		m_expireCountdown.cancel();
 
 		for (auto effect : m_effects)
 		{
@@ -181,25 +187,7 @@ namespace wowpp
 	}
 	bool AuraSpellSlot::isNegative() const
 	{
-		// Passive spells are never negative
-		if (isPassive())
-			return false;
-
-		// Negative attribute
-		if (m_spell.attributes(0) & game::spell_attributes::Negative)
-			return true;
-
-		// Check effects (rework this)
-		for (auto &effect : m_effects)
-		{
-			if (!effect)
-				return false;
-
-			if (!effect->isPositive())
-				return false;
-		}
-
-		return true;
+		return m_spell.positive() == 0;
 	}
 	bool AuraSpellSlot::isDeathPersistent() const
 	{
