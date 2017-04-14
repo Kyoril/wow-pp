@@ -63,6 +63,10 @@ namespace wowpp
 						// TODO: Send proper error message to the client
 						return false;
 					}
+					else
+					{
+						++it;
+					}
 				}
 				else
 				{
