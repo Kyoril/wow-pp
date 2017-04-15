@@ -225,11 +225,11 @@ namespace wowpp
 	{
 		for (auto effect : m_effects)
 		{
-			if (effect &&
-				(effect->getEffect().mechanic() & (1 << m_spell.mechanic())))
-			{
+			if (!effect)
+				return false;
+
+			if (effect->getEffect().aura() == auraType)
 				return true;
-			}
 		}
 
 		return false;
