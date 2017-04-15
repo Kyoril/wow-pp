@@ -1445,7 +1445,7 @@ namespace wowpp
 		const UInt32 lowerPart = guidLowerPart(characterId);
 
 		if (m_connection.execute(fmt::format(
-			"INSERT IGNORE INTO `character_spells` VALUES ({0}, {1});"
+			"INSERT IGNORE INTO `character_spells` VALUES ({0}, {1}, 1, 0);"
 			, lowerPart
 			, spellId
 			)))
