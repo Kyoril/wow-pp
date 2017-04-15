@@ -840,6 +840,7 @@ namespace wowpp
 			m_ui->spellNameField->setText(spell->name().c_str());
 			m_ui->spellMechanicField->setText(QString::number(spell->mechanic()));
 			m_ui->spellRankField->setText(QString::number(spell->rank()));
+			m_ui->spellPositiveBox->setChecked(spell->positive() != 0);
 
 			// Determine the cast time of this spell
 			Int64 castTime = spell->casttime();
@@ -1745,6 +1746,18 @@ namespace wowpp
 
 			m_selectedUnit->set_schoolimmunity(mask);
 			m_application.markAsChanged(m_selectedUnit->id(), pp::editor_team::data_entry_type::Units, pp::editor_team::data_entry_change_type::Modified);
+		}
+
+		void ObjectEditor::on_spellPositiveBox_stateChanged(int state)
+		{
+			if (!m_selectedSpell)
+				return;
+
+			if (m_selectionChanging)
+				return;
+
+			m_selectedSpell->set_positive(state == Qt::Checked ? 1 : 0);
+			m_application.markAsChanged(m_selectedSpell->id(), pp::editor_team::data_entry_type::Spells, pp::editor_team::data_entry_change_type::Modified);
 		}
 
 		void ObjectEditor::on_objectRemoveTriggerBtn_clicked()

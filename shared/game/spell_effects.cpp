@@ -276,7 +276,7 @@ namespace wowpp
 		std::vector<game::VictimState> victimStates;
 		std::vector<game::HitInfo> hitInfos;
 		std::vector<float> resists;
-		bool isPositive = AuraEffect::isPositive(m_spell, effect);
+		bool isPositive = (m_spell.positive() != 0);
 		UInt8 school = m_spell.schoolmask();
 
 		if (isPositive)
@@ -349,7 +349,7 @@ namespace wowpp
 					{
 						targetUnit->getAuras().forEachAuraOfType(game::aura_type::PeriodicDamage, [&totalPoints, this](AuraEffect &aura) -> bool
 						{
-							if (aura.getSpell().id() == m_spell.id())
+							if (aura.getSlot().getSpell().id() == m_spell.id())
 							{
 								Int32 remainingTicks = aura.getMaxTickCount() - aura.getTickCount();
 								Int32 remainingDamage = aura.getBasePoints() * remainingTicks;
@@ -380,24 +380,20 @@ namespace wowpp
 			}
 			else if (targetUnit->isAlive())
 			{
-				std::shared_ptr<AuraEffect> aura = std::make_shared<AuraEffect>(m_spell, effect, totalPoints, caster, *targetUnit, m_target, m_itemGuid, false, [&universe](std::function<void()> work)
+				// Create a new slot for this unit if it didn't happen already
+				if (m_auraSlots.find(targetUnit->getGuid()) == m_auraSlots.end())
 				{
-					universe.post(work);
-				}, [&universe](AuraEffect & self)
-				{
-					// Prevent aura from being deleted before being removed from the list
-					auto strong = self.shared_from_this();
-					universe.post([strong]()
-					{
-						strong->getTarget().getAuras().removeAura(*strong);
-					});
-				});
+					m_auraSlots[targetUnit->getGuid()] = std::make_shared<AuraSpellSlot>(targetUnit->getTimers(), m_spell, m_itemGuid);
+					m_auraSlots[targetUnit->getGuid()]->setOwner(std::static_pointer_cast<GameUnit>(targetUnit->shared_from_this()));
+					m_auraSlots[targetUnit->getGuid()]->setCaster(std::static_pointer_cast<GameUnit>(m_cast.getExecuter().shared_from_this()));
+				}
 
-				// TODO: Dimishing return and custom durations
+				// Get slot
+				auto slot = m_auraSlots[targetUnit->getGuid()];
+				ASSERT(slot);
 
-				// TODO: Apply spell haste
-
-				// TODO: Check if aura already expired
+				// Now, create an aura effect
+				std::shared_ptr<AuraEffect> auraEffect = std::make_shared<AuraEffect>(*slot, effect, totalPoints, caster, *targetUnit, m_target, false);
 
 				const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 				if (!noThreat)
@@ -408,12 +404,13 @@ namespace wowpp
 				// TODO: Add aura to unit target
 				if (isChanneled())
 				{
-					m_onChannelAuraRemoved = aura->misapplied.connect([this]() {
+					m_onChannelAuraRemoved = auraEffect->misapplied.connect([this]() {
 						stopCast(game::spell_interrupt_flags::None);
 					});
 				}
 
-				targetUnit->getAuras().addAura(std::move(aura));
+				// Add to slot
+				slot->addAuraEffect(auraEffect);
 
 				// We need to be sitting for this aura to work
 				if (m_spell.aurainterruptflags() & game::spell_aura_interrupt_flags::NotSeated)
@@ -1852,7 +1849,8 @@ namespace wowpp
 				UInt32 auraDispelType = effect.miscvaluea();
 				for (UInt32 i = 0; i < totalPoints; i++)
 				{
-					AuraEffect *stolenAura = targetUnit->getAuras().popBack(auraDispelType, true);
+					// TODO:
+					/*AuraEffect *stolenAura = targetUnit->getAuras().popBack(auraDispelType, true);
 					if (stolenAura)
 					{
 						proto::SpellEntry spell(stolenAura->getSpell());
@@ -1878,7 +1876,7 @@ namespace wowpp
 					else
 					{
 						break;
-					}
+					}*/
 				}
 			}
 
@@ -2049,7 +2047,7 @@ namespace wowpp
 				m_cast.getExecuter().getAuras().forEachAuraOfType(game::aura_type::Dummy, [this, &sealAura](AuraEffect &aura) -> bool {
 					if (aura.getCaster() == &m_cast.getExecuter() &&
 						aura.getEffect().index() > 0 &&	// Never the first effect!
-						isSealSpell(aura.getSpell()))
+						isSealSpell(aura.getSlot().getSpell()))
 					{
 						// Found the seal aura
 						sealAura = &aura;
@@ -2070,7 +2068,7 @@ namespace wowpp
 				const auto *spell = m_cast.getExecuter().getProject().spells.getById(judgementSpellId);
 
 				// Remove seal aura now as it is no longer needed
-				m_cast.getExecuter().getAuras().removeAllAurasDueToSpell(sealAura->getSpell().id());
+				m_cast.getExecuter().getAuras().removeAllAurasDueToSpell(sealAura->getSlot().getSpell().id());
 				sealAura = nullptr;
 
 				// Found a spell?

@@ -102,6 +102,7 @@ namespace wowpp
 			void onRaceClassChanged(int state);
 			void onMechanicImmunityChanged(int state);
 			void onSchoolImmunityChanged(int state);
+			void on_spellPositiveBox_stateChanged(int state);
 
 		private:
 				

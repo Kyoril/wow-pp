@@ -111,7 +111,7 @@ namespace wowpp
 						m_ui->emoteBox->setEnabled(true);
 					}
 				}
-				catch (const std::exception &e)
+				catch (const std::exception &)
 				{
 					m_ui->emoteBox->setEnabled(false);
 				}

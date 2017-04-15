@@ -605,7 +605,7 @@ namespace wowpp
 
 				strongThis->sendEndCast(true);
 				strongThis->applyAllEffects(true, true);
-
+				
 				return true;
 			});
 		}
@@ -1071,21 +1071,7 @@ namespace wowpp
 			m_attackType = game::weapon_attack::RangedAttack;
 			break;
 		default:
-			bool isPositive = false;
-
-			for (const auto &effect : m_spell.effects())
-			{
-				if (AuraEffect::isPositive(m_spell, effect))
-				{
-					isPositive = true;
-				}
-				else
-				{
-					isPositive = false;
-					break;
-				}
-			}
-
+			bool isPositive = (m_spell.positive() != 0);
 			if (isPositive)
 			{
 				m_attackerProc = game::spell_proc_flags::DoneSpellMagicDmgClassPos;
@@ -1200,6 +1186,15 @@ namespace wowpp
 		{
 			return;
 		}
+
+		for (auto &pair : m_auraSlots)
+		{
+			auto owner = pair.second->getOwner();
+			if (owner)
+				owner->getAuras().addAura(std::move(pair.second));
+		}
+
+		m_auraSlots.clear();
 
 		completedEffects();
 

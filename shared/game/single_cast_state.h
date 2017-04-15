@@ -26,6 +26,7 @@
 #include "common/countdown.h"
 #include "game_object.h"
 #include "shared/proto_data/spells.pb.h"
+#include "aura_spell_slot.h"
 
 namespace wowpp
 {
@@ -240,6 +241,7 @@ namespace wowpp
 		std::vector<UInt64> m_dynObjectsToDespawn;
 		bool m_instantsCast, m_delayedCast;
 		simple::scoped_connection m_onChannelAuraRemoved;
+		std::map<UInt64, std::shared_ptr<AuraSpellSlot>> m_auraSlots;
 
 		void sendEndCast(bool success);
 		void onCastFinished();
