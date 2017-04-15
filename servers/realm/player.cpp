@@ -1762,7 +1762,7 @@ namespace wowpp
 		// TODO check distance to mailbox, etc
 
 		auto mail = getMail(mailId);
-		if (mail && mail->getCOD() > 0)
+		if (mail && mail->getCOD() == 0)
 		{
 			sendPacket(
 				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
