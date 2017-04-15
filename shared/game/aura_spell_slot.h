@@ -128,6 +128,9 @@ namespace wowpp
 		void setSlot(UInt8 slot);
 		/// Determines whether this aura should override another aura slot.
 		bool shouldOverwriteAura(AuraSpellSlot &other);
+		/// Removes one or multiple proc charges. This will destroy the aura
+		/// when no charges are left.
+		bool removeProcCharges(UInt8 count = 1);
 
 		/// Executes a function for each effect as long as the functor method returns true.
 		void forEachEffect(std::function<bool(AuraEffectPtr)> functor);
@@ -136,6 +139,8 @@ namespace wowpp
 
 	private:
 
+		/// Updates the aura's application field on the owner.
+		void updateAuraApplication();
 		/// Executed when the aura slot expires.
 		void onExpiration();
 
@@ -151,5 +156,7 @@ namespace wowpp
 		UInt8 m_slot;
 		simple::scoped_connection m_onExpire;
 		Countdown m_expireCountdown;
+		UInt8 m_procCharges;
+		UInt32 m_stackCount;
 	};
 }

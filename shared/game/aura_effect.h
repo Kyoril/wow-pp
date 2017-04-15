@@ -108,21 +108,12 @@ namespace wowpp
 			return m_totalTicks;
 		}
 
-		UInt32 getStackCount() {
-			return m_stackCount;
-		}
-
 		void updateStackCount(Int32 points);
 
 		/// Executed when the target of this aura moved.
 		void onTargetMoved(const math::Vector3 &oldPosition, float oldO);
 		/// Executed when the aura expires.
 		void onExpired();
-
-	protected:
-		
-		/// Updates the counter display (stack) of this aura.
-		void updateAuraApplication();
 
 	protected:
 
@@ -296,13 +287,11 @@ namespace wowpp
 		UInt32 m_tickCount;
 		GameTime m_applyTime;
 		Int32 m_basePoints;
-		UInt8 m_procCharges;
 		Countdown m_tickCountdown;
 		bool m_isPeriodic;
 		bool m_expired;
 		UInt32 m_totalTicks;
 		Int32 m_duration;
 		bool m_isPersistent;
-		UInt32 m_stackCount;
 	};
 }

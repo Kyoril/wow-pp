@@ -44,7 +44,6 @@ namespace wowpp
 		, m_tickCount(0)
 		, m_applyTime(getCurrentTime())
 		, m_basePoints(basePoints)
-		, m_procCharges(slot.getSpell().proccharges())
 		, m_tickCountdown(target.getTimers())
 		, m_isPeriodic(false)
 		, m_expired(false)
@@ -52,7 +51,6 @@ namespace wowpp
 		, m_duration(slot.getSpell().duration())
 		, m_targetMap(targetMap)
 		, m_isPersistent(isPersistent)
-		, m_stackCount(1)
 	{
 		auto &spell = m_spellSlot.getSpell();
 
@@ -138,7 +136,7 @@ namespace wowpp
 
 	void AuraEffect::updateStackCount(Int32 points)
 	{
-		if (m_spellSlot.getSpell().stackamount() != m_stackCount)
+		/*if (m_spellSlot.getSpell().stackamount() != m_stackCount)
 		{
 			m_stackCount++;
 			updateAuraApplication();
@@ -152,33 +150,16 @@ namespace wowpp
 		}
 
 		handleModifier(false);
-
 		m_tickCount = 0;
 
 		if (m_duration > 0)
 		{
 			// Get spell duration
-			/*m_expireCountdown.setEnd(
-				getCurrentTime() + m_duration);*/
+			//m_expireCountdown.setEnd(
+			//	getCurrentTime() + m_duration);
 		}
 
-		handleModifier(true);
-	}
-
-	void AuraEffect::updateAuraApplication()
-	{
-		if (!m_spellSlot.hasValidSlot())
-			return;
-
-		const UInt32 stackCount = m_procCharges > 0 ? m_procCharges * m_stackCount : m_stackCount;
-		const auto slot = m_spellSlot.getSlot();
-		const UInt32 index = slot / 4;
-		const UInt32 byte = (slot % 4) * 8;
-
-		UInt32 val = m_target.getUInt32Value(unit_fields::AuraApplications + index);
-		val &= ~(0xFF << byte);
-		val |= ((UInt8(stackCount <= 255 ? stackCount - 1 : 255 - 1)) << byte);
-		m_target.setUInt32Value(unit_fields::AuraApplications + index, val);
+		handleModifier(true);*/
 	}
 
 	void AuraEffect::handleModifier(bool apply)
@@ -466,18 +447,9 @@ namespace wowpp
 			}
 		}
 
-		if (m_procCharges > 0 && canRemove)
-		{
-			m_procCharges--;
-			if (m_procCharges == 0) 
-			{
-				m_target.getAuras().removeAura(m_spellSlot);
-			}
-			else if (m_spellSlot.hasValidSlot())
-			{
-				updateAuraApplication();
-			}
-		}
+		// Remove one proc charge
+		if (canRemove)
+			m_spellSlot.removeProcCharges(1);
 	}
 
 	void AuraEffect::handleTakenDamage(GameUnit *attacker)

@@ -36,6 +36,8 @@ namespace wowpp
 		, m_totalDuration(0)
 		, m_slot(0xFF)
 		, m_expireCountdown(timers)
+		, m_procCharges(spell.proccharges())
+		, m_stackCount(1)
 	{
 		m_expireCountdown.ended.connect(this, &AuraSpellSlot::onExpiration);
 	}
@@ -87,6 +89,9 @@ namespace wowpp
 				val |= (UInt32(9) << byte);
 			}
 			m_owner->setUInt32Value(unit_fields::AuraFlags + index, val);
+
+			// Update aura applications
+			updateAuraApplication();
 
 			// Notify caster
 			m_owner->auraUpdated(m_slot, m_spell.id(), getTotalDuration(), getTotalDuration());
@@ -277,6 +282,42 @@ namespace wowpp
 		}
 
 		return false;
+	}
+	bool AuraSpellSlot::removeProcCharges(UInt8 count/* = 1*/)
+	{
+		ASSERT(m_owner && "Valid owner has to exist");
+		ASSERT(m_applied && "Aura has to be applied");
+		ASSERT(count >= 1 && "At least one charge should be given");
+
+		if (m_procCharges >= count)
+		{
+			m_procCharges -= count;
+			if (m_procCharges == 0)
+				m_owner->getAuras().removeAura(*this);
+			else
+				updateAuraApplication();
+		}
+		else
+		{
+			return false;
+		}
+
+		return true;
+	}
+	void AuraSpellSlot::updateAuraApplication()
+	{
+		ASSERT(hasValidSlot() && "Valid slot required");
+		ASSERT(m_owner && "Valid owner required");
+		ASSERT(m_applied && "Aura needs to be applied first");
+
+		const UInt32 stackCount = m_procCharges > 0 ? m_procCharges * m_stackCount : m_stackCount;
+		const UInt32 index = m_slot / 4;
+		const UInt32 byte = (m_slot % 4) * 8;
+
+		UInt32 val = m_owner->getUInt32Value(unit_fields::AuraApplications + index);
+		val &= ~(0xFF << byte);
+		val |= ((UInt8(stackCount <= 255 ? stackCount - 1 : 255 - 1)) << byte);
+		m_owner->setUInt32Value(unit_fields::AuraApplications + index, val);
 	}
 	void AuraSpellSlot::forEachEffect(std::function<bool(AuraEffectPtr)> functor)
 	{
