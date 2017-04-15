@@ -51,9 +51,22 @@ namespace wowpp
 					const bool sameSpell = ((*it)->getSpell().baseid() == aura->getSpell().baseid());
 					if ((sameSpell && (*it)->getSpell().rank() <= aura->getSpell().rank()) || !sameSpell)
 					{
-						newSlot = (*it)->getSlot();
-						removeAura(it);
-						break;
+						// Check if we need to add a stack
+						if ((*it)->getSpell().id() == aura->getSpell().id() &&
+							aura->getSpell().stackamount() > 0 &&
+							(*it)->getCaster() == aura->getCaster() && aura->getCaster())
+						{
+							// We simply increase the stack and stop here
+							(*it)->addStack(*aura);
+							return true;
+						}
+						else
+						{
+							// We need to replace the old spell
+							newSlot = (*it)->getSlot();
+							removeAura(it);
+							break;
+						}
 					}
 					else if (sameSpell)
 					{

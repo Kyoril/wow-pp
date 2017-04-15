@@ -94,8 +94,26 @@ namespace wowpp
 		m_totalTicks = (m_effect.amplitude() == 0 ? 0 : m_duration / m_effect.amplitude());
 	}
 
-	void AuraEffect::setBasePoints(Int32 basePoints) {
-		m_basePoints = basePoints;
+	void AuraEffect::setBasePoints(Int32 basePoints)
+	{
+		bool needsReapply = (m_basePoints != basePoints);
+		if (needsReapply)
+		{
+			// First misapply the effect
+			handleModifier(false);
+
+			// Update base points now (if we would've done this before, errors would occur
+			// because on misapply, stats may be altered based on base points - thus 
+			// adding or subtracting more points than we did on apply
+			m_basePoints = basePoints;
+		}
+		
+		// Reset the tick count
+		m_tickCount = 0;
+
+		// And now reapply the effect with the new base points
+		if (needsReapply)
+			handleModifier(true);
 	}
 
 	UInt32 AuraEffect::getEffectSchoolMask()
@@ -132,34 +150,6 @@ namespace wowpp
 	void AuraEffect::update()
 	{
 		onTick();
-	}
-
-	void AuraEffect::updateStackCount(Int32 points)
-	{
-		/*if (m_spellSlot.getSpell().stackamount() != m_stackCount)
-		{
-			m_stackCount++;
-			updateAuraApplication();
-
-			Int32 basePoints = m_stackCount * points;
-
-			if (basePoints != m_basePoints)
-			{
-				setBasePoints(basePoints);
-			}
-		}
-
-		handleModifier(false);
-		m_tickCount = 0;
-
-		if (m_duration > 0)
-		{
-			// Get spell duration
-			//m_expireCountdown.setEnd(
-			//	getCurrentTime() + m_duration);
-		}
-
-		handleModifier(true);*/
 	}
 
 	void AuraEffect::handleModifier(bool apply)

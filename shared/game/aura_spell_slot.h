@@ -131,6 +131,9 @@ namespace wowpp
 		/// Removes one or multiple proc charges. This will destroy the aura
 		/// when no charges are left.
 		bool removeProcCharges(UInt8 count = 1);
+		/// Adds a new stack based on another aura's effects. The other aura's
+		/// spell has to match.
+		void addStack(AuraSpellSlot &aura);
 
 		/// Executes a function for each effect as long as the functor method returns true.
 		void forEachEffect(std::function<bool(AuraEffectPtr)> functor);

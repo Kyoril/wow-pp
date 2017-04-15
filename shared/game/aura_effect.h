@@ -87,7 +87,6 @@ namespace wowpp
 			return m_basePoints;
 		}
 		/// Updates the auras base points.
-		/// @
 		void setBasePoints(Int32 basePoints);
 
 		UInt32 getEffectSchoolMask();
@@ -107,8 +106,6 @@ namespace wowpp
 		UInt32 getMaxTickCount() {
 			return m_totalTicks;
 		}
-
-		void updateStackCount(Int32 points);
 
 		/// Executed when the target of this aura moved.
 		void onTargetMoved(const math::Vector3 &oldPosition, float oldO);

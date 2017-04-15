@@ -304,6 +304,47 @@ namespace wowpp
 
 		return true;
 	}
+	void AuraSpellSlot::addStack(AuraSpellSlot & aura)
+	{
+		ASSERT(m_owner && "Valid owner requird");
+		ASSERT(m_applied && "Aura has to be applied");
+		ASSERT(aura.getSpell().id() == m_spell.id() && "Aura spells have to match");
+
+		if (m_spell.stackamount() != m_stackCount)
+		{
+			m_stackCount++;
+			updateAuraApplication();
+
+			// Now for every effect, update their base points and reapply them
+			for (Int32 i = 0; i < m_effects.size(); ++i)
+			{
+				if (!m_effects[i])
+					break;
+
+				ASSERT((m_effects[i] && aura.m_effects[i]) && "Both auras have to have the same amount of effects");
+				ASSERT((m_effects[i]->getEffect().aura() && aura.m_effects[i]->getEffect().aura()) && "Both effects have to match");
+
+				Int32 basePoints = m_stackCount * aura.m_effects[i]->getBasePoints();
+				m_effects[i]->setBasePoints(basePoints);
+			}
+		}
+
+		// Reset aura expiration (if any)
+		if (m_totalDuration > 0)
+			m_expireCountdown.setEnd(getCurrentTime() + m_totalDuration);
+
+		if (hasValidSlot())
+		{
+			m_owner->auraUpdated(m_slot, m_spell.id(), getTotalDuration(), getTotalDuration());
+
+			auto *caster = getCaster();
+			if (caster)
+			{
+				caster->targetAuraUpdated(m_owner->getGuid(), m_slot,
+					m_spell.id(), getTotalDuration(), getTotalDuration());
+			}
+		}
+	}
 	void AuraSpellSlot::updateAuraApplication()
 	{
 		ASSERT(hasValidSlot() && "Valid slot required");
