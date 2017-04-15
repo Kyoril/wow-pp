@@ -325,5 +325,6 @@ namespace wowpp
 		void handleMailQueryNextTime(game::IncomingPacket &packet);
 		void handleMailGetBody(game::IncomingPacket &packet);
 		void handleMailTakeMoney(game::IncomingPacket &packet);
+		void handleMailDelete(game::IncomingPacket &packet);
 	};
 }

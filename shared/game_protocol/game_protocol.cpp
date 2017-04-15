@@ -4159,6 +4159,14 @@ namespace wowpp
 					>> io::read<NetUInt32>(out_mailId);
 			}
 
+			bool mailDelete(io::Reader & packet, ObjectGuid & out_mailboxGuid, UInt32 & out_mailId)
+			{
+				return packet
+					>> io::read<NetObjectGuid>(out_mailboxGuid)
+					>> io::read<NetUInt32>(out_mailId)
+					>> io::skip(sizeof(UInt32));
+			}
+
 			bool resurrectResponse(io::Reader & packet, UInt64 &out_guid, UInt8 &out_status)
 			{
 				return packet

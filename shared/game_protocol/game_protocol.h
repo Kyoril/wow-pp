@@ -1057,6 +1057,12 @@ namespace wowpp
 				UInt32 &out_mailId
 				);
 
+			bool mailDelete(
+				io::Reader &packet,
+				ObjectGuid &out_mailboxGuid,
+				UInt32 &out_mailId
+			);
+
 			bool resurrectResponse(
 				io::Reader &packet,
 				UInt64 &out_guid,

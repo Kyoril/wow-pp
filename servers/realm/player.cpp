@@ -1748,6 +1748,35 @@ namespace wowpp
 		// TODO change mail state
 	}
 
+	void Player::handleMailDelete(game::IncomingPacket & packet)
+	{
+		ObjectGuid mailboxGuid;
+		UInt32 mailId;
+
+		if (!game::client_read::mailDelete(packet, mailboxGuid, mailId))
+		{
+			return;
+		}
+
+		// TODO check distance to mailbox, etc
+
+		auto mail = getMail(mailId);
+		if (mail && mail->getCOD() > 0)
+		{
+			sendPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(mailId, mail::response_type::Deleted, mail::response_result::Ok)));
+
+			// TODO change mail state (delete it maybe ?)
+		}
+		else
+		{
+			sendPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(mailId, mail::response_type::Deleted, mail::response_result::Internal)));
+		}
+	}
+
 	/*
 	void Player::saveCharacter()
 	{
