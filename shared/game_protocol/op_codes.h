@@ -262,6 +262,7 @@ namespace wowpp
 				ActionButtons				= 0x129,
 				InitialSpells				= 0x12A,
 				LearnedSpell				= 0x12B,
+				SupercededSpell				= 0x12C,
 				CastFailed					= 0x130,
 				SpellStart					= 0x131,
 				SpellGo						= 0x132,

@@ -194,7 +194,7 @@ namespace wowpp
 		while (it != m_auras.end())
 		{
 			// Keep passive and death persistent auras
-			if ((*it)->isDeathPersistent() || (*it)->isPassive())
+			if ((*it)->isDeathPersistent())
 			{
 				++it;
 			}

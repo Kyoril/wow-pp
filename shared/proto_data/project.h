@@ -288,4 +288,6 @@ namespace wowpp
 			}
 		};
 	}
+
+	bool canStackSpellRanksInSpellBook(const proto::SpellEntry &spell);
 }

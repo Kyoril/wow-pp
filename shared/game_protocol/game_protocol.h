@@ -1795,6 +1795,12 @@ namespace wowpp
 			    UInt32 spellId
 			);
 
+			void supercededSpell(
+				game::OutgoingPacket &out_packet,
+				UInt32 prevSpellId,
+				UInt32 newSpellId
+			);
+
 			void itemPushResult(
 			    game::OutgoingPacket &out_packet,
 			    UInt64 playerGuid,

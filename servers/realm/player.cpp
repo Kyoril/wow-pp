@@ -1776,6 +1776,7 @@ namespace wowpp
 				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
 					MailResult(mailId, mail::response_type::Deleted, mail::response_result::Internal)));
 		}
+	}
 
 	void Player::handleGetChannelMemberCount(game::IncomingPacket & packet)
 	{

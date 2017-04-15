@@ -197,7 +197,7 @@ namespace wowpp
 	}
 	bool AuraSpellSlot::isDeathPersistent() const
 	{
-		return (m_spell.attributes(3) & game::spell_attributes_ex_c::DeathPersistent) != 0;
+		return isPassive() || (m_spell.attributes(3) & game::spell_attributes_ex_c::DeathPersistent) != 0;
 	}
 	bool AuraSpellSlot::hasMechanics(UInt32 mechanicMask) const
 	{

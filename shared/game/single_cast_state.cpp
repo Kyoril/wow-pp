@@ -1187,16 +1187,16 @@ namespace wowpp
 			return;
 		}
 
+		completedEffects();
+
 		for (auto &pair : m_auraSlots)
 		{
 			auto owner = pair.second->getOwner();
-			if (owner)
+			if (owner && (owner->isAlive() || pair.second->isDeathPersistent()))
 				owner->getAuras().addAura(std::move(pair.second));
 		}
 
 		m_auraSlots.clear();
-
-		completedEffects();
 
 		// Consume combo points if required
 		if ((m_spell.attributes(1) & (game::spell_attributes_ex_a::ReqComboPoints_1 | game::spell_attributes_ex_a::ReqComboPoints_2)))

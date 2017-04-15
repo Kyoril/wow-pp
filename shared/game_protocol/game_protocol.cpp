@@ -2126,6 +2126,16 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void supercededSpell(game::OutgoingPacket & out_packet, UInt32 prevSpellId, UInt32 newSpellId)
+			{
+				out_packet.start(game::server_packet::SupercededSpell);
+				out_packet
+					<< io::write<NetUInt16>(prevSpellId)
+					<< io::write<NetUInt16>(newSpellId)
+					;
+				out_packet.finish();
+			}
+
 			void itemPushResult(game::OutgoingPacket &out_packet, UInt64 playerGuid, const GameItem &item, bool wasLooted, bool wasCreated, UInt8 bagSlot, UInt8 slot, UInt32 addedCount, UInt32 totalCount)
 			{
 				out_packet.start(game::server_packet::ItemPushResult);
