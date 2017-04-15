@@ -338,6 +338,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(MailQueryNextTime, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MailGetBody, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MailTakeMoney, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(GetChannelMemberCount, game::session_status::LoggedIn)
 
 #undef WOWPP_HANDLE_PACKET
 #undef QUOTE
@@ -1746,6 +1747,11 @@ namespace wowpp
 		m_worldNode->changeMoney(m_characterId, mail->getMoney(), false);
 		mail->setMoney(0);
 		// TODO change mail state
+	}
+
+	void Player::handleGetChannelMemberCount(game::IncomingPacket & packet)
+	{
+		// TODO
 	}
 
 	/*

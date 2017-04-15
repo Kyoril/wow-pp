@@ -441,6 +441,7 @@ namespace wowpp
 		std::vector<GameUnit *> targets;
 		GameUnit *unitTarget = nullptr;
 		WorldInstance *world = attacker.getWorldInstance();
+		ASSERT(world);
 
 		if (targetMap.getTargetMap() == game::spell_cast_target_flags::Self || targetA == game::targets::UnitCaster)
 		{
@@ -495,7 +496,7 @@ namespace wowpp
 				if (maxtargets > 1) 
 				{
 					math::Vector3 location = unitTarget->getLocation();
-					auto &finder = attacker.getWorldInstance()->getUnitFinder();
+					auto &finder = world->getUnitFinder();
 					finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &unitTarget, &targets, maxtargets](GameUnit & unit) -> bool
 					{
 						// Also check the vertical distance
@@ -524,7 +525,7 @@ namespace wowpp
 		case game::targets::UnitPartyCaster:	//20
 			{
 				math::Vector3 location = attacker.getLocation();
-				auto &finder = attacker.getWorldInstance()->getUnitFinder();
+				auto &finder = world->getUnitFinder();
 				finder.findUnits(Circle(location.x, location.y, radius), [this, &attacker, &radius, &location, &targets, maxtargets](GameUnit & unit) -> bool
 				{
 					if (unit.getTypeId() != object_type::Character)
@@ -555,7 +556,7 @@ namespace wowpp
 		case game::targets::UnitConeEnemy:		//24
 			{
 				math::Vector3 location = attacker.getLocation();
-				auto &finder = attacker.getWorldInstance()->getUnitFinder();
+				auto &finder = world->getUnitFinder();
 				const float realRad = radius + attacker.getMeleeReach();
 				finder.findUnits(Circle(location.x, location.y, realRad), [this, spellEntry, &location, &realRad, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
@@ -605,7 +606,7 @@ namespace wowpp
 			{
 				math::Vector3 location;
 				targetMap.getDestLocation(location.x, location.y, location.z);
-				auto &finder = attacker.getWorldInstance()->getUnitFinder();
+				auto &finder = world->getUnitFinder();
 				finder.findUnits(Circle(location.x, location.y, radius), [this, spellEntry, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
 					// Only target player characters?
@@ -654,7 +655,7 @@ namespace wowpp
 				if (unitTarget)
 				{
 					math::Vector3 location = attacker.getLocation();
-					auto &finder = attacker.getWorldInstance()->getUnitFinder();
+					auto &finder = world->getUnitFinder();
 					finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, unitTarget, &targets, maxtargets](GameUnit & unit) -> bool
 					{
 						if (!unit.isGameCharacter())
@@ -700,7 +701,7 @@ namespace wowpp
 		case game::targets::UnitAreaEnemySrc: //15
 			{
 				math::Vector3 location = attacker.getLocation();
-				auto &finder = attacker.getWorldInstance()->getUnitFinder();
+				auto &finder = world->getUnitFinder();
 				finder.findUnits(Circle(location.x, location.y, radius), [this, spellEntry, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
 					// Only target player characters?
@@ -752,7 +753,7 @@ namespace wowpp
 					targetMap.getDestLocation(location.x, location.y, location.z);
 				}
 
-				auto &finder = attacker.getWorldInstance()->getUnitFinder();
+				auto &finder = world->getUnitFinder();
 				finder.findUnits(Circle(location.x, location.y, radius), [this, spellEntry, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
 					// Only target player characters?
@@ -799,7 +800,7 @@ namespace wowpp
 			{
 
 				math::Vector3 location = attacker.getLocation();
-				auto &finder = attacker.getWorldInstance()->getUnitFinder();
+				auto &finder = world->getUnitFinder();
 				finder.findUnits(Circle(location.x, location.y, radius), [this, &location, &radius, &attacker, &targets, maxtargets](GameUnit & unit) -> bool
 				{
 					if (!unit.isGameCharacter())

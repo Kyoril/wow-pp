@@ -183,6 +183,7 @@ namespace wowpp
 				MoveStartDescend				= 0x3A7,
 				VoiceSessionEnable				= 0x3AF,
 				RaidReadyCheckFinished			= 0x3C5,
+				GetChannelMemberCount			= 0x3D3,
 				QuestgiverStatusMultipleQuery	= 0x416
 			};
 		}

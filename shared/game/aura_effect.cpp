@@ -604,7 +604,7 @@ namespace wowpp
 		}
 		else
 		{
-			WLOG("WARNING: PROC_TRIGGER_SPELL aura of spell " << m_spellSlot.getSpell().id() << " does not have a trigger spell provided");
+			//WLOG("WARNING: PROC_TRIGGER_SPELL aura of spell " << m_spellSlot.getSpell().id() << " does not have a trigger spell provided");
 			return;
 		}
 	}
