@@ -217,79 +217,96 @@ namespace wowpp
 
 	UInt32 AuraContainer::consumeAbsorb(UInt32 damage, UInt8 school)
 	{
-		// TODO!
-#if 0
 		UInt32 absorbed = 0;
 		UInt32 ownerMana = m_owner.getUInt32Value(unit_fields::Power1);
-		UInt32 manaShielded = 0;
+		bool manaConsumed = false;
 
-		std::list<std::shared_ptr<AuraEffect>> toRemove;
-		for (auto &it : m_auras)
+		for (auto it = m_auras.begin(); it != m_auras.end(); )
 		{
-			if (it->getEffect().aura() == game::aura_type::SchoolAbsorb
-			        && ((it->getEffect().miscvaluea() & school) != 0))
-			{
-				UInt32 toConsume = static_cast<UInt32>(it->getBasePoints());
-				if (toConsume >= damage)
+			auto slot = *it;
+
+			bool shouldRemove = false;
+			slot->forEachEffect([&](AuraSpellSlot::AuraEffectPtr effect) -> bool {
+				// Determine if this absorb effect is a mana shield
+				const bool isManaShield = effect->getEffect().aura() == game::aura_type::ManaShield;
+				// Determine if this is an absorb effect
+				const bool isAbsorbEffect = 
+					(effect->getEffect().aura() == game::aura_type::SchoolAbsorb || isManaShield);
+
+				// Determine if the absorb school mask matches
+				if (isAbsorbEffect && (effect->getEffect().miscvaluea() & school))
 				{
-					absorbed += damage;
-					it->setBasePoints(toConsume - damage);
-					break;
-				}
-				else
-				{
-					absorbed += toConsume;
-					toRemove.push_back(it);
-				}
-			}
-			else if (it->getEffect().aura() == game::aura_type::ManaShield
-			         && ((it->getEffect().miscvaluea() & school) != 0))
-			{
-				UInt32 toConsume = static_cast<UInt32>(it->getBasePoints());
-				UInt32 toConsumeByMana = (float) ownerMana / it->getEffect().multiplevalue();
-				if (toConsume >= damage && toConsumeByMana >= damage)
-				{
-					absorbed += damage;
-					manaShielded += damage;
-					const Int32 manaToConsume = (damage * it->getEffect().multiplevalue());
-					ownerMana -= manaToConsume;
-					it->setBasePoints(toConsume - damage);
-					break;
-				}
-				else
-				{
-					if (toConsume < toConsumeByMana)
+					// Get maximum damage amount this aura can absorb
+					const float multiple = effect->getEffect().multiplevalue() == 0.0f ? 1.0f : effect->getEffect().multiplevalue();
+					UInt32 consumableByMana = isManaShield ? (float)ownerMana / multiple : 0;
+					UInt32 consumable = ::abs(effect->getBasePoints());
+
+					// Cap consumable value to mana if mana shield
+					if (isManaShield)
 					{
-						absorbed += toConsume;
-						manaShielded += toConsume;
-						const Int32 manaToConsume = (toConsume * it->getEffect().multiplevalue());
-						ownerMana -= manaToConsume;
-						toRemove.push_back(it);
+						// Consume as much damage as possible by mana up to aura limit
+						consumable = std::min(consumableByMana, consumable);
+						if (consumable <= 0)
+						{
+							// No mana left?
+							return false;
+						}
+					}
+
+					// Check if there is enough to consume
+					if (consumable >= damage)
+					{
+						// Aura has more base points than needed
+						absorbed += damage;
+						effect->setBasePoints(consumable - damage);
+						if (isManaShield) 
+						{
+							ownerMana -= (damage * multiple);
+							manaConsumed = true;
+						}
+
+						// All damage consumed
+						damage = 0;
+
+						// Remove aura if base points are set to 0
+						if (effect->getBasePoints() == 0)
+							shouldRemove = true;
 					}
 					else
 					{
-						absorbed += toConsumeByMana;
-						manaShielded += toConsumeByMana;
-						ownerMana -= toConsumeByMana * 2;
-						it->setBasePoints(toConsume - toConsumeByMana);
+						// Aura will be completely consumed
+						absorbed += consumable;
+						damage -= consumable;
+						shouldRemove = true;
+
+						if (isManaShield)
+						{
+							ownerMana -= (consumable * multiple);
+							manaConsumed = true;
+						}
 					}
+
+					// Stop aura effect iteration
+					return false;
 				}
-			}
+
+				// Continue iteration if 
+				return (damage != 0);
+			});
+
+			if (shouldRemove)
+				removeAura(it);
+			else
+				++it;
+
+			if (damage == 0)
+				break;
 		}
 
-		if (manaShielded > 0)
-		{
+		if (manaConsumed)
 			m_owner.setUInt32Value(unit_fields::Power1, ownerMana);
-		}
 
-		for (auto &aura : toRemove)
-		{
-			removeAura(*aura);
-		}
-#endif
-
-		return 0;
-		//return absorbed;
+		return absorbed;
 	}
 
 	Int32 AuraContainer::getMaximumBasePoints(game::AuraType type) const

@@ -3099,8 +3099,9 @@ namespace wowpp
 		const UInt32 skillId = item ? item->getEntry().skill() : static_cast<UInt32>(game::skill_type::Unarmed);
 
 		// Request current weapon skill (or unarmed skill of no weapon)
-		UInt16 maxSkillValue, skillValue;
-		getSkillValue(skillId, skillValue, maxSkillValue);
+		UInt16 maxSkillValue = 1, skillValue = 1;
+		if (!getSkillValue(skillId, skillValue, maxSkillValue))
+			return 1;
 
 		// TODO: Use max skill value against players (pvp), real skill value otherwise
 		UInt32 value = skillValue;//(target.isGameCharacter() ? maxSkillValue : skillValue);
