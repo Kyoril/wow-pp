@@ -323,7 +323,8 @@ namespace wowpp
 		if (!checkIndex(targetA, targetB))
 		{
 			UInt8 school = spell.schoolmask();
-			refreshTargets(*attacker, targetMap, targetA, targetB, effect.radius(), spell.maxtargets(), effect.type(), spell.id());
+			if (attacker)
+				refreshTargets(*attacker, targetMap, targetA, targetB, effect.radius(), spell.maxtargets(), effect.type(), spell.id());
 
 			for (GameUnit *targetUnit : m_targets[targetA][targetB])
 			{
@@ -450,7 +451,7 @@ namespace wowpp
 			unitTarget = dynamic_cast<GameUnit *>(world->findObjectByGUID(targetMap.getUnitTarget()));
 		}
 
-		if (spellId && attacker.isGameCharacter())
+		if (spellId != 0 && attacker.isGameCharacter())
 		{
 			reinterpret_cast<GameCharacter*>(&attacker)->applySpellMod(
 				spell_mod_op::Radius, spellId, radius);
