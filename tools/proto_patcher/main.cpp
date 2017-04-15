@@ -2796,6 +2796,304 @@ namespace wowpp
 
 		return true;
 	}
+
+	static bool hasPositiveTarget(const proto::SpellEffect &effect)
+	{
+		if (effect.targetb() == game::targets::UnitAreaEnemySrc) {
+			return false;
+		}
+
+		switch (effect.targeta())
+		{
+			case game::targets::UnitTargetEnemy:
+			case game::targets::UnitAreaEnemyDst:
+				//case game::targets::UnitTargetAny:
+			case game::targets::UnitConeEnemy:
+			case game::targets::DestDynObjEnemy:
+				return false;
+			default:
+				return true;
+		}
+	}
+
+	static bool isPositiveAura(proto::SpellEffect &effect)
+	{
+		switch (effect.aura())
+		{
+			//always positive
+			case game::aura_type::PeriodicHeal:
+			case game::aura_type::ModThreat:
+			case game::aura_type::DamageShield:
+			case game::aura_type::ModStealth:
+			case game::aura_type::ModStealthDetect:
+			case game::aura_type::ModInvisibility:
+			case game::aura_type::ModInvisibilityDetection:
+			case game::aura_type::ObsModHealth:
+			case game::aura_type::ObsModMana:
+			case game::aura_type::ReflectSpells:
+			case game::aura_type::ProcTriggerDamage:
+			case game::aura_type::TrackCreatures:
+			case game::aura_type::TrackResources:
+			case game::aura_type::ModBlockSkill:
+			case game::aura_type::ModDamageDoneCreature:
+			case game::aura_type::PeriodicHealthFunnel:
+			case game::aura_type::FeignDeath:
+			case game::aura_type::SchoolAbsorb:
+			case game::aura_type::ExtraAttacks:
+			case game::aura_type::ModSpellCritChanceSchool:
+			case game::aura_type::ModPowerCostSchool:
+			case game::aura_type::ReflectSpellsSchool:
+			case game::aura_type::FarSight:
+			case game::aura_type::Mounted:
+			case game::aura_type::SplitDamagePct:
+			case game::aura_type::WaterBreathing:
+			case game::aura_type::ModBaseResistance:
+			case game::aura_type::ModRegen:
+			case game::aura_type::ModPowerRegen:
+			case game::aura_type::InterruptRegen:
+			case game::aura_type::SpellMagnet:
+			case game::aura_type::ManaShield:
+			case game::aura_type::ModSkillTalent:
+			case game::aura_type::ModMeleeAttackPowerVersus:
+			case game::aura_type::ModTotalThreat:
+			case game::aura_type::WaterWalk:
+			case game::aura_type::FeatherFall:
+			case game::aura_type::Hover:
+			case game::aura_type::AddTargetTrigger:
+			case game::aura_type::AddCasterHitTrigger:
+			case game::aura_type::ModRangedDamageTaken:
+			case game::aura_type::ModRegenDurationCombat:
+			case game::aura_type::Untrackable:
+			case game::aura_type::ModOffhandDamagePct:
+			case game::aura_type::ModMeleeDamageTaken:
+			case game::aura_type::ModMeleeDamageTakenPct:
+			case game::aura_type::ModPossessPet:
+			case game::aura_type::ModMountedSpeedAlways:
+			case game::aura_type::ModRangedAttackPowerVersus:
+			case game::aura_type::ModManaRegenInterrupt:
+			case game::aura_type::ModRangedAmmoHaste:
+			case game::aura_type::RetainComboPoints:
+			case game::aura_type::SpiritOfRedemption:
+			case game::aura_type::ModResistanceOfStatPercent:
+			case game::aura_type::AuraType_222:
+			case game::aura_type::PrayerOfMending:
+			case game::aura_type::DetectStealth:
+			case game::aura_type::ModAOEDamageAvoidance:
+			case game::aura_type::ModIncreaseHealth_3:
+			case game::aura_type::AuraType_233:
+			case game::aura_type::ModSpellDamageOfAttackPower:
+			case game::aura_type::ModSpellHealingOfAttackPower:
+			case game::aura_type::ModScale_2:
+			case game::aura_type::ModExpertise:
+			case game::aura_type::ModSpellDamageFromHealing:
+			case game::aura_type::ComprehendLanguage:
+			case game::aura_type::ModIncreaseHealth_2:
+			case game::aura_type::AuraType_261:
+				return true;
+			//always negative
+			case game::aura_type::BindSight:
+			case game::aura_type::ModPossess:
+			case game::aura_type::ModConfuse:
+			case game::aura_type::ModCharm:
+			case game::aura_type::ModFear:
+			case game::aura_type::ModTaunt:
+			case game::aura_type::ModStun:
+			case game::aura_type::ModRoot:
+			case game::aura_type::ModSilence:
+			case game::aura_type::PeriodicLeech:
+			case game::aura_type::ModPacifySilence:
+			case game::aura_type::PeriodicManaLeech:
+			case game::aura_type::ModDisarm:
+			case game::aura_type::ModStalked:
+			case game::aura_type::ChannelDeathItem:
+			case game::aura_type::ModDetectRange:
+			case game::aura_type::Ghost:
+			case game::aura_type::AurasVisible:
+			case game::aura_type::Empathy:
+			case game::aura_type::ModTargetResistance:
+			case game::aura_type::RangedAttackPowerAttackerBonus:
+			case game::aura_type::PowerBurnMana:
+			case game::aura_type::ModCritDamageBonusMelee:
+			case game::aura_type::AOECharm:
+			case game::aura_type::UseNormalMovementSpeed:
+			case game::aura_type::ArenaPreparation:
+			case game::aura_type::ModDetaunt:
+			case game::aura_type::AuraType_223:
+			case game::aura_type::ModForceMoveForward:
+			case game::aura_type::AuraType_243:
+				return false;
+			//depends on basepoints (more is better)
+			case game::aura_type::ModRangedHaste:
+			case game::aura_type::ModBaseResistancePct:
+			case game::aura_type::ModResistanceExclusive:
+			case game::aura_type::SafeFall:
+			case game::aura_type::ResistPushback:
+			case game::aura_type::ModShieldBlockValuePct:
+			case game::aura_type::ModDetectedRange:
+			case game::aura_type::SplitDamageFlat:
+			case game::aura_type::ModStealthLevel:
+			case game::aura_type::ModWaterBreathing:
+			case game::aura_type::ModReputationGain:
+			case game::aura_type::PetDamageMulti:
+			case game::aura_type::ModShieldBlockValue:
+			case game::aura_type::ModAOEAvoidance:
+			case game::aura_type::ModHealthRegenInCombat:
+			case game::aura_type::ModAttackPowerPct:
+			case game::aura_type::ModRangedAttackPowerPct:
+			case game::aura_type::ModDamageDoneVersus:
+			case game::aura_type::ModCritPercentVersus:
+			case game::aura_type::ModSpeedNotStack:
+			case game::aura_type::ModMountedSpeedNotStack:
+			case game::aura_type::ModSpellDamageOfStatPercent:
+			case game::aura_type::ModSpellHealingOfStatPercent:
+			case game::aura_type::ModDebuffResistance:
+			case game::aura_type::ModAttackerSpellCritChance:
+			case game::aura_type::ModFlatSpellDamageVersus:
+			case game::aura_type::ModRating:
+			case game::aura_type::ModFactionReputationGain:
+			case game::aura_type::HasteMelee:
+			case game::aura_type::MeleeSlow:
+			case game::aura_type::ModIncreaseSpellPctToHit:
+			case game::aura_type::ModXpPct:
+			case game::aura_type::ModFlightSpeed:
+			case game::aura_type::ModFlightSpeedMounted:
+			case game::aura_type::ModFlightSpeedStacking:
+			case game::aura_type::ModFlightSpeedMountedStacking:
+			case game::aura_type::ModFlightSpeedMountedNotStacking:
+			case game::aura_type::ModRangedAttackPowerOfStatPercent:
+			case game::aura_type::ModRageFromDamageDealt:
+			case game::aura_type::AuraType_214:
+			case game::aura_type::HasteSpells:
+			case game::aura_type::HasteRanged:
+			case game::aura_type::ModManaRegenFromStat:
+			case game::aura_type::ModDispelResist:
+				return (effect.basepoints() >= 0);
+			//depends on basepoints (less is better)
+			case game::aura_type::ModCriticalThreat:
+			case game::aura_type::ModAttackerMeleeHitChance:
+			case game::aura_type::ModAttackerRangedHitChance:
+			case game::aura_type::ModAttackerSpellHitChance:
+			case game::aura_type::ModAttackerMeleeCritChance:
+			case game::aura_type::ModAttackerRangedCritChance:
+			case game::aura_type::ModCooldown:
+			case game::aura_type::ModAttackerSpellAndWeaponCritChance:
+			case game::aura_type::ModAttackerMeleeCritDamage:
+			case game::aura_type::ModAttackerRangedCritDamage:
+			case game::aura_type::ModAttackerSpellCritDamage:
+			case game::aura_type::MechanicDurationMod:
+			case game::aura_type::MechanicDurationModNotStack:
+			case game::aura_type::ModDurationOfMagicEffects:
+			case game::aura_type::ModCombatResultChance:
+			case game::aura_type::ModEnemyDodge:
+				return (effect.basepoints() <= 0);
+				//depends
+			case game::aura_type::PeriodicDamage:
+			case game::aura_type::Dummy:
+			case game::aura_type::ModAttackSpeed:
+			case game::aura_type::ModDamageTaken:
+			case game::aura_type::ModResistance:
+			case game::aura_type::PeriodicTriggerSpell:
+			case game::aura_type::PeriodicEnergize:
+			case game::aura_type::ModPacify:
+			case game::aura_type::ModStat:
+			case game::aura_type::ModSkill:
+			case game::aura_type::ModIncreaseSpeed:
+			case game::aura_type::ModIncreaseMountedSpeed:
+			case game::aura_type::ModDecreaseSpeed:
+			case game::aura_type::ModIncreaseHealth:
+			case game::aura_type::ModIncreaseEnergy:
+			case game::aura_type::ModShapeShift:
+			case game::aura_type::EffectImmunity:
+			case game::aura_type::StateImmunity:
+			case game::aura_type::SchoolImmunity:
+			case game::aura_type::DamageImmunity:
+			case game::aura_type::DispelImmunity:
+			case game::aura_type::ProcTriggerSpell:
+			case game::aura_type::ModParryPercent:
+			case game::aura_type::ModDodgePercent:
+			case game::aura_type::ModBlockPercent:
+			case game::aura_type::ModCritPercent:
+			case game::aura_type::ModHitChance:
+			case game::aura_type::ModSpellHitChance:
+			case game::aura_type::Transform:
+			case game::aura_type::ModSpellCritChance:
+			case game::aura_type::ModIncreaseSwimSpeed:
+			case game::aura_type::ModScale:
+			case game::aura_type::ModCastingSpeed:
+			case game::aura_type::ModPowerCostSchoolPct:
+			case game::aura_type::ModLanguage:
+			case game::aura_type::MechanicImmunity:
+			case game::aura_type::ModDamagePercentDone:
+			case game::aura_type::ModPercentStat:
+			case game::aura_type::ModDamagePercentTaken:
+			case game::aura_type::ModHealthRegenPercent:
+			case game::aura_type::PeriodicDamagePercent:
+			case game::aura_type::PreventsFleeing:
+			case game::aura_type::ModUnattackable:
+			case game::aura_type::ModAttackPower:
+			case game::aura_type::ModResistancePct:
+			case game::aura_type::AddFlatModifier:
+			case game::aura_type::AddPctModifier:
+			case game::aura_type::ModPowerRegenPercent:
+			case game::aura_type::OverrideClassScripts:
+			case game::aura_type::ModHealing:
+			case game::aura_type::ModMechanicResistance:
+			case game::aura_type::ModHealingPct:
+			case game::aura_type::ModRangedAttackPower:
+			case game::aura_type::ModSpeedAlways:
+			case game::aura_type::ModIncreaseEnergyPercent:
+			case game::aura_type::ModIncreaseHealthPercent:
+			case game::aura_type::ModHealingDone:
+			case game::aura_type::ModHealingDonePct:
+			case game::aura_type::ModTotalStatPercentage:
+			case game::aura_type::ModHaste:
+			case game::aura_type::ForceReaction:
+			case game::aura_type::MechanicImmunityMask:
+			case game::aura_type::TrackStealthed:
+			case game::aura_type::NoPvPCredit:
+			case game::aura_type::MeleeAttackPowerAttackerBonus:
+			case game::aura_type::DetectAmore:
+			case game::aura_type::Fly:
+			case game::aura_type::PeriodicDummy:
+			case game::aura_type::PeriodicTriggerSpellWithValue:
+			case game::aura_type::ProcTriggerSpellWithValue:
+			case game::aura_type::AuraType_247:
+			default:
+				return hasPositiveTarget(effect);
+		}
+
+		return true;
+	}
+
+	static bool isPositiveSpell(proto::SpellEntry &spell)
+	{
+		// Passive spells are always considered positive
+		if (spell.attributes(0) & game::spell_attributes::Passive)
+			return true;
+
+		// Negative attribute
+		if (spell.attributes(0) & game::spell_attributes::Negative)
+			return false;
+
+		for (auto &effect : *spell.mutable_effects())
+		{
+			if (isPositiveAura(effect))
+				return true;
+		}
+
+		return false;
+	}
+
+	static bool updateSpells(proto::Project &project)
+	{
+		for (auto &spell : *project.spells.getTemplates().mutable_entry())
+		{
+			// Determine if spell would be positive
+			spell.set_positive(isPositiveSpell(spell));
+		}
+
+		return true;
+	}
 }
 
 /// Procedural entry point of the application.
@@ -2864,9 +3162,9 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 	
-	if (!importLocales(protoProject, connection))
+	if (!updateSpells(protoProject))
 	{
-		WLOG("Couldn't import locales");
+		WLOG("Couldn't update spells");
 		return 1;
 	}
 

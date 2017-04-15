@@ -21,10 +21,12 @@
 
 #include "pch.h"
 #include "aura_container.h"
+#include "aura_spell_slot.h"
 #include "aura_effect.h"
 #include "game_unit.h"
 #include "log/default_log_levels.h"
 #include "common/linear_set.h"
+#include "common/macros.h"
 
 namespace wowpp
 {
@@ -33,80 +35,59 @@ namespace wowpp
 	{
 	}
 
-	bool AuraContainer::addAura(std::shared_ptr<AuraEffect> aura)
+	bool AuraContainer::addAura(AuraPtr aura)
 	{
-		// Find the new aura slot to be used
-		UInt8 newSlot = 0xFF;
-		bool isReplacement = false;
-		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
+		// If aura shouldn't be hidden on the client side...
+		if (!aura->isPassive() && (aura->getSpell().attributes(0) & game::spell_attributes::HiddenClientSide) == 0)
 		{
-			// Same spell, same caster and same effect index - don't stack!
-			auto a = *it;
+			UInt8 newSlot = 0xFF;
 
-			// Checks if both auras are from the same caster
-			const bool isSameCaster = a->getCaster() == aura->getCaster() && a->getItemGuid() == aura->getItemGuid();
-
-			// Checks if both auras have the same spell family (&flags)
-			const bool isSameFamily = 
-				(a->getSpell().family() == aura->getSpell().family() && a->getSpell().familyflags() == aura->getSpell().familyflags());
-
-			// Check if this spell has a specific family set
-			//const bool hasFamily =
-			//	(a->getSpell().family() != 0);
-
-			// Check if this is the same spell (even if they don't have the same spell id)
-			const bool isSameSpell = 
-				(a->getSpell().baseid() == aura->getSpell().baseid() &&
-				(/*hasFamily && */isSameFamily)) &&
-				a->isPassive() == aura->isPassive();
-
-			// Checks if the new aura stacks for different casters (can have multiple auras by different casters even though it's the same spell)
-			const bool stackForDiffCasters =
-				aura->getSpell().attributes(3) & game::spell_attributes_ex_c::StackForDiffCasters ||
-				aura->getItemGuid() != 0;
-
-			// Perform checks
-			if (isSameSpell &&
-				(isSameCaster || !stackForDiffCasters) &&
-				!aura->isPassive() && 
-				!a->isPassive())
+			// Check old auras for new slot
+			for (auto it = m_auras.begin(); it != m_auras.end();)
 			{
-				// Replacement: Use old auras slot for new aura, old aura should be misapplied by this
-				newSlot = a->getSlot();
-				isReplacement = true;
-
-				// Replace old aura instance if not higher base points
-				if (a->getEffect().aura() == aura->getEffect().aura() &&
-					a->getEffect().index() == aura->getEffect().index())
+				if ((*it)->hasValidSlot() && aura->shouldOverwriteAura(*(*it)))
 				{
-					if (a->getSpell().stackamount())
+					// Only overwrite if higher or equal base rank
+					const bool sameSpell = ((*it)->getSpell().baseid() == aura->getSpell().baseid());
+					if ((sameSpell && (*it)->getSpell().rank() <= aura->getSpell().rank()) || !sameSpell)
 					{
-						a->updateStackCount(aura->getBasePoints());
-
-						// Notify caster
-						m_owner.auraUpdated(newSlot, a->getSpell().id(), a->getTotalDuration(), a->getTotalDuration());
-
-						if (a->getCaster())
+						// Check if we need to add a stack
+						if ((*it)->getSpell().id() == aura->getSpell().id() &&
+							aura->getSpell().stackamount() > 0 &&
+							(*it)->getCaster() == aura->getCaster() && aura->getCaster())
 						{
-							a->getCaster()->targetAuraUpdated(m_owner.getGuid(), newSlot,
-								a->getSpell().id(), a->getTotalDuration(), a->getTotalDuration());
+							// We simply increase the stack and stop here
+							(*it)->addStack(*aura);
+							return true;
 						}
-
+						else
+						{
+							// We need to replace the old spell
+							newSlot = (*it)->getSlot();
+							removeAura(it);
+							break;
+						}
+					}
+					else if (sameSpell)
+					{
+						// Aura should have been overwritten, but has a lesser rank
+						// So stop checks here and don't apply new aura at all
+						// TODO: Send proper error message to the client
 						return false;
 					}
 					else
 					{
-						// Remove old aura - new aura will be added
-						removeAura(it);
-						break;
+						++it;
 					}
 				}
+				else
+				{
+					++it;
+				}
 			}
-		}
 
-		if (!aura->isPassive() || (aura->getSpell().attributes(3) & 0x10000000))
-		{
-			if (!isReplacement)
+			// Aura hasn't been overwritten yet, determine new slot
+			if (newSlot == 0xFF)
 			{
 				if (aura->isPositive())
 				{
@@ -132,58 +113,33 @@ namespace wowpp
 				}
 			}
 
-			if (newSlot != 0xFF)
-			{
-				aura->setSlot(newSlot);
-				m_owner.setUInt32Value(unit_fields::AuraEffect + newSlot, aura->getSpell().id());
+			// No more free slots
+			if (newSlot == 0xFF)
+				return false;
 
-				UInt32 index = newSlot / 4;
-				UInt32 byte = (newSlot % 4) * 8;
-				UInt32 val = m_owner.getUInt32Value(unit_fields::AuraLevels + index);
-				val &= ~(0xFF << byte);
-				val |= ((aura->getCaster() ? aura->getCaster()->getLevel() : 70) << byte);
-				m_owner.setUInt32Value(unit_fields::AuraLevels + index, val);
-
-				val = m_owner.getUInt32Value(unit_fields::AuraFlags + index);
-				val &= ~(0xFF << byte);
-				if (aura->isPositive()) {
-					val |= (UInt32(31) << byte);
-				}
-				else {
-					val |= (UInt32(9) << byte);
-				}
-				m_owner.setUInt32Value(unit_fields::AuraFlags + index, val);
-
-				// Notify caster
-				m_owner.auraUpdated(newSlot, aura->getSpell().id(), aura->getTotalDuration(), aura->getTotalDuration());
-
-				if (aura->getCaster())
-				{
-					aura->getCaster()->targetAuraUpdated(m_owner.getGuid(), newSlot,
-					                                     aura->getSpell().id(), aura->getTotalDuration(), aura->getTotalDuration());
-				}
-			}
+			// Apply slot
+			aura->setSlot(newSlot);
 		}
 
-		// Remove shapeshifting auras in case of shapeshift aura
-		if (aura->getEffect().aura() == game::aura_type::ModShapeShift)
-		{
+		// Remove other shapeshifting auras in case this is a shapeshifting aura
+		if (aura->hasEffect(game::aura_type::ModShapeShift))
 			removeAurasByType(game::aura_type::ModShapeShift);
-		}
 
-		// Store aura instance
-		auto *auraPtr = aura.get();
-		m_auras.push_back(std::move(aura));
-		m_auraTypeCount[auraPtr->getEffect().aura()]++;
+		// Add aura
+		m_auras.push_back(aura);
 
-		// Add aura to the list of auras of this unit and apply it's effects
-		// Note: We use auraPtr here, since std::move will make aura invalid
-		auraPtr->applyAura();
+		// Increase aura counters
+		aura->forEachEffect([&](AuraSpellSlot::AuraEffectPtr effect) -> bool {
+			m_auraTypeCount[effect->getEffect().aura()]++;
+			return true;
+		});
 
+		// Apply aura effects
+		aura->applyEffects();
 		return true;
 	}
 
-	AuraContainer::AuraList::iterator AuraContainer::findAura(AuraEffect &aura)
+	AuraContainer::AuraList::iterator AuraContainer::findAura(AuraSpellSlot &aura)
 	{
 		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
 		{
@@ -200,29 +156,35 @@ namespace wowpp
 	{
 		// Make sure that the aura is not destroy when releasing
 		ASSERT(it != m_auras.end());
-		auto strong = *it;
+		auto strong = (*it);
 		
 		// Remove the aura from the list of auras
 		it = m_auras.erase(it);
 
 		// Reduce counter
-		ASSERT(m_auraTypeCount[strong->getEffect().aura()] > 0);
-		m_auraTypeCount[strong->getEffect().aura()]--;
-
+		strong->forEachEffect([&](AuraSpellSlot::AuraEffectPtr effect) -> bool {
+			ASSERT(m_auraTypeCount[effect->getEffect().aura()] > 0 && "At least one aura of this type should still exist");
+			m_auraTypeCount[effect->getEffect().aura()]--;
+			return true;
+		});
+		
 		// NOW misapply the aura. It is important to call this method AFTER the aura has been
 		// removed from the list of auras. First: To prevent a stack overflow when removing
 		// an aura causes the remove of the same aura types like in ModShapeShift. Second:
 		// Stun effects need to check whether there are still ModStun auras on the target, AFTER
 		// the aura has been removed (or else it would count itself)!!
-		strong->misapplyAura();
+		strong->misapplyEffects();
 	}
 
-	void AuraContainer::removeAura(AuraEffect &aura)
+	void AuraContainer::removeAura(AuraSpellSlot &aura)
 	{
 		auto it = findAura(aura);
 		if (it != m_auras.end())
 		{
 			removeAura(it);
+		}
+		else {
+			WLOG("Could not find aura to remove!");
 		}
 	}
 
@@ -231,13 +193,14 @@ namespace wowpp
 		AuraList::iterator it = m_auras.begin();
 		while (it != m_auras.end())
 		{
-			if (((*it)->getSpell().attributes(3) & game::spell_attributes_ex_c::DeathPersistent) != 0 || 
-				(*it)->isPassive())
+			// Keep passive and death persistent auras
+			if ((*it)->isDeathPersistent() || (*it)->isPassive())
 			{
 				++it;
 			}
 			else
 			{
+				// Remove aura
 				removeAura(it);
 			}
 		}
@@ -254,6 +217,8 @@ namespace wowpp
 
 	UInt32 AuraContainer::consumeAbsorb(UInt32 damage, UInt8 school)
 	{
+		// TODO!
+#if 0
 		UInt32 absorbed = 0;
 		UInt32 ownerMana = m_owner.getUInt32Value(unit_fields::Power1);
 		UInt32 manaShielded = 0;
@@ -321,21 +286,23 @@ namespace wowpp
 		{
 			removeAura(*aura);
 		}
+#endif
 
-		return absorbed;
+		return 0;
+		//return absorbed;
 	}
 
 	Int32 AuraContainer::getMaximumBasePoints(game::AuraType type) const
 	{
 		Int32 treshold = 0;
 
-		for (auto &it : m_auras)
+		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
 		{
-			if (it->getEffect().aura() == type &&
-			        it->getBasePoints() > treshold)
-			{
-				treshold = it->getBasePoints();
-			}
+			(*it)->forEachEffectOfType(type, [&treshold](AuraSpellSlot::AuraEffectPtr effect) -> bool {
+				if (effect->getBasePoints() > treshold)
+					treshold = effect->getBasePoints();
+				return true;
+			});
 		}
 
 		return treshold;
@@ -345,13 +312,13 @@ namespace wowpp
 	{
 		Int32 treshold = 0;
 
-		for (auto &it : m_auras)
+		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
 		{
-			if (it->getEffect().aura() == type &&
-			        it->getBasePoints() < treshold)
-			{
-				treshold = it->getBasePoints();
-			}
+			(*it)->forEachEffectOfType(type, [&treshold](AuraSpellSlot::AuraEffectPtr effect) -> bool {
+				if (effect->getBasePoints() < treshold)
+					treshold = effect->getBasePoints();
+				return true;
+			});
 		}
 
 		return treshold;
@@ -360,12 +327,13 @@ namespace wowpp
 	Int32 AuraContainer::getTotalBasePoints(game::AuraType type) const
 	{
 		Int32 treshold = 0;
-		for (auto &it : m_auras)
+
+		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
 		{
-			if (it->getEffect().aura() == type)
-			{
-				treshold += it->getBasePoints();
-			}
+			(*it)->forEachEffectOfType(type, [&treshold](AuraSpellSlot::AuraEffectPtr effect) -> bool {
+				treshold += effect->getBasePoints();
+				return true;
+			});
 		}
 
 		return treshold;
@@ -374,12 +342,13 @@ namespace wowpp
 	float AuraContainer::getTotalMultiplier(game::AuraType type) const
 	{
 		float multiplier = 1.0f;
-		for (auto &it : m_auras)
+
+		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
 		{
-			if (it->getEffect().aura() == type)
-			{
-				multiplier *= (100.0f + static_cast<float>(it->getBasePoints())) / 100.0f;
-			}
+			(*it)->forEachEffectOfType(type, [&multiplier](AuraSpellSlot::AuraEffectPtr effect) -> bool {
+				multiplier *= (100.0f + static_cast<float>(effect->getBasePoints())) / 100.0f;
+				return true;
+			});
 		}
 
 		return multiplier;
@@ -387,12 +356,11 @@ namespace wowpp
 
 	void AuraContainer::forEachAura(std::function<bool(AuraEffect&)> functor)
 	{
-		for (auto &aura : m_auras)
+		for (auto aura : m_auras)
 		{
-			if (!functor(*aura))
-			{
-				return;
-			}
+			aura->forEachEffect([&](AuraSpellSlot::AuraEffectPtr effect) -> bool {
+				return functor(*effect);
+			});
 		}
 	}
 
@@ -402,31 +370,26 @@ namespace wowpp
 		if (!hasAura(type))
 			return;
 
-		// TODO: Order auras differently so that we iterate as less auras as possible for
-		// performance reasons.
-		for (auto &aura : m_auras)
+		for (auto it = m_auras.begin(); it != m_auras.end(); ++it)
 		{
-			if (aura->getEffect().aura() == type)
+			if ((*it)->hasEffect(type))
 			{
-				if (!functor(*aura))
-				{
-					return;
-				}
+				(*it)->forEachEffectOfType(type, [&](AuraSpellSlot::AuraEffectPtr effect) -> bool {
+					return functor(*effect);
+				});
 			}
 		}
 	}
 
 	void AuraContainer::logAuraInfos()
 	{
-		DLOG("AURA LIST OF TARGET 0x" << std::hex << std::setw(16) << std::uppercase << std::setfill('0') << m_owner.getGuid() << " - " << m_owner.getName())
-		for (auto aura : m_auras)
-		{
-			DLOG("\tAURA " << game::constant_literal::auraTypeNames.getName(static_cast<game::AuraType>(aura->getEffect().aura())) << "\tSPELL " << aura->getSpell().id() << "\tITEM 0x" << std::hex << aura->getItemGuid());
-		}
+		// TODO
 	}
 
 	void AuraContainer::removeAllAurasDueToSpell(UInt32 spellId)
 	{
+		ASSERT(spellId && "Valid spell id should be specified");
+
 		AuraList::iterator it = m_auras.begin();
 		while (it != m_auras.end())
 		{
@@ -443,82 +406,50 @@ namespace wowpp
 
 	void AuraContainer::removeAllAurasDueToItem(UInt64 itemGuid)
 	{
-		AuraList::iterator it = m_auras.begin();
-		while (it != m_auras.end())
+		ASSERT(itemGuid && "Valid item guid should be specified");
+
+		for (auto it = m_auras.begin(); it != m_auras.end(); )
 		{
 			if ((*it)->getItemGuid() == itemGuid)
-			{
 				removeAura(it);
-			}
 			else
-			{
-				it++;
-			}
+				++it;
 		}
 	}
 
 	void AuraContainer::removeAllAurasDueToMechanic(UInt32 immunityMask)
 	{
+		ASSERT(immunityMask && "At least one mechanic should be provided");
+
 		// We need to remove all auras by their spell
 		LinearSet<UInt32> spells;
-		for (auto &aura : m_auras)
+		for (auto it = m_auras.begin(); it != m_auras.end();)
 		{
-			if ((immunityMask & (1 << aura->getEffect().mechanic())) != 0 ||
-				(immunityMask & (1 << aura->getSpell().mechanic())) != 0)
-			{
-				spells.optionalAdd(aura->getSpell().id());
-			}
-		}
-
-		for (auto &spellid : spells)
-		{
-			removeAllAurasDueToSpell(spellid);
+			if ((*it)->hasMechanics(immunityMask))
+				removeAura(it);
+			else
+				++it;
 		}
 	}
 
 	UInt32 AuraContainer::removeAurasDueToDispel(UInt32 dispelType, bool dispelPositive, UInt32 count/* = 1*/)
 	{
+		ASSERT(dispelType && "A valid dispel type should be provided");
+		ASSERT(count && "At least a number of 1 should be provided");
+
 		UInt32 successCount = 0;
 
-		// Repeat the procedure below N times
-		for (UInt32 i = 0; i < count; ++i)
+		for (auto it = m_auras.begin(); it != m_auras.end();)
 		{
-			// We need these variables to remember some aura attributes. One spell can cause multiple
-			// auras on a target. So we have to find all auras, whose spell matches the dispel type,
-			// but also whose spell ids are the same as the first match and whose caster guid matches
-			UInt64 casterGuid = 0;
-			UInt32 spell = 0;
-
-			// AuraEffect iteration
-			for (auto it = m_auras.begin(); it != m_auras.end(); )
+			if ((*it)->getSpell().dispel() == dispelType &&
+				(*it)->isPositive() == dispelPositive)
 			{
-				// If this aura matches the dispel criteria...
-				if ((*it)->getSpell().dispel() == dispelType)
-				{
-					// Did we find a spell?
-					if (spell == 0)
-					{
-						// Remember spell attributes
-						spell = (*it)->getSpell().id();
-						casterGuid = (*it)->getCasterGuid();
-						removeAura(it);
-
-						// We removed at least one spell's auras
-						successCount++;
-						continue;
-					}
-					else if (spell == (*it)->getSpell().id())
-					{
-						// Same spell - validate that it's the same caster
-						if (casterGuid == (*it)->getCasterGuid())
-						{
-							removeAura(it);
-							continue;
-						}
-					}
-				}
-
-				// Next aura
+				removeAura(it);
+				if (++successCount >= count)
+					return successCount;
+			}
+			else
+			{
 				++it;
 			}
 		}
@@ -528,71 +459,35 @@ namespace wowpp
 
 	void AuraContainer::removeAurasByType(UInt32 auraType)
 	{
+		ASSERT(auraType && "A valid aura effect type should be specified");
+
 		// We need to remove all auras by their spell
-		LinearSet<UInt32> spells;
-		for (auto &aura : m_auras)
+		for (auto it = m_auras.begin(); it != m_auras.end(); )
 		{
-			if (aura->getEffect().aura() == auraType)
-			{
-				spells.optionalAdd(aura->getSpell().id());
-			}
-		}
-
-		for (auto &spellid : spells)
-		{
-			removeAllAurasDueToSpell(spellid);
-		}
-	}
-
-	AuraEffect *AuraContainer::popBack(UInt8 dispelType, bool positive)
-	{
-		auto it = m_auras.rbegin();
-		while (it != m_auras.rend())
-		{
-			if ((*it)->isPositive() == positive && (*it)->getSpell().dispel() == dispelType)
-			{
-				std::shared_ptr<AuraEffect> aura = *it;
-				m_auras.erase(std::next(it).base());
-				aura->misapplyAura();
-
-				return aura.get();
-			}
+			if ((*it)->hasEffect(auraType))
+				removeAura(it);
 			else
-			{
-				it++;
-			}
+				++it;
 		}
-
-		return nullptr;
 	}
 
 	void AuraContainer::removeAllAurasDueToInterrupt(game::SpellAuraInterruptFlags flags)
 	{
 		// We need to remove all auras by their spell
-		LinearSet<UInt32> spells;
-		for (auto &aura : m_auras)
+		for (auto it = m_auras.begin(); it != m_auras.end(); )
 		{
-			if ((aura->getSpell().aurainterruptflags() & flags) != 0)
-			{
-				spells.optionalAdd(aura->getSpell().id());
-			}
-		}
-
-		for (auto &spellid : spells)
-		{
-			removeAllAurasDueToSpell(spellid);
+			if ((*it)->getSpell().aurainterruptflags() & flags)
+				removeAura(it);
+			else
+				++it;
 		}
 	}
 
 	void AuraContainer::removeAllAuras()
 	{
-		auto it = m_auras.begin();
-		while(it != m_auras.end())
+		for (auto it = m_auras.begin(); it != m_auras.end();)
 		{
-			std::shared_ptr<AuraEffect> aura = *it;
-			it = m_auras.erase(it);
-
-			aura->misapplyAura();
+			removeAura(it);
 		}
 	}
 }
