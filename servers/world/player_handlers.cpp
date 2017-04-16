@@ -838,13 +838,15 @@ namespace wowpp
 		const auto *spell = m_project.spells.getById(talent->ranks(rank));
 
 		// Add new spell, and maybe remove old spells
-		m_character->addSpell(*spell);
-		if ((spell->attributes(0) & game::spell_attributes::Passive) != 0)
+		if (m_character->addSpell(*spell))
 		{
-			SpellTargetMap targets;
-			targets.m_targetMap = game::spell_cast_target_flags::Unit;
-			targets.m_unitTarget = m_character->getGuid();
-			m_character->castSpell(std::move(targets), spell->id());
+			if ((spell->attributes(0) & game::spell_attributes::Passive) != 0)
+			{
+				SpellTargetMap targets;
+				targets.m_targetMap = game::spell_cast_target_flags::Unit;
+				targets.m_unitTarget = m_character->getGuid();
+				m_character->castSpell(std::move(targets), spell->id());
+			}
 		}
 	}
 

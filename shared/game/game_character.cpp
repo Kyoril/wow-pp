@@ -2056,7 +2056,6 @@ namespace wowpp
 
 		// Fire signal
 		spellLearned(spell);
-
 		// If it is a trade skill...
 		bool isTradeSkill = false;
 		Int32 skillIndex = 0, skillPoint = 0;

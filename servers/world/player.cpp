@@ -1040,13 +1040,12 @@ namespace wowpp
 			{
 				sendProxyPacket(
 					std::bind(game::server_write::supercededSpell, std::placeholders::_1, spell.prevspell(), spell.id()));
-			}
-			else
-			{
-				sendProxyPacket(
-					std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell.id()));
+				return;
 			}
 		}
+
+		sendProxyPacket(
+			std::bind(game::server_write::learnedSpell, std::placeholders::_1, spell.id()));
 	}
 
 	void Player::onResurrectRequest(UInt64 objectGUID, const String &sentName, UInt8 typeId)
