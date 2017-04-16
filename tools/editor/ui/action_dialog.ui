@@ -180,6 +180,11 @@
        <string>Unit - Set Mount</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>Object - Despawn</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item>

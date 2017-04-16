@@ -168,6 +168,9 @@ namespace wowpp
 			/// Sets the mount display id of a unit and makes it enter the mounted state.
 			/// Targets: UNIT; Data: <MOUNT-ID>; Texts: NONE;
 			SetMount = 20,
+			/// Despawns an object by removing it from the world.
+			/// Targets: UNIT; Data: NONE; Texts: NONE;
+			Despawn = 21,
 
 			Invalid,
 			Count_ = Invalid

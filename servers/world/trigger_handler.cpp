@@ -39,6 +39,7 @@
 #include "game/unit_mover.h"
 #include "game/game_creature.h"
 #include "common/make_unique.h"
+#include "game/universe.h"
 
 namespace wowpp
 {
@@ -127,6 +128,8 @@ namespace wowpp
 			WOWPP_HANDLE_TRIGGER_ACTION(SetVariable)
 			WOWPP_HANDLE_TRIGGER_ACTION(Dismount)
 			WOWPP_HANDLE_TRIGGER_ACTION(SetMount)
+			WOWPP_HANDLE_TRIGGER_ACTION(Despawn)
+
 #undef WOWPP_HANDLE_TRIGGER_ACTION
 
 				case trigger_actions::Delay:
@@ -794,6 +797,42 @@ namespace wowpp
 		}
 
 		target->setUInt32Value(unit_fields::MountDisplayId, mountId);
+	}
+
+	void TriggerHandler::handleDespawn(const proto::TriggerAction & action, game::TriggerContext & context)
+	{
+		GameObject *target = getActionTarget(action, context);
+		if (target == nullptr)
+		{
+			ELOG("TRIGGER_ACTION_DESPAWN: No target found, action will be ignored");
+			return;
+		}
+
+		if (!target->isWorldObject() && !target->isCreature())
+		{
+			ELOG("TRIGGER_ACTION_DESPAWN: Target has to be a creature or world object");
+			return;
+		}
+
+		auto *world = target->getWorldInstance();
+		if (!world)
+		{
+			ELOG("TRIGGER_ACTION_DESPAWN: Target isn't spawned right now");
+			return;
+		}
+
+		// Remove object in next world tick
+		auto strong = target->shared_from_this();
+		std::weak_ptr<GameObject> weak(strong);
+		world->getUniverse().post([weak]() {
+			auto strong = weak.lock();
+			if (strong)
+			{
+				auto *world = strong->getWorldInstance();
+				if (world)
+					world->removeGameObject(*strong);
+			}
+		});
 	}
 
 	bool TriggerHandler::checkInCombatFlag(const proto::TriggerEntry & entry, const GameObject * owner)

@@ -75,6 +75,7 @@ namespace wowpp
 		void handleSetVariable(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleDismount(const proto::TriggerAction &action, game::TriggerContext &context);
 		void handleSetMount(const proto::TriggerAction &action, game::TriggerContext &context);
+		void handleDespawn(const proto::TriggerAction &action, game::TriggerContext &context);
 
 	private:
 
