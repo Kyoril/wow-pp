@@ -46,6 +46,7 @@ namespace wowpp
 	{
 		// Connect to spawn event
 		m_onSpawned = m_controlled.spawned.connect(this, &CreatureAI::onSpawned);
+		m_onDespawned = m_controlled.despawned.connect(this, &CreatureAI::onDespawned);
 	}
 
 	CreatureAI::~CreatureAI()
@@ -74,6 +75,11 @@ namespace wowpp
 		setState(std::move(state));
 	}
 
+	void CreatureAI::onDespawned(GameObject &)
+	{
+		setState(nullptr);
+	}
+
 	void CreatureAI::idle()
 	{
 		auto state = std::make_shared<CreatureAIIdleState>(*this);
@@ -85,14 +91,17 @@ namespace wowpp
 		if (m_state)
 		{
 			m_state->onLeave();
+			m_state.reset();
 		}
 
 		// Every state change causes the creature to leave evade mode
 		m_evading = false;
 
-		ASSERT(state.get());
-		m_state = std::move(state);
-		m_state->onEnter();
+		if (state)
+		{
+			m_state = std::move(state);
+			m_state->onEnter();
+		}
 	}
 
 	GameCreature &CreatureAI::getControlled() const

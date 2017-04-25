@@ -328,6 +328,17 @@ namespace wowpp
 				m_effects[i]->setBasePoints(basePoints);
 			}
 		}
+		else
+		{
+			for (Int32 i = 0; i < m_effects.size(); ++i)
+			{
+				if (!m_effects[i])
+					break;
+
+				// Cause the effect to reset tick count etc.
+				m_effects[i]->setBasePoints(m_effects[i]->getBasePoints());
+			}
+		}
 
 		// Reset aura expiration (if any)
 		if (m_totalDuration > 0)

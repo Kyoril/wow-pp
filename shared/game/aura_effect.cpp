@@ -1196,10 +1196,6 @@ namespace wowpp
 				{
 					handleProcModifier(attackType, canRemove, amount, target);
 				}
-				else
-				{
-					WLOG("Unhandled AddTargetTrigger aura with id " << m_spellSlot.getSpell().id());
-				}
 			});
 		}
 

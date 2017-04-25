@@ -26,6 +26,7 @@
 
 namespace wowpp
 {
+	class GameObject;
 	class GameUnit;
 	class GameCreature;
 	class CreatureAIState;
@@ -105,6 +106,7 @@ namespace wowpp
 
 		void setState(CreatureAIStatePtr state);
 		virtual void onSpawned();
+		virtual void onDespawned(GameObject &);
 
 	private:
 
@@ -113,6 +115,7 @@ namespace wowpp
 		Home m_home;
 		simple::scoped_connection m_onSpawned, m_onDamaged;
 		simple::scoped_connection m_onKilled;
+		simple::scoped_connection m_onDespawned;
 		bool m_evading;
 	};
 }
