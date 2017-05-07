@@ -27,6 +27,8 @@
 #include "game_object.h"
 #include "shared/proto_data/spells.pb.h"
 #include "aura_spell_slot.h"
+#include "game_unit.h"
+#include "world_instance.h"
 
 namespace wowpp
 {
@@ -119,7 +121,7 @@ namespace wowpp
 				tileIndex,
 				[&buffer, &packet, &caster](ITileSubscriber & subscriber)
 			{
-				if (subscriber.getControlledObject() == &caster)
+				if (static_cast<GameUnit*>(subscriber.getControlledObject()) == &caster)
 				{
 					subscriber.sendPacket(
 						packet,
