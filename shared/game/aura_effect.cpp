@@ -111,6 +111,9 @@ namespace wowpp
 		// Reset the tick count
 		m_tickCount = 0;
 
+		// Aura refresh also resets expiration status
+		m_expired = false;
+
 		// And now reapply the effect with the new base points
 		if (needsReapply)
 			handleModifier(true);
