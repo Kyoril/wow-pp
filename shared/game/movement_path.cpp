@@ -98,8 +98,8 @@ namespace wowpp
 	}
 
 	MovementPath::MovementPath()
-		: m_firstPosTimestamp(std::numeric_limits<int>::max())	// first value will definitly be smaller
-		, m_lastPosTimestamp(std::numeric_limits<int>::min())	// use the minimum value of course.
+		: m_firstPosTimestamp(std::numeric_limits<MovementPath::Timestamp>::max())	// first value will definitly be smaller
+		, m_lastPosTimestamp(0)	// use the minimum value of course.
 	{
 	}
 
@@ -110,6 +110,8 @@ namespace wowpp
 	void MovementPath::clear()
 	{
 		m_position.clear();
+		m_firstPosTimestamp = std::numeric_limits<MovementPath::Timestamp>::max();
+		m_lastPosTimestamp = 0;
 	}
 
 	void MovementPath::addPosition(MovementPath::Timestamp timestamp, const math::Vector3 &position)
@@ -119,6 +121,8 @@ namespace wowpp
 			m_firstPosTimestamp = timestamp;
 		if (timestamp > m_lastPosTimestamp)
 			m_lastPosTimestamp = timestamp;
+
+		ASSERT(m_lastPosTimestamp >= m_firstPosTimestamp);
 
 		// Store position info
 		m_position[timestamp] = position;
@@ -135,9 +139,14 @@ namespace wowpp
 		DLOG("MovementPath Debug Info");
 		{
 			DLOG("\tPosition Elements:\t" << m_position.size());
+			Timestamp prev = 0;
 			for (auto it : m_position)
 			{
-				DLOG("\t\t" << std::setw(5) << it.first << ": " << it.second);
+				Timestamp diff = 0;
+				if (prev > 0) diff = it.first - prev;
+				prev = it.first;
+
+				DLOG("\t\t" << std::setw(5) << it.first << ": " << it.second << " [Duration: " << diff << "]");
 			}
 		}
 	}

@@ -141,26 +141,6 @@ namespace wowpp
 
 		m_start = currentLoc;
 
-		// Do we really need to move?
-		if (target.isCloseTo(currentLoc, 0.1f))
-		{
-			if (m_debugOutputEnabled)
-			{
-				WLOG("Target point is too close to current location, stopping movement");
-			}
-
-			m_target = target;
-
-			if (isMoving())
-			{
-				// Fire signal since we reached our target
-				stopMovement();
-				targetReached();
-			}
-
-			return true;
-		}
-
 		// Now we need to stop the current movement
 		if (m_moveReached.running)
 		{
@@ -201,37 +181,26 @@ namespace wowpp
 		std::vector<math::Vector3> path;
 		if (!map->calculatePath(currentLoc, target, path, m_canWalkOnTerrain, clipping))
 		{
-			WLOG("Unable to calculate map path");
 			return false;
 		}
 
 		if (path.empty())
-		{
 			return false;
-		}
-		else if(m_debugOutputEnabled)
-		{
-			ILOG("Found " << path.size() << " waypoints");
-		}
 
 		// Update timing
 		m_moveStart = getCurrentTime();
-		//m_path.addPosition(m_moveStart, currentLoc);
-
+		if (m_debugOutputEnabled)
+		{
+			DLOG("Move start: " << m_moveStart);
+		}
+		
 		GameTime moveTime = m_moveStart;
 		for (UInt32 i = 0; i < path.size(); ++i)
 		{
 			const float dist =
 				(i == 0) ? ((path[i] - currentLoc).length()) : (path[i] - path[i - 1]).length();
-
 			if (dist == 0.0f)
-			{
-				if (m_debugOutputEnabled)
-				{
-					DLOG("Skipping waypoint " << i << " because distance is 0");
-				}
 				continue;
-			}
 
 			moveTime += (dist / customSpeed) * constants::OneSecond;
 			m_path.addPosition(moveTime, path[i]);
@@ -240,24 +209,6 @@ namespace wowpp
 		// Use new values
 		m_start = currentLoc;
 		m_target = path.back()/* + math::Vector3(0.0f, 0.0f, 0.4f)*/;
-		
-		// Check if target path is really close to current path
-		if (m_target.isCloseTo(currentLoc, 0.1f))
-		{
-			if (m_debugOutputEnabled)
-			{
-				WLOG("Generated target point ( "<< m_target <<" ) is too close to current location, stopping movement");
-			}
-
-			if (isMoving())
-			{
-				// Fire signal since we reached our target
-				stopMovement();
-			}
-
-			targetReached();
-			return true;
-		}
 
 		// Calculate time of arrival
 		m_moveEnd = moveTime;
@@ -291,6 +242,10 @@ namespace wowpp
 
 		// Setup end timer
 		m_moveReached.setEnd(m_moveEnd);
+		if (m_debugOutputEnabled)
+		{
+			DLOG("Move end: " << m_moveEnd << " (Time: " << m_moveEnd - m_moveStart << ")");
+		}
 
 		// Raise signal
 		targetChanged();
@@ -374,19 +329,28 @@ namespace wowpp
 		if (now >= m_moveEnd)
 			return;
 
+		// Take a sample of the current location
+		auto location = getCurrentLocation();
+
+		// Remove all points that are too early
 		std::vector<math::Vector3> path;
 		for (auto &p : m_path.getPositions())
 		{
 			if (p.first < now)
+			{
 				continue;
+			}
 
 			path.push_back(p.second);
 		}
 
+		if (path.empty())
+			return;
+
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
 		game::Protocol::OutgoingPacket packet(sink);
-		game::server_write::monsterMove(packet, getMoved().getGuid(), getCurrentLocation(), path, m_moveEnd - now);
+		game::server_write::monsterMove(packet, getMoved().getGuid(), location, path, m_moveEnd - now);
 		subscriber.sendPacket(packet, buffer);
 	}
 }

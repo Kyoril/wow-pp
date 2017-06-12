@@ -497,8 +497,12 @@ namespace wowpp
 									entry.inverse.m[2][0], entry.inverse.m[2][1], entry.inverse.m[2][2], entry.inverse.m[2][3],
 									entry.inverse.m[3][0], entry.inverse.m[3][1], entry.inverse.m[3][2], entry.inverse.m[3][3]);
 								transform = transform.inverse();
+
+								child->setScale(transform[0][0], transform[1][1], transform[2][2]);
+								Ogre::Matrix3 rot;
+								transform.extract3x3Matrix(rot);
+								child->setOrientation(Ogre::Quaternion(rot));
 								child->setPosition(transform.getTrans());
-								child->setOrientation(transform.extractQuaternion());
 								child->attachObject(obj.get());
 
 								// Assign geometry

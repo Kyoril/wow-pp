@@ -22,6 +22,7 @@
 #include "pch.h"
 #include "common/endian_convert.h"
 #include "common/clock.h"
+#include "common/macros.h"
 #include "game_protocol.h"
 #include "game/game_item.h"
 #include "game/loot_instance.h"
@@ -680,6 +681,8 @@ namespace wowpp
 			    UInt32 time
 			)
 			{
+				ASSERT(!path.empty());
+
 				out_packet.start(server_packet::MonsterMove);
 				out_packet
 					<< io::write_packed_guid(guid)
@@ -692,29 +695,27 @@ namespace wowpp
 				out_packet
 					<< io::write<NetUInt32>(256)
 					<< io::write<NetUInt32>(time)
-					<< io::write<NetUInt32>(path.empty() ? 1 : path.size() - 1);
-				if (path.size() > 0)
+					<< io::write<NetUInt32>(path.size() - 1);	// Number of points between target and start
+				// Write destination point
+				const auto &pt = path.back();
+				out_packet
+					<< io::write<float>(pt.x)
+					<< io::write<float>(pt.y)
+					<< io::write<float>(pt.z);
+				// Write points in between (if any)
+				if (path.size() > 1)
 				{
-					// Write destination
-					auto &pt = path.back();
-					out_packet
-						<< io::write<float>(pt.x)
-						<< io::write<float>(pt.y)
-						<< io::write<float>(pt.z);
-					if (path.size() > 1)
+					// all other points are relative to the center of the path
+					const math::Vector3 mid = (oldPosition + pt) * 0.5f;
+					for (UInt32 i = 1; i < path.size() - 1; ++i)
 					{
-						// all other points are relative to the center of the path
-						const math::Vector3 mid = (oldPosition + pt) * 0.5f;
-						for (UInt32 i = 1; i < path.size() - 1; ++i)
-						{
-							auto &p = path[i];
-							UInt32 packed = 0;
-							packed |= ((int)((mid.x - p.x) / 0.25f) & 0x7FF);
-							packed |= ((int)((mid.y - p.y) / 0.25f) & 0x7FF) << 11;
-							packed |= ((int)((mid.z - p.z) / 0.25f) & 0x3FF) << 22;
-							out_packet
-								<< io::write<NetUInt32>(packed);
-						}
+						auto &p = path[i];
+						UInt32 packed = 0;
+						packed |= ((int)((mid.x - p.x) / 0.25f) & 0x7FF);
+						packed |= ((int)((mid.y - p.y) / 0.25f) & 0x7FF) << 11;
+						packed |= ((int)((mid.z - p.z) / 0.25f) & 0x3FF) << 22;
+						out_packet
+							<< io::write<NetUInt32>(packed);
 					}
 				}
 				out_packet.finish();
