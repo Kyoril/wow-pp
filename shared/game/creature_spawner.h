@@ -102,7 +102,6 @@ namespace wowpp
 		OwnedCreatures m_creatures;
 		Countdown m_respawnCountdown;
 		math::Vector3 m_location;
-		std::vector<math::Vector3> m_randomPoints;
-		Int8 m_lastPoint;
+		math::Vector3 m_randomPoint;
 	};
 }

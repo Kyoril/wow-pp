@@ -144,6 +144,11 @@ namespace wowpp
 		// Do we really need to move?
 		if (target.isCloseTo(currentLoc, 0.1f))
 		{
+			if (m_debugOutputEnabled)
+			{
+				WLOG("Target point is too close to current location, stopping movement");
+			}
+
 			m_target = target;
 
 			if (isMoving())
@@ -178,12 +183,14 @@ namespace wowpp
 		auto *world = moved.getWorldInstance();
 		if (!world)
 		{
+			WLOG("Unable to find world instance");
 			return false;
 		}
 
 		auto *map = world->getMapData();
 		if (!map)
 		{
+			WLOG("Unable to find map data");
 			return false;
 		}
 
@@ -194,11 +201,18 @@ namespace wowpp
 		std::vector<math::Vector3> path;
 		if (!map->calculatePath(currentLoc, target, path, m_canWalkOnTerrain, clipping))
 		{
+			WLOG("Unable to calculate map path");
 			return false;
 		}
 
 		if (path.empty())
+		{
 			return false;
+		}
+		else if(m_debugOutputEnabled)
+		{
+			ILOG("Found " << path.size() << " waypoints");
+		}
 
 		// Update timing
 		m_moveStart = getCurrentTime();
@@ -209,6 +223,15 @@ namespace wowpp
 		{
 			const float dist =
 				(i == 0) ? ((path[i] - currentLoc).length()) : (path[i] - path[i - 1]).length();
+
+			if (dist == 0.0f)
+			{
+				if (m_debugOutputEnabled)
+				{
+					DLOG("Skipping waypoint " << i << " because distance is 0");
+				}
+				continue;
+			}
 
 			moveTime += (dist / customSpeed) * constants::OneSecond;
 			m_path.addPosition(moveTime, path[i]);
@@ -221,12 +244,18 @@ namespace wowpp
 		// Check if target path is really close to current path
 		if (m_target.isCloseTo(currentLoc, 0.1f))
 		{
+			if (m_debugOutputEnabled)
+			{
+				WLOG("Generated target point ( "<< m_target <<" ) is too close to current location, stopping movement");
+			}
+
 			if (isMoving())
 			{
 				// Fire signal since we reached our target
 				stopMovement();
-				targetReached();
 			}
+
+			targetReached();
 			return true;
 		}
 

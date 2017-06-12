@@ -45,27 +45,12 @@ namespace wowpp
 		, m_currentlySpawned(0)
 		, m_respawnCountdown(world.getUniverse().getTimers())
 		, m_location(spawnEntry.positionx(), spawnEntry.positiony(), spawnEntry.positionz())
-		, m_lastPoint(-1)
 	{
 		if (m_active)
 		{
 			for (size_t i = 0; i < m_spawnEntry.maxcount(); ++i)
 			{
 				spawnOne();
-			}
-
-			if (m_spawnEntry.movement() == game::creature_movement::Random)
-			{
-				auto *mapData = m_world.getMapData();
-				if (mapData)
-				{
-					// Cache some random movement points
-					m_randomPoints.resize(4);
-					for (auto &pt : m_randomPoints)
-					{
-						mapData->getRandomPointOnGround(m_location, 15.0f, pt);
-					}
-				}
 			}
 		}
 
@@ -153,21 +138,18 @@ namespace wowpp
 
 	const math::Vector3 & CreatureSpawner::randomPoint()
 	{
-		if (m_randomPoints.empty())
-			return m_location;
-
-		// Choose next point
-		std::uniform_int_distribution<Int16> dist(0, m_randomPoints.size() - 1);
-		Int16 index = dist(randomGenerator);
-
-		// Don't reuse the same point twice in a row
-		if (index == m_lastPoint)
+		auto *mapData = m_world.getMapData();
+		if (mapData)
 		{
-			index = (index + 1) % m_randomPoints.size();
+			if (mapData->getRandomPointOnGround(m_location, 5.0f, m_randomPoint))
+			{
+				return m_randomPoint;
+			}
+			else
+			{
+				return m_location;
+			}
 		}
-		m_lastPoint = index;
-
-		return m_randomPoints[index];
 	}
 
 	void CreatureSpawner::setState(bool active)

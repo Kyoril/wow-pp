@@ -409,6 +409,7 @@ namespace
 		config.maxEdgeLen = config.walkableRadius * 4;
 		config.maxSimplificationError = MeshSettings::MaxSimplificationError;
 		config.minRegionArea = MeshSettings::MinRegionSize;
+
 		config.mergeRegionArea = MeshSettings::MergeRegionSize;
 		config.maxVertsPerPoly = MeshSettings::VerticesPerPolygon;
 		config.tileSize = MeshSettings::TileVoxelSize;
@@ -470,7 +471,7 @@ namespace
 
 		if (filterWalkable)
 			rcClearUnwalkableTriangles(&ctx, slope, &mesh.solidVerts[0], static_cast<int>(mesh.solidVerts.size() / 3), &mesh.solidTris[0], static_cast<int>(mesh.solidTris.size() / 3), &areas[0]);
-
+		
 		rcRasterizeTriangles(&ctx, &mesh.solidVerts[0], static_cast<int>(mesh.solidVerts.size() / 3), &mesh.solidTris[0], &areas[0], static_cast<int>(mesh.solidTris.size() / 3), heightField);
 		return true;
 	}
@@ -950,7 +951,6 @@ namespace
 				doodadTrees[chunk.uniqueId] = doodadTree;
 				doodadIdsByFile[filename] = doodadTree;
 
-/*
 				// Serialize it
 				std::ofstream file(filePath.string().c_str(), std::ios::out | std::ios::binary);
 				if (!file)
@@ -962,7 +962,6 @@ namespace
 				io::StreamSink fileSink(file);
 				io::Writer fileWriter(fileSink);
 				fileWriter << *doodadTree;
-*/
 			}
 			else
 			{
@@ -1462,8 +1461,6 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-
-
 	// Initialize the log system with support for multithreading
 	std::mutex logMutex;
 	wowpp::g_DefaultLog.signal().connect([&logMutex](const wowpp::LogEntry &entry)
@@ -1471,8 +1468,6 @@ int main(int argc, char* argv[])
 		std::lock_guard<std::mutex> lock(logMutex);
 		wowpp::printLogEntry(std::cout, entry, wowpp::g_DefaultConsoleLogOptions);
 	});
-
-
 
 	// Try to create output path
 	if (!fs::is_directory(outputPath))
@@ -1518,8 +1513,6 @@ int main(int argc, char* argv[])
 	ILOG("Found " << dbcMap->getRecordCount() << " maps");
 	ILOG("Found " << dbcAreaTable->getRecordCount() << " areas");
 	ILOG("Found " << dbcLiquidType->getRecordCount() << " liquid types");
-
-
 
 	// Create work jobs for every map that exists
 	boost::asio::io_service dispatcher;

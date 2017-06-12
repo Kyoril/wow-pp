@@ -188,13 +188,13 @@ namespace wowpp
 			m_sceneMgr.setFog(Ogre::FOG_LINEAR, m_camera.getViewport()->getBackgroundColour(),
 				0.001f, 450.0f, 512.0f);
 
-			m_mapInst.reset(new Map(m_map, m_app.getConfiguration().dataPath));
+			m_mapInst = std::make_unique<Map>(m_map, m_app.getConfiguration().dataPath, true);
 
 			// Create transform widget
-			m_transformWidget.reset(new TransformWidget(
+			m_transformWidget = std::make_unique<TransformWidget>(
 				m_app.getSelection(),
 				m_sceneMgr,
-				m_camera));
+				m_camera);
 
 			// Watch for transform changes
 			m_onTransformChanged = m_app.transformToolChanged.connect(this, &WorldEditor::onTransformToolChanged);
@@ -422,6 +422,98 @@ namespace wowpp
 							countIt->second++;
 						}
 					}
+
+					// Iterate through all doodads and check if they are loaded
+					for (const auto &entry : tile->doodads.entries)
+					{
+						auto countIt = m_doodadRefCount.find(entry.uniqueId);
+						if (countIt == m_doodadRefCount.end())
+						{
+							// Load doodad geometry from aabbtree
+							auto tree = m_mapInst->getDoodadTree(entry.fileName);
+							if (tree.get())
+							{
+								const auto &verts = tree->getVertices();
+								const auto &inds = tree->getIndices();
+
+								std::vector<math::Vector3> normals;
+								normals.resize(verts.size());
+
+								// Code for smooth normal generation
+								for (UInt32 i = 0; i < inds.size(); i += 3)
+								{
+									auto& v0 = verts[inds[i + 0]];
+									auto& v1 = verts[inds[i + 1]];
+									auto& v2 = verts[inds[i + 2]];
+
+									math::Vector3 u = v1 - v0;
+									math::Vector3 v = v2 - v0;
+									math::Vector3 n = u.cross(v);
+									n.normalize();
+
+									normals[inds[i + 0]] += n;
+									normals[inds[i + 1]] += n;
+									normals[inds[i + 2]] += n;
+								}
+
+								for (uint i = 0; i < normals.size(); ++i) {
+									normals[i].normalize();
+								}
+
+								// Build unique object name
+								std::ostringstream objStrm;
+								objStrm << "DOODAD_" << entry.uniqueId;
+
+								// Create collision render object
+								ogre_utils::ManualObjectPtr obj(m_sceneMgr.createManualObject(objStrm.str()));
+								{
+									obj->begin("LineOfSightBlock", Ogre::RenderOperation::OT_TRIANGLE_LIST);
+									obj->estimateVertexCount(verts.size());
+									obj->estimateIndexCount(inds.size() * 3);
+
+									for (UInt32 i = 0; i < verts.size(); ++i)
+									{
+										obj->position(verts[i].x, verts[i].y, verts[i].z);
+										obj->colour(Ogre::ColourValue(0.0f, 0.5f, 0.0f));
+										obj->normal(normals[i].x, normals[i].y, normals[i].z);
+									}
+
+									UInt32 triIndex = 0;
+									for (UInt32 i = 0; i < inds.size(); i += 3)
+									{
+										obj->index(inds[i]);
+										obj->index(inds[i + 1]);
+										obj->index(inds[i + 2]);
+										triIndex++;
+									}
+									obj->end();
+								}
+
+								// Create scene node with proper transformation and attach the render object to it!
+								Ogre::SceneNode *child = m_sceneMgr.getRootSceneNode()->createChildSceneNode(objStrm.str());
+								Ogre::Matrix4 transform(
+									entry.inverse.m[0][0], entry.inverse.m[0][1], entry.inverse.m[0][2], entry.inverse.m[0][3],
+									entry.inverse.m[1][0], entry.inverse.m[1][1], entry.inverse.m[1][2], entry.inverse.m[1][3],
+									entry.inverse.m[2][0], entry.inverse.m[2][1], entry.inverse.m[2][2], entry.inverse.m[2][3],
+									entry.inverse.m[3][0], entry.inverse.m[3][1], entry.inverse.m[3][2], entry.inverse.m[3][3]);
+								transform = transform.inverse();
+								child->setPosition(transform.getTrans());
+								child->setOrientation(transform.extractQuaternion());
+								child->attachObject(obj.get());
+
+								// Assign geometry
+								m_doodadGeometry[entry.uniqueId] = std::move(obj);
+							}
+
+							// Setup reference counter
+							m_doodadRefCount[entry.uniqueId] = 1;
+						}
+						else
+						{
+							// Simply increase reference counter
+							countIt->second++;
+						}
+					}
 				}
 				else
 				{
@@ -465,6 +557,33 @@ namespace wowpp
 									
 									// Remove reference counter
 									m_wmoRefCount.erase(countIt);
+								}
+							}
+						}
+
+						// Iterate through all wmos and check if they are loaded
+						for (const auto &entry : tile->doodads.entries)
+						{
+							auto countIt = m_doodadRefCount.find(entry.uniqueId);
+							if (countIt != m_doodadRefCount.end())
+							{
+								// Simply decrese reference counter
+								countIt->second--;
+								if (countIt->second == 0)
+								{
+									// Destroy loaded geometry
+									auto geomIt = m_doodadGeometry.find(entry.uniqueId);
+									if (geomIt != m_doodadGeometry.end())
+									{
+										if (geomIt->second->getParentSceneNode())
+										{
+											m_sceneMgr.destroySceneNode(geomIt->second->getParentSceneNode());
+										}
+										m_doodadGeometry.erase(geomIt);
+									}
+
+									// Remove reference counter
+									m_doodadRefCount.erase(countIt);
 								}
 							}
 						}

@@ -41,13 +41,15 @@ namespace wowpp
 {
 	std::map<UInt32, std::unique_ptr<dtNavMesh, NavMeshDeleter>> Map::navMeshsPerMap;
 	std::map<String, std::shared_ptr<math::AABBTree>> aabbTreeById;
+	std::map<String, std::shared_ptr<math::AABBTree>> aabbDoodadTreeById;
 
-	Map::Map(const proto::MapEntry &entry, boost::filesystem::path dataPath)
+	Map::Map(const proto::MapEntry &entry, boost::filesystem::path dataPath, bool loadDoodads/* = false*/)
 		: m_entry(entry)
 		, m_dataPath(std::move(dataPath))
 		, m_tiles(64, 64)
 		, m_navMesh(nullptr)
 		, m_navQuery(nullptr)
+		, m_loadDoodads(loadDoodads)
 	{
 		setupNavMesh();
 	}
@@ -738,7 +740,6 @@ namespace wowpp
 		}
 
 		// Set to true to generate straight path
-		const bool correctPathHeights = false;
 		dtStatus dtResult;
 
 		// Buffer to store polygons that need to be used for our path
@@ -778,137 +779,114 @@ namespace wowpp
 		// Resize path
 		tempPath.resize(pathLength);
 
-		if (!correctPathHeights)
+		// Buffer to store path coordinates
+		std::vector<math::Vector3> tempPathCoords(maxPathLength);
+		std::vector<dtPolyRef> tempPathPolys(maxPathLength);
+		std::vector<unsigned char> tempPathFlags(maxPathLength);
+		int tempPathCoordsCount = 0;
+
+		bool targetIsADT = false;
+		if (startPoly != endPoly)
 		{
-			// Buffer to store path coordinates
-			std::vector<math::Vector3> tempPathCoords(maxPathLength);
-			std::vector<dtPolyRef> tempPathPolys(maxPathLength);
-			std::vector<unsigned char> tempPathFlags(maxPathLength);
-			int tempPathCoordsCount = 0;
-
-			bool targetIsADT = false;
-			if (startPoly != endPoly)
+			// Find a straight path
+			dtResult = m_navQuery->findStraightPath(
+				&dtStart.x,							// Start position
+				&dtEnd.x,							// End position
+				tempPath.data(),					// Polygon path
+				static_cast<int>(tempPath.size()),	// Number of polygons in path
+				&tempPathCoords[0].x,				// [out] Path points
+				&tempPathFlags[0],					// [out] Path point flags
+				&tempPathPolys[0],					// [out] Polygon id for each point.
+				&tempPathCoordsCount,				// [out] used coordinate count in vertices (3 floats = 1 vert)
+				maxPathLength,						// max coordinate count
+				0									// options
+			);
+			if (dtStatusFailed(dtResult))
 			{
-				// Find a straight path
-				dtResult = m_navQuery->findStraightPath(
-					&dtStart.x,							// Start position
-					&dtEnd.x,							// End position
-					tempPath.data(),					// Polygon path
-					static_cast<int>(tempPath.size()),	// Number of polygons in path
-					&tempPathCoords[0].x,				// [out] Path points
-					&tempPathFlags[0],					// [out] Path point flags
-					&tempPathPolys[0],					// [out] Polygon id for each point.
-					&tempPathCoordsCount,				// [out] used coordinate count in vertices (3 floats = 1 vert)
-					maxPathLength,						// max coordinate count
-					0									// options
-				);
-				if (dtStatusFailed(dtResult))
-				{
-					ELOG("findStraightPath failed");
-					return false;
-				}
-
-				unsigned short polyFlags = 0;
-				if (tempPathCoordsCount > 0)
-				{
-					dtPolyRef poly = tempPathPolys[tempPathCoordsCount - 1];
-					if (dtStatusSucceed(m_navMesh->getPolyFlags(poly, &polyFlags)))
-					{
-						targetIsADT =
-							(polyFlags & (2 | 32)) != 0;
-					}
-				}
+				ELOG("findStraightPath failed");
+				return false;
 			}
-			else
+
+			unsigned short polyFlags = 0;
+			if (tempPathCoordsCount > 0)
 			{
-
-				// Adjust end height to the poly height here
-				float newHeight = dtEnd.y;
-				if (dtStatusSucceed(m_navQuery->getPolyHeight(endPoly, &dtEnd.x, &newHeight)))
-					dtEnd.y = newHeight;
-
-				unsigned short polyFlags = 0;
-				if (dtStatusSucceed(m_navMesh->getPolyFlags(endPoly, &polyFlags)))
+				dtPolyRef poly = tempPathPolys[tempPathCoordsCount - 1];
+				if (dtStatusSucceed(m_navMesh->getPolyFlags(poly, &polyFlags)))
 				{
 					targetIsADT =
 						(polyFlags & (2 | 32)) != 0;
 				}
-
-				// Build shortcut
-				tempPathCoords[0] = dtStart;
-				tempPathCoords[1] = dtEnd;
-				tempPathPolys[0] = startPoly;
-				tempPathPolys[1] = endPoly;
-				tempPathCoordsCount = 2;
-			}
-
-			if (tempPathCoordsCount == 0)
-				return false;
-
-			// Correct actual path length
-			tempPathCoords.resize(tempPathCoordsCount);
-			tempPathPolys.resize(tempPathCoordsCount);
-
-			// Adjust height value
-			float newHeight = 0.0f;
-			auto wowCoord = recastToWoWCoord(tempPathCoords.back());
-			bool adjustHeight = getHeightAt(wowCoord, newHeight, targetIsADT, !targetIsADT);
-			if (adjustHeight)
-			{
-				tempPathCoords.back().y = newHeight;
-			}
-
-			// Smooth out the path
-			dtResult = smoothPath(*m_navQuery, *m_navMesh, ignoreAdtSlope ? m_filter : m_adtSlopeFilter, tempPathPolys, tempPathCoords);
-			if (dtStatusFailed(dtResult))
-			{
-				ELOG("Failed to smooth out existing path.");
-				return false;
-			}
-
-			// Append waypoints and eventually do shape clipping
-			bool wasInShape = false;
-			for (const auto &p : tempPathCoords)
-			{
-				auto wowCoord = recastToWoWCoord(p);
-				if (clipping)
-				{
-					game::Point pos(wowCoord.x, wowCoord.y);
-					/*if (!clipping->isPointInside(pos))
-					{
-						// Stop: We were in the shape already and wanted to exit it (eventually again)
-						if (wasInShape)
-							break;
-					}
-					else
-					{
-						// Entered the shape
-						wasInShape = true;
-					}*/
-				}
-
-				out_path.push_back(wowCoord);
 			}
 		}
 		else
 		{
-			int smoothPathSize = 0;
-			float smoothPath[VERTEX_SIZE * MAX_POINT_PATH_LENGTH];
-			dtResult = findSmoothPath(m_navQuery.get(), m_navMesh, ignoreAdtSlope ? &m_filter : &m_adtSlopeFilter, &dtStart.x, &dtEnd.x, &tempPath[0], pathLength, smoothPath, &smoothPathSize, 74);
-			if (dtStatusFailed(dtResult))
+
+			// Adjust end height to the poly height here
+			float newHeight = dtEnd.y;
+			if (dtStatusSucceed(m_navQuery->getPolyHeight(endPoly, &dtEnd.x, &newHeight)))
+				dtEnd.y = newHeight;
+
+			unsigned short polyFlags = 0;
+			if (dtStatusSucceed(m_navMesh->getPolyFlags(endPoly, &polyFlags)))
 			{
-				//ELOG("Could not get smooth path: " << dtResult);
-				return false;
+				targetIsADT =
+					(polyFlags & (2 | 32)) != 0;
 			}
-			else
+
+			// Build shortcut
+			tempPathCoords[0] = dtStart;
+			tempPathCoords[1] = dtEnd;
+			tempPathPolys[0] = startPoly;
+			tempPathPolys[1] = endPoly;
+			tempPathCoordsCount = 2;
+		}
+
+		if (tempPathCoordsCount == 0)
+			return false;
+
+		// Correct actual path length
+		tempPathCoords.resize(tempPathCoordsCount);
+		tempPathPolys.resize(tempPathCoordsCount);
+
+		// Adjust height value
+		float newHeight = 0.0f;
+		auto wowCoord = recastToWoWCoord(tempPathCoords.back());
+		bool adjustHeight = getHeightAt(wowCoord, newHeight, targetIsADT, !targetIsADT);
+		if (adjustHeight)
+		{
+			tempPathCoords.back().y = newHeight;
+		}
+
+		// Smooth out the path
+		dtResult = smoothPath(*m_navQuery, *m_navMesh, ignoreAdtSlope ? m_filter : m_adtSlopeFilter, tempPathPolys, tempPathCoords);
+		if (dtStatusFailed(dtResult))
+		{
+			ELOG("Failed to smooth out existing path.");
+			return false;
+		}
+
+		// Append waypoints and eventually do shape clipping
+		bool wasInShape = false;
+		for (const auto &p : tempPathCoords)
+		{
+			auto wowCoord = recastToWoWCoord(p);
+			if (clipping)
 			{
-				for (int i = 0; i < smoothPathSize * VERTEX_SIZE; i += VERTEX_SIZE)
+				game::Point pos(wowCoord.x, wowCoord.y);
+				if (!clipping->isPointInside(pos))
 				{
-					out_path.push_back(
-						recastToWoWCoord(math::Vector3(smoothPath[i], smoothPath[i + 1], smoothPath[i + 2])));
+					// Stop: We were in the shape already and wanted to exit it (eventually again)
+					if (wasInShape)
+						break;
 				}
-				return true;
+				else
+				{
+					// Entered the shape
+					wasInShape = true;
+				}
 			}
+
+			out_path.push_back(wowCoord);
 		}
 
 		return true;
@@ -998,6 +976,15 @@ namespace wowpp
 	{
 		auto it = aabbTreeById.find(filename);
 		if (it == aabbTreeById.end())
+			return nullptr;
+
+		return it->second;
+	}
+
+	std::shared_ptr<math::AABBTree> Map::getDoodadTree(const String &filename) const
+	{
+		auto it = aabbDoodadTreeById.find(filename);
+		if (it == aabbDoodadTreeById.end())
 			return nullptr;
 
 		return it->second;
@@ -1112,6 +1099,61 @@ namespace wowpp
 
 					// Store tree
 					aabbTreeById[wmo.fileName] = tree;
+				}
+			}
+		}
+
+		// Read doodad chunks for editor serialization
+		if (mapHeaderChunk.offsDoodads && m_loadDoodads)
+		{
+			fileSource.seek(mapHeaderChunk.offsDoodads);
+			reader.readPOD(tile->doodads.header);
+			if (tile->doodads.header.fourCC != MapDoodadChunkCC)
+			{
+				WLOG("Map file " << file << " seems to be corrupted: Wrong doodad chunk header");
+				return nullptr;
+			}
+
+			UInt32 doodadCount = 0;
+			reader >> io::read<UInt32>(doodadCount);
+
+			tile->doodads.entries.resize(doodadCount);
+			for (auto &doodad : tile->doodads.entries)
+			{
+				reader
+					>> io::read<NetUInt32>(doodad.uniqueId)
+					>> io::read_container<UInt16>(doodad.fileName);
+				reader.readPOD(doodad.inverse);
+				reader.readPOD(doodad.bounds);
+
+				// Load aabbtree
+				auto it = aabbDoodadTreeById.find(doodad.fileName);
+				if (it == aabbDoodadTreeById.end())
+				{
+					auto treeFilePath = m_dataPath / "bvh" / (doodad.fileName + ".bvh");
+
+					std::ifstream bvhFile(treeFilePath.string().c_str(), std::ios::in | std::ios::binary);
+					if (!bvhFile)
+					{
+						return nullptr;
+					}
+
+					// Create reader object
+					io::StreamSource bvhSrc(bvhFile);
+					io::Reader bvhRead(bvhSrc);
+
+					// Read bvh tree data from file
+					auto tree = std::make_shared<math::AABBTree>();
+					bvhRead >> *tree;
+
+					// Check if empty
+					if (tree->getIndices().empty())
+					{
+						WLOG("BVH tree " << doodad.fileName << " has no triangles (empty)!");
+					}
+
+					// Store tree
+					aabbDoodadTreeById[doodad.fileName] = tree;
 				}
 			}
 		}

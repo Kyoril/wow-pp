@@ -76,7 +76,7 @@ namespace wowpp
 
 		/// Creates a new instance of the map class and initializes it.
 		/// @entry The base entry of this map.
-		explicit Map(const proto::MapEntry &entry, boost::filesystem::path dataPath);
+		explicit Map(const proto::MapEntry &entry, boost::filesystem::path dataPath, bool loadDoodads = false);
 
 		/// Constructs a new nav mesh for this map id.
 		void setupNavMesh();
@@ -116,6 +116,8 @@ namespace wowpp
 
 		/// 
 		std::shared_ptr<math::AABBTree> getWMOTree(const String &filename) const;
+		/// 
+		std::shared_ptr<math::AABBTree> getDoodadTree(const String &filename) const;
 
 	private:
 
@@ -152,6 +154,8 @@ namespace wowpp
 		dtQueryFilter m_filter;
 		/// This filter avoids unwalkable adt areas.
 		dtQueryFilter m_adtSlopeFilter;
+		/// Determines whether or not doodads will be loaded.
+		bool m_loadDoodads;
 
 		// Holds all loaded navigation meshes, keyed by map id.
 		static std::map<UInt32, std::unique_ptr<dtNavMesh, NavMeshDeleter>> navMeshsPerMap;
