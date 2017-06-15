@@ -103,6 +103,28 @@ namespace wowpp
 
 				return len;
 			}
+			/// Returns a position relative to this position vector based on
+			/// a rotation value in radians.
+			/// @param orientation Rotation angle in radians.
+			/// @param forwardDist Forward offset in world units based on the rotation. May be negative for backward.
+			/// @param rightDist Right offset in world units based on the rotation. May be negative for left.
+			/// @param upDist Up offset in world units. May be negative for down.
+			/// @returns Relative position vector.
+			math::Vector3 getRelativePosition(float orientation, float forwardDist = 0.0f, float rightDist = 0.0f, float upDist = 0.0f) const
+			{
+				const float converted = orientation + 3.1415927f / 2.0f;
+				const float x_coef = ::cos(converted);
+				const float y_coef = ::sin(converted);
+
+				const float x_range_add = ::cos(orientation) * forwardDist;
+				const float y_range_add = ::sin(orientation) * forwardDist;
+
+				return math::Vector3(
+					x + x_coef * rightDist + x_range_add,
+					y + y_coef * rightDist + y_range_add,
+					z + upDist
+				);
+			}
 
 			Vector3 lerp(const Vector3 &target, float t) const
 			{

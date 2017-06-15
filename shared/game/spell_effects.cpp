@@ -1063,7 +1063,12 @@ namespace wowpp
 
 			// TODO: Error checks and limit max path length
 			auto &mover = caster.getMover();
-			mover.moveTo(firstTarget.getLocation(), 25.0f);
+
+			const float orientation = firstTarget.getAngle(caster);
+			const math::Vector3 target =
+				firstTarget.getMover().getCurrentLocation().getRelativePosition(orientation, 
+					firstTarget.getMeleeReach() + caster.getMeleeReach());
+			mover.moveTo(target, 35.0f);
 
 			if (m_hitResults.find(firstTarget.getGuid()) == m_hitResults.end())
 			{

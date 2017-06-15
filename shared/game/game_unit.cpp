@@ -408,18 +408,7 @@ namespace wowpp
 		math::Vector3 loc = m_mover ?
 			m_mover->getCurrentLocation() : getLocation();
 
-		const float orientation = getOrientation() + 3.1415927f / 2.0f;
-		const float x_coef = ::cos(orientation);
-		const float y_coef = ::sin(orientation);
-
-		const float x_range_add = ::cos(getOrientation()) * forwardDist;
-		const float y_range_add = ::sin(getOrientation()) * forwardDist;
-
-		return math::Vector3(
-			loc.x + x_coef * rightDist + x_range_add,
-			loc.y + y_coef * rightDist + y_range_add,
-			loc.z + upDist
-		);
+		return loc.getRelativePosition(getOrientation(), forwardDist, rightDist, upDist);
 	}
 
 	math::Vector3 GameUnit::getPredictedPosition(float seconds) const
