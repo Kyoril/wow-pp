@@ -861,6 +861,14 @@ namespace wowpp
 
 		void modifyAuraState(game::AuraState state, bool apply);
 
+
+		/// Calculates a position relative to the units location based on it's current orientation.
+		math::Vector3 getRelativeLocation(float forwardDist, float rightDist, float upDist) const;
+		/// Returns the location of this unit with movement prediction applied.
+		/// @param seconds The returned location will be calculated when the unit 
+		///                will continue it's current movement for this amount of time.
+		math::Vector3 getPredictedPosition(float seconds) const;
+
 	public:
 
 		/// @copydoc GameObject::relocate

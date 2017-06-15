@@ -145,11 +145,9 @@ namespace wowpp
 			{
 				return m_randomPoint;
 			}
-			else
-			{
-				return m_location;
-			}
 		}
+
+		return m_location;
 	}
 
 	void CreatureSpawner::setState(bool active)

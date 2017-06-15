@@ -309,7 +309,7 @@ namespace wowpp
 	math::Vector3 UnitMover::getCurrentLocation() const
 	{
 		// Unit didn't move yet or isn't moving at all
-		if (m_moveStart == 0 || !isMoving() || !m_path.hasPositions()) {
+		if (/*m_moveStart == 0 || !isMoving() || */!m_path.hasPositions()) {
 			return getMoved().getLocation();
 		}
 

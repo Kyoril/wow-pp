@@ -402,6 +402,47 @@ namespace wowpp
 		}
 	}
 
+	math::Vector3 GameUnit::getRelativeLocation(float forwardDist, float rightDist, float upDist) const
+	{
+		// Determine current location as exactly as possible
+		math::Vector3 loc = m_mover ?
+			m_mover->getCurrentLocation() : getLocation();
+
+		const float orientation = getOrientation() + 3.1415927f / 2.0f;
+		const float x_coef = ::cos(orientation);
+		const float y_coef = ::sin(orientation);
+
+		const float x_range_add = ::cos(getOrientation()) * forwardDist;
+		const float y_range_add = ::sin(getOrientation()) * forwardDist;
+
+		return math::Vector3(
+			loc.x + x_coef * rightDist + x_range_add,
+			loc.y + y_coef * rightDist + y_range_add,
+			loc.z + upDist
+		);
+	}
+
+	math::Vector3 GameUnit::getPredictedPosition(float seconds) const
+	{
+		// TODO: Get speed from UnitMover class
+		const float runSpeed = getSpeed(movement_type::Run);
+		const float backSpeed = getSpeed(movement_type::Backwards);
+		
+		float forwardFactor = 0.0f;
+		if (m_movementInfo.moveFlags & game::movement_flags::Forward)
+			forwardFactor = 1.0f * runSpeed;
+		else if (m_movementInfo.moveFlags & game::movement_flags::Backward)
+			forwardFactor = -1.0f * backSpeed;
+
+		float sideFactor = 0.0f;
+		if (m_movementInfo.moveFlags & game::movement_flags::StrafeRight)
+			sideFactor = -1.0f * runSpeed;
+		else if (m_movementInfo.moveFlags & game::movement_flags::StrafeLeft)
+			sideFactor = 1.0f * runSpeed;
+
+		return getRelativeLocation(forwardFactor * seconds, sideFactor * seconds, 0.0f);
+	}
+
 	void GameUnit::relocate(const math::Vector3 & position, float o, bool fire)
 	{
 		// Grab last fired location

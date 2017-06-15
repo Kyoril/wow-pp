@@ -28,37 +28,48 @@ namespace wowpp
 {
 	namespace
 	{
-		template <typename T>
-		static math::Vector3 doInterpolation(MovementPath::Timestamp timestamp, MovementPath::Timestamp firstTimestamp, MovementPath::Timestamp lastTimestamp, const T &map)
+		template<typename T = MovementPath::PositionMap>
+		static math::Vector3 doInterpolation(MovementPath::Timestamp timestamp, const T &map)
 		{
 			// No data! What should we do? ...
 			if (map.empty())
 				return math::Vector3();
 
+			// Check if timestamp is less than the end point
+			auto endIt = map.rbegin();
+			if (endIt->first < timestamp)
+				return endIt->second;
+
 			// Get start and end iterator
 			typename T::const_iterator t1 = map.end(), t2 = map.end();
 
-			// Get first position
+			// Get first position and check if it is ahead in time or just the right time
 			typename T::const_iterator it = map.begin();
+			if (it->first >= timestamp)
+				return it->second;
+
+			MovementPath::Timestamp startTime = 0;
 
 			// Iterate through all saved positions
 			while (it != map.end())
 			{
-				// Check if the value is bigger and if the new value
-				// is not the last value
-				if (it->first <= timestamp &&
-					it->first < lastTimestamp)
+				// Check if this position lies in the past
+				if (it->first < timestamp &&
+					it->first > startTime)
 				{
 					t1 = it;
+					startTime = it->first;
 				}
 
-
+				// If we have a valid start point, and don't have an end point yet, we can
+				// use it as the target point
 				if (t1 != map.end() &&
 					t2 == map.end())
 				{
-					if (it->first > timestamp)
+					if (it->first >= timestamp)
 					{
 						t2 = it;
+						break;
 					}
 				}
 
@@ -66,24 +77,10 @@ namespace wowpp
 				it++;
 			}
 
-			// If there is no start value...
-			if (t1 == map.end())
-			{
-				t1 = map.begin();
-
-				// T2 = T1 + 1
-				t2 = t1;
-				std::advance(t2, 1);
-			}
-
-			// If no end value was found (maybe it is out of space), use the last 
-			// known value as end point
-			if (t2 == map.end())
-			{
-				// No end point found, use last point available (source point)
-				return t1->second;
-			}
-
+			// By now we should have a valid start value
+			ASSERT(t1 != map.end());
+			ASSERT(t2 != map.end());
+			
 			// Normalize end time value (end - start) for a range of 0 to END
 			MovementPath::Timestamp nEnd = static_cast<MovementPath::Timestamp>(t2->first - t1->first);
 			ASSERT(nEnd != 0);
@@ -131,7 +128,7 @@ namespace wowpp
 	math::Vector3 MovementPath::getPosition(MovementPath::Timestamp timestamp) const
 	{
 		// Interpolate between the two values
-		return doInterpolation<PositionMap>(timestamp, m_firstPosTimestamp, m_lastPosTimestamp, m_position);
+		return doInterpolation<PositionMap>(timestamp, m_position);
 	}
 
 	void MovementPath::printDebugInfo()
