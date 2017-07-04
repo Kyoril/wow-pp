@@ -338,6 +338,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(MailQueryNextTime, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MailGetBody, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MailTakeMoney, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(MailTakeItem, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GetChannelMemberCount, game::session_status::LoggedIn)
 
 #undef WOWPP_HANDLE_PACKET
@@ -1775,6 +1776,46 @@ namespace wowpp
 			sendPacket(
 				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
 					MailResult(mailId, mail::response_type::Deleted, mail::response_result::Internal)));
+		}
+	}
+
+	void Player::handleMailTakeItem(game::IncomingPacket & packet)
+	{
+		ObjectGuid mailboxGuid;
+		UInt32 mailId;
+		UInt32 itemId;
+
+		if (!game::client_read::mailTakeItem(packet, mailboxGuid, mailId, itemId))
+		{
+			return;
+		}
+
+		// TODO check distance to mailbox, etc
+
+		auto *mail = getMail(mailId);
+		// TODO check if mail is deleted or time is due
+		if (!mail)
+		{
+			sendPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(mailId, mail::response_type::ItemTaken, mail::response_result::Internal)));
+			return;
+		}
+		else
+		{
+			auto &items = mail->getItems();
+
+			ItemData item;
+			for (auto &it : items)
+			{
+				if (it.first == itemId)
+				{
+					item = it.second;
+					break;
+				}
+			}
+
+			m_worldNode->takeItemMail(m_characterId, mailId, item);
 		}
 	}
 

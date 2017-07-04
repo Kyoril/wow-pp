@@ -1063,6 +1063,13 @@ namespace wowpp
 				UInt32 &out_mailId
 			);
 
+			bool mailTakeItem(
+				io::Reader &packet,
+				ObjectGuid &out_mailboxGuid,
+				UInt32 &out_mailId,
+				UInt32 &out_itemId
+			);
+
 			bool resurrectResponse(
 				io::Reader &packet,
 				UInt64 &out_guid,

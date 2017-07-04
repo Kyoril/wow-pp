@@ -1317,6 +1317,14 @@ namespace wowpp
 			return;
 		}
 
+		if (mailInfo.itemsCount > MaxItemsInMail)
+		{
+			sendProxyPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(0, mail::response_type::Send, mail::response_result::TooManyAttachments)));
+			return;
+		}
+
 		if (mailInfo.receiver.empty())
 		{
 			return;
@@ -1343,14 +1351,6 @@ namespace wowpp
 		// TODO distance to mailbox
 		//float distance = m_character->getDistanceTo(target);
 
-		if (mailInfo.itemsCount > MaxItemsInMail)
-		{
-			sendProxyPacket(
-				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
-						  MailResult(0, mail::response_type::Send, mail::response_result::TooManyAttachments)));
-			return;
-		}
-
 		UInt32 cost = mailInfo.itemsCount > 0 ? 30 * mailInfo.itemsCount : 30;
 		UInt32 reqMoney = cost + mailInfo.money;
 		UInt32 plMoney = m_character->getUInt32Value(character_fields::Coinage);
@@ -1364,7 +1364,8 @@ namespace wowpp
 
 		auto &inventory = m_character->getInventory();
 		UInt16 itemSlot = 0;
-		std::vector<std::shared_ptr<GameItem>> items;
+		std::vector<UInt16> itemsSlots;
+		std::vector<std::pair<UInt32, ItemData>> items;
 		for (UInt8 i = 0; i < mailInfo.itemsCount; ++i)
 		{
 			UInt64 guid = mailInfo.itemsGuids[i];
@@ -1433,15 +1434,22 @@ namespace wowpp
 				return;
 			}
 
-			// TODO other checks
-			items.push_back(item);
+			ItemData itemData;
+			itemData.entry = item->getEntry().id();
+			itemData.stackCount = item->getStackCount();
+			itemData.creator = item->getUInt64Value(item_fields::Creator);
+			itemData.contained = item->getUInt64Value(item_fields::Contained);
+			itemData.durability = item->getUInt32Value(item_fields::Durability);
+
+			items.push_back(make_pair(guidLowerPart(guid), itemData));
+			itemsSlots.push_back(itemSlot);
 		}
 
 		// mail subject of more comprobations
 
 		Mail mail(m_character->getGuid(), items, mailInfo, mailInfo.body.empty() ? mail::check_mask::Copied : mail::check_mask::HasBody);
 
-		m_realmConnector.sendMailDraft(std::move(mail), mailInfo.receiver);
+		m_realmConnector.sendMailDraft(std::move(mail), mailInfo.receiver, itemsSlots);
 
 		//TODO
 

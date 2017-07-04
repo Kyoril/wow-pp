@@ -530,7 +530,8 @@ namespace wowpp
 	{
 		Mail mail;
 		String receiver;
-		if (!(pp::world_realm::world_read::mailDraft(packet, mail, receiver)))
+		std::vector<UInt16> itemsSlots;
+		if (!(pp::world_realm::world_read::mailDraft(packet, mail, receiver, itemsSlots)))
 		{
 			return;
 		}
@@ -578,13 +579,22 @@ namespace wowpp
 		auto senderChar = senderPl->getGameCharacter();
 		if (senderChar)
 		{
-			size_t itemsCount = mail.getItems().size();
+			size_t itemsCount = itemsSlots.size();
 
 			UInt32 cost = itemsCount > 0 ? 30 * itemsCount : 30;
 			UInt32 reqMoney = cost + mail.getMoney();
 
-			m_connection->sendSinglePacket(
-				std::bind(pp::world_realm::realm_write::moneyChange, std::placeholders::_1, senderPl->getCharacterId(), reqMoney, true));
+			UInt64 senderCharId = senderPl->getCharacterId();
+
+			changeMoney(senderCharId, reqMoney, true);
+
+			auto &items = mail.getItems();
+			std::vector<UInt32> stackCount;
+			for (auto &item : items)
+			{
+				stackCount.push_back(item.second.stackCount);
+			}
+			itemsRemoved(senderCharId, itemsSlots, stackCount);
 
 			senderPl->sendPacket(
 				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
@@ -675,6 +685,12 @@ namespace wowpp
 			std::bind(pp::world_realm::realm_write::itemData, std::placeholders::_1, characterGuid, std::cref(items)));
 	}
 
+	void World::itemsRemoved(UInt64 characterGuid, const std::vector<UInt16>& itemsSlots, const std::vector<UInt32>& stackCount)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::itemsRemoved, std::placeholders::_1, characterGuid, std::cref(itemsSlots), std::cref(stackCount)));
+	}
+
 	void World::characterLearnedSpell(UInt64 characterGuid, UInt32 spellId)
 	{
 		m_connection->sendSinglePacket(
@@ -685,6 +701,12 @@ namespace wowpp
 	{
 		m_connection->sendSinglePacket(
 			std::bind(pp::world_realm::realm_write::moneyChange, std::placeholders::_1, characterDbId, money, remove));
+	}
+
+	void World::takeItemMail(UInt64 characterDbId, UInt32 mailId, ItemData & item)
+	{
+		m_connection->sendSinglePacket(
+			std::bind(pp::world_realm::realm_write::takeItemMail, std::placeholders::_1, characterDbId, mailId, item));
 	}
 
 }

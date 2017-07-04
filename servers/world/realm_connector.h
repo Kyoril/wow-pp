@@ -105,7 +105,7 @@ namespace wowpp
 		/// 
 		void sendCharacterSpawnNotification(UInt64 characterId);
 		///
-		void sendMailDraft(Mail mail, String &receiver);
+		void sendMailDraft(Mail mail, String &receiver, std::vector<UInt16> &itemsSlots);
 		///
 		void sendMailGetList(DatabaseId characterId);
 		///
@@ -134,8 +134,10 @@ namespace wowpp
 		void handleAddIgnore(pp::Protocol::IncomingPacket &packet);
 		void handleRemoveIgnore(pp::Protocol::IncomingPacket &packet);
 		void handleItemData(pp::Protocol::IncomingPacket &packet);
+		void handleItemsRemoved(pp::Protocol::IncomingPacket &packet);
 		void handleSpellLearned(pp::Protocol::IncomingPacket &packet);
 		void handleMoneyChange(pp::Protocol::IncomingPacket &packet);
+		void handleTakeItemMail(pp::Protocol::IncomingPacket &packet);
 
 	private:
 

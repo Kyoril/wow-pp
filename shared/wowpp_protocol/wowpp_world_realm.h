@@ -132,7 +132,9 @@ namespace wowpp
 					/// The player character has learned a new spell. This is currently only sent using the WebAPI.
 					SpellLearned,
 					/// Sent by the realm when money needs to be changed on a character.
-					MoneyChange
+					MoneyChange,
+					/// Sent by the realm when items need to taken from a mail.
+					ItemsMailTake
 				};
 			}
 
@@ -275,7 +277,8 @@ namespace wowpp
 				void mailDraft(
 					pp::OutgoingPacket &out_packet,
 					Mail mail,
-					String receiver
+					String receiver,
+					std::vector<UInt16> itemsSlots
 				);
 
 				void mailGetList(
@@ -367,7 +370,8 @@ namespace wowpp
 				void itemsRemoved(
 				    pp::OutgoingPacket &out_packet,
 				    UInt64 characterId,
-				    const std::vector<UInt16> &data
+				    const std::vector<UInt16> &data,
+					const std::vector<UInt32> &stackCount
 				);
 				void spellLearned(
 					pp::OutgoingPacket &out_packet,
@@ -379,6 +383,12 @@ namespace wowpp
 					UInt64 characterId,
 					UInt32 money,
 					bool remove
+				);
+				void takeItemMail(
+					pp::OutgoingPacket &out_packet,
+					UInt64 characterId,
+					UInt32 mailId,
+					ItemData &item
 				);
 			}
 
@@ -491,7 +501,8 @@ namespace wowpp
 				bool mailDraft(
 					io::Reader &packet,
 					Mail &out_mail,
-					String &out_receiver
+					String &out_receiver,
+					std::vector<UInt16> &out_itemsSlots
 				);	
 
 				bool mailGetList(
@@ -587,7 +598,8 @@ namespace wowpp
 				bool itemsRemoved(
 				    io::Reader &packet,
 				    UInt64 &out_characterId,
-				    std::vector<UInt16> &out_slots
+				    std::vector<UInt16> &out_slots,
+					std::vector<UInt32> &out_stackCount
 				);
 				bool spellLearned(
 					io::Reader &packet,
@@ -599,6 +611,12 @@ namespace wowpp
 					UInt64 &out_characterId,
 					UInt32 &out_money,
 					bool &out_remove
+				);
+				bool takeItemMail(
+					io::Reader &packet,
+					UInt64 &out_characterId,
+					UInt32 &out_mailId,
+					ItemData &out_item
 				);
 			}
 		}

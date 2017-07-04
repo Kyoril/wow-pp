@@ -167,12 +167,13 @@ namespace wowpp
 						<< io::write<NetUInt64>(characterId);
 					out_packet.finish();
 				}
-				void mailDraft(pp::OutgoingPacket & out_packet, Mail mail, String receiver)
+				void mailDraft(pp::OutgoingPacket & out_packet, Mail mail, String receiver, std::vector<UInt16> itemsSlots)
 				{
 					out_packet.start(world_packet::MailDraft);
 					out_packet
 						<< mail
 						<< io::write_dynamic_range<NetUInt8>(receiver)
+						<< io::write_dynamic_range<UInt16>(itemsSlots)
 						;
 					out_packet.finish();
 				}
@@ -303,12 +304,13 @@ namespace wowpp
 					}
 					out_packet.finish();
 				}
-				void itemsRemoved(pp::OutgoingPacket &out_packet, UInt64 characterId, const std::vector<UInt16> &data)
+				void itemsRemoved(pp::OutgoingPacket &out_packet, UInt64 characterId, const std::vector<UInt16> &data, const std::vector<UInt32> &stackCount)
 				{
 					out_packet.start(realm_packet::ItemsRemoved);
 					out_packet
-					        << io::write<NetUInt64>(characterId)
-					        << io::write_dynamic_range<NetUInt32>(data);
+						<< io::write<NetUInt64>(characterId)
+						<< io::write_dynamic_range<NetUInt16>(data)
+						<< io::write_dynamic_range<NetUInt32>(stackCount);
 					out_packet.finish();
 				}
 				void spellLearned(pp::OutgoingPacket & out_packet, UInt64 characterId, UInt32 spellId)
@@ -326,6 +328,16 @@ namespace wowpp
 						<< io::write<NetUInt64>(characterId)
 						<< io::write<NetUInt32>(money)
 						<< io::write<NetUInt8>(remove);
+					out_packet.finish();
+				}
+				void takeItemMail(pp::OutgoingPacket & out_packet, UInt64 characterId, UInt32 mailId, ItemData& item)
+				{
+					DLOG("Item id is " << item.entry);
+					out_packet.start(realm_packet::ItemsMailTake);
+					out_packet
+						<< io::write<NetUInt64>(characterId)
+						<< io::write<NetUInt32>(mailId)
+						<< item;
 					out_packet.finish();
 				}
 			}
@@ -446,11 +458,12 @@ namespace wowpp
 						>> io::read<NetUInt64>(out_characterId);
 				}
 				
-				bool mailDraft(io::Reader & packet, Mail &out_mail, String & out_receiver)
+				bool mailDraft(io::Reader & packet, Mail &out_mail, String & out_receiver, std::vector<UInt16> & out_itemsSlots)
 				{
 					return packet
 						>> out_mail
 						>> io::read_container<NetUInt8>(out_receiver)
+						>> io::read_container<NetUInt16>(out_itemsSlots)
 						;
 				}
 
@@ -577,11 +590,12 @@ namespace wowpp
 					return packet;
 				}
 
-				bool itemsRemoved(io::Reader &packet, UInt64 &out_characterId, std::vector<UInt16> &out_slots)
+				bool itemsRemoved(io::Reader &packet, UInt64 &out_characterId, std::vector<UInt16> &out_slots, std::vector<UInt32> &out_stackCount)
 				{
 					return packet
-					       >> io::read<NetUInt64>(out_characterId)
-					       >> io::read_container<NetUInt32>(out_slots);
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read_container<NetUInt16>(out_slots)
+						>> io::read_container<NetUInt32>(out_stackCount);
 				}
 
 				bool spellLearned(io::Reader & packet, UInt64 & out_characterId, UInt32 & out_spellId)
@@ -596,6 +610,13 @@ namespace wowpp
 						>> io::read<NetUInt64>(out_characterId)
 						>> io::read<NetUInt32>(out_money)
 						>> io::read<NetUInt8>(out_remove);
+				}
+				bool takeItemMail(io::Reader & packet, UInt64 & out_characterId, UInt32 & out_mailId, ItemData & out_item)
+				{
+					return packet
+						>> io::read<NetUInt64>(out_characterId)
+						>> io::read<NetUInt32>(out_mailId)
+						>> out_item;
 				}
 			}
 		}

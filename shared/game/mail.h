@@ -23,6 +23,7 @@
 
 #include "common/typedefs.h"
 #include "game_item.h"
+#include "inventory.h"
 
 namespace io
 {
@@ -119,8 +120,6 @@ namespace wowpp
 		typedef response_result::Type ResponseResult;
 	}
 
-	typedef std::vector<std::shared_ptr<GameItem>> ItemVector;
-
 	struct MailResult final
 	{
 		UInt32 mailId;
@@ -172,7 +171,7 @@ namespace wowpp
 
 		explicit Mail(
 			const UInt64 &senderGuid,
-			ItemVector &itemVector,
+			std::vector<std::pair<UInt32, ItemData>> &items,
 			const MailData &mailInfo,
 			UInt32 checkMasks = mail::check_mask::None,
 			UInt8 messageType = mail::message_type::Normal,
@@ -184,7 +183,7 @@ namespace wowpp
 		///
 		String getBody() const { return m_body; }
 		///
-		ItemVector &getItems() { return m_items; }
+		std::vector<std::pair<UInt32, ItemData>> &getItems() { return m_items; }
 		///
 		UInt32 getCOD() const { return m_COD; }
 		///
@@ -237,7 +236,7 @@ namespace wowpp
 		UInt64 m_senderGuid;
 		String m_subject, m_body;
 		// TODO change items
-		ItemVector m_items;
+		std::vector<std::pair<UInt32, ItemData>> m_items;
 		UInt32 m_money, m_COD;
 		UInt32 m_mailId;
 		UInt8 m_messageType;

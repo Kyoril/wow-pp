@@ -2959,13 +2959,13 @@ namespace wowpp
 				}
 				else
 				{
+					size_t sizePos = out_packet.sink().position();
 					for (auto &mail : mails)
 					{
-						std::vector<std::shared_ptr<GameItem>> items = mail.getItems();
+						std::vector<std::pair<UInt32, ItemData>> items = mail.getItems();
 						UInt8 messageType = mail.getMessageType();
 						UInt32 mailId = mail.getMailId();
 
-						size_t sizePos = out_packet.sink().position();
 						out_packet
 							// Placeholder for mailSize
 							<< io::write<NetUInt16>(0)
@@ -3003,10 +3003,36 @@ namespace wowpp
 							<< io::write<float>(30.0f)
 							// TOOD mail template from dbc
 							<< io::write<NetUInt32>(0)
-							<< io::write_range(mail.getSubject()) << io::write<NetUInt8>(0)
-							// TODO handle items sent
-							<< io::write<NetUInt8>(0);
-						//	<< io::write<NetUInt8>(items.size());
+							<< io::write_range(mail.getSubject()) << io::write<NetUInt8>(0);
+
+						UInt8 itemCount = items.size();
+						out_packet << io::write<NetUInt8>(itemCount);
+						for (UInt8 i = 0; i < itemCount; ++i)
+						{
+							out_packet
+								<< io::write<NetUInt8>(i)
+								<< io::write<NetUInt32>(items[i].first)
+								<< io::write<NetUInt32>(items[i].second.entry);
+							// TODO: enchantments
+							for (UInt8 j = 0; j < 6; ++j)
+							{
+								out_packet
+									<< io::write<NetUInt32>(0)
+									<< io::write<NetUInt32>(0)
+									<< io::write<NetUInt32>(0);
+							}
+
+							out_packet
+								<< io::write<NetUInt32>(items[i].second.randomPropertyIndex)
+								<< io::write<NetUInt32>(items[i].second.randomSuffixIndex)
+								<< io::write<NetUInt32>(items[i].second.stackCount)
+								// TODO: spellCharges
+								<< io::write<NetUInt32>(0)
+								// TODO: maxDurability
+								<< io::write<NetUInt32>(items[i].second.durability)
+								<< io::write<NetUInt32>(items[i].second.durability);
+							i++;
+						}
 
 						UInt16 mailSize = static_cast<UInt16>(out_packet.sink().position() - sizePos);
 						out_packet.writePOD(sizePos, mailSize);
@@ -4175,6 +4201,14 @@ namespace wowpp
 					>> io::read<NetObjectGuid>(out_mailboxGuid)
 					>> io::read<NetUInt32>(out_mailId)
 					>> io::skip(sizeof(UInt32));
+			}
+
+			bool mailTakeItem(io::Reader & packet, ObjectGuid & out_mailboxGuid, UInt32 & out_mailId, UInt32 & out_itemId)
+			{
+				return packet
+					>> io::read<NetObjectGuid>(out_mailboxGuid)
+					>> io::read<NetUInt32>(out_mailId)
+					>> io::read<NetUInt32>(out_itemId);
 			}
 
 			bool resurrectResponse(io::Reader & packet, UInt64 &out_guid, UInt8 &out_status)

@@ -122,11 +122,17 @@ namespace wowpp
 			case pp::world_realm::realm_packet::ItemData:
 				handleItemData(packet);
 				break;
+			case pp::world_realm::realm_packet::ItemsRemoved:
+				handleItemsRemoved(packet);
+				break;
 			case pp::world_realm::realm_packet::SpellLearned:
 				handleSpellLearned(packet);
 				break; 
 			case pp::world_realm::realm_packet::MoneyChange:
 				handleMoneyChange(packet);
+				break;
+			case pp::world_realm::realm_packet::ItemsMailTake:
+				handleTakeItemMail(packet);
 				break;
 			default:
 				// Log about unknown or unhandled packet
@@ -541,6 +547,45 @@ namespace wowpp
 		}
 	}
 
+	void RealmConnector::handleItemsRemoved(pp::Protocol::IncomingPacket & packet)
+	{
+		UInt64 characterId;
+		std::vector<UInt16> itemsSlots;
+		std::vector<UInt32> stackCount;
+		if (!(pp::world_realm::realm_read::itemsRemoved(packet, characterId, itemsSlots, stackCount)))
+		{
+			return;
+		}
+
+		if (itemsSlots.empty())
+		{
+			return;
+		}
+
+		// Find requested character
+		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		if (!player)
+		{
+			WLOG("Received item data from realm but couldn't find player connection!");
+			return;
+		}
+
+		auto character = player->getCharacter();
+		if (!character)
+		{
+			WLOG("Received item data, but could not find players game character!");
+			return;
+		}
+
+		auto &inventory = character->getInventory();
+		for (int i = 0; i < itemsSlots.size(); ++i)
+		{
+			inventory.removeItem(itemsSlots[i], stackCount[i]);
+		}
+	}
+
+
+
 	void RealmConnector::handleSpellLearned(pp::Protocol::IncomingPacket & packet)
 	{
 		UInt64 characterId;
@@ -648,6 +693,69 @@ namespace wowpp
 		{
 			character->setUInt32Value(character_fields::Coinage, charMoney + money);
 		}
+	}
+
+	void RealmConnector::handleTakeItemMail(pp::Protocol::IncomingPacket & packet)
+	{
+		UInt64 characterId;
+		UInt32 mailId;
+		ItemData item;
+		if (!(pp::world_realm::realm_read::takeItemMail(packet, characterId, mailId, item)))
+		{
+			return;
+		}
+
+		// Find requested character
+		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		if (!player)
+		{
+			WLOG("Received item data from realm but couldn't find player connection!");
+			return;
+		}
+
+		auto character = player->getCharacter();
+		if (!character)
+		{
+			WLOG("Received item data, but could not find players game character!");
+			return;
+		}
+
+		const auto *entry = m_project.items.getById(item.entry);
+		if (!entry)
+		{
+			player->sendProxyPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(mailId, mail::response_type::ItemTaken, mail::response_result::Internal)));
+			return;
+		}
+
+		// TODO: COD
+		std::map<UInt16, UInt16> addedBySlot;
+		auto result = character->getInventory().createItems(*entry, item.stackCount, &addedBySlot);
+		if (result != game::inventory_change_failure::Okay)
+		{
+			ELOG("Coult not create items: " << result);
+			player->sendProxyPacket(
+				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+					MailResult(mailId, mail::response_type::ItemTaken, mail::response_result::Equip, result)));
+			return;
+		}
+
+		for (auto &pair : addedBySlot)
+		{
+			auto itemInstance = character->getInventory().getItemAtSlot(pair.first);
+			UInt8 bag = 0, subslot = 0;
+			Inventory::getRelativeSlots(pair.first, bag, subslot);
+			player->sendProxyPacket(
+				std::bind(game::server_write::itemPushResult, std::placeholders::_1,
+					character->getGuid(), std::cref(*itemInstance), false, false, bag, subslot, pair.second, character->getInventory().getItemCount(entry->id())));
+		}
+
+		player->sendProxyPacket(
+			std::bind(game::server_write::mailSendResult, std::placeholders::_1,
+				MailResult(mailId, mail::response_type::ItemTaken, mail::response_result::Ok, 0, item.entry, item.stackCount)));
+
+		// TODO: update mail
 	}
 
 	void RealmConnector::handleProxyPacket(pp::Protocol::IncomingPacket &packet)
@@ -1433,10 +1541,10 @@ namespace wowpp
 			std::bind(pp::world_realm::world_write::characterSpawned, std::placeholders::_1, characterId));
 	}
 
-	void RealmConnector::sendMailDraft(Mail mail, String &receiver)
+	void RealmConnector::sendMailDraft(Mail mail, String &receiver, std::vector<UInt16> &itemsSlots)
 	{
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::world_write::mailDraft, std::placeholders::_1, std::move(mail), std::move(receiver)));
+			std::bind(pp::world_realm::world_write::mailDraft, std::placeholders::_1, std::move(mail), std::move(receiver), std::move(itemsSlots)));
 	}
 
 	void RealmConnector::sendMailGetList(DatabaseId characterId)

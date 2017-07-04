@@ -37,7 +37,7 @@ namespace wowpp
 
 	Mail::Mail(
 		const UInt64 & senderGuid,
-		ItemVector & itemVector,
+		std::vector<std::pair<UInt32, ItemData>> & items,
 		const MailData & mailInfo,
 		UInt32 checkMasks,
 		UInt8 messageType,
@@ -45,7 +45,7 @@ namespace wowpp
 		: m_senderGuid(senderGuid)
 		, m_subject(mailInfo.subject)
 		, m_body(mailInfo.body)
-		, m_items(std::move(itemVector))
+		, m_items(std::move(items))
 		, m_money(mailInfo.money)
 		, m_COD(mailInfo.COD)
 		, m_mailId(0)
@@ -108,14 +108,24 @@ namespace wowpp
 			<< io::write<NetUInt8>(object.m_messageType)
 			<< io::write<NetUInt32>(object.m_stationery)
 			<< io::write<NetUInt32>(object.m_checkMasks)
+			<< io::write<NetUInt32>(object.m_items.size())
 			;
-		// TODO items
+
+		for (auto &item : object.m_items)
+		{
+			w
+				<< item.first
+				<< item.second
+				;
+		}
 
 		return w;
 	}
 
 	io::Reader & operator >> (io::Reader & r, Mail & object)
 	{
+		size_t itemsCount;
+
 		r
 			>> io::read<NetUInt64>(object.m_senderGuid)
 			>> io::read_container<NetUInt8>(object.m_subject)
@@ -126,7 +136,19 @@ namespace wowpp
 			>> io::read<NetUInt8>(object.m_messageType)
 			>> io::read<NetUInt32>(object.m_stationery)
 			>> io::read<NetUInt32>(object.m_checkMasks)
-			;
+			>> io::read<NetUInt32>(itemsCount)
+			;		
+
+		for (UInt32 i = 0; i < itemsCount; ++i)
+		{
+			UInt32 guid;
+			ItemData item;
+			r
+				>> guid
+				>> item
+				;
+			object.m_items.push_back(std::make_pair(guid, item));
+		}
 
 		return r;
 	}
