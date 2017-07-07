@@ -2959,9 +2959,9 @@ namespace wowpp
 				}
 				else
 				{
-					size_t sizePos = out_packet.sink().position();
 					for (auto &mail : mails)
 					{
+						size_t sizePos = out_packet.sink().position();
 						std::vector<std::pair<UInt32, ItemData>> items = mail.getItems();
 						UInt8 messageType = mail.getMessageType();
 						UInt32 mailId = mail.getMailId();
@@ -3031,13 +3031,12 @@ namespace wowpp
 								// TODO: maxDurability
 								<< io::write<NetUInt32>(items[i].second.durability)
 								<< io::write<NetUInt32>(items[i].second.durability);
-							i++;
 						}
 
 						UInt16 mailSize = static_cast<UInt16>(out_packet.sink().position() - sizePos);
 						out_packet.writePOD(sizePos, mailSize);
-						out_packet.finish();
 					}
+					out_packet.finish();
 				}
 			}
 
