@@ -2961,14 +2961,13 @@ namespace wowpp
 				{
 					for (auto &mail : mails)
 					{
-						size_t sizePos = out_packet.sink().position();
-						std::vector<std::pair<UInt32, ItemData>> items = mail.getItems();
+						const size_t sizePos = out_packet.sink().position();
+						const auto &items = mail.getItems();
 						UInt8 messageType = mail.getMessageType();
 						UInt32 mailId = mail.getMailId();
 
 						out_packet
-							// Placeholder for mailSize
-							<< io::write<NetUInt16>(0)
+							<< io::write<NetUInt16>(0)			// Placeholder for mailSize
 							<< io::write<NetUInt32>(mailId)
 							<< io::write<NetUInt8>(messageType);
 						
@@ -2980,7 +2979,8 @@ namespace wowpp
 							case mail::message_type::Creature:
 							case mail::message_type::GameObject:
 							case mail::message_type::Auction:
-								// TODO handle these (NetUInt32)
+								// TODO handle these (NetUInt32): Creature/Object entry id / auction id
+								out_packet << io::write<NetUInt32>(0);
 								break;
 							case mail::message_type::Item:
 								out_packet << io::write<NetUInt32>(0);
@@ -2992,17 +2992,13 @@ namespace wowpp
 
 						out_packet
 							<< io::write<NetUInt32>(mail.getCOD())
-							// TODO letter item id (sending mailId for body, client stores them based on id)
-							<< io::write<NetUInt32>(mailId)
-							// unknown
-							<< io::write<NetUInt32>(0)
+							<< io::write<NetUInt32>(mailId)		// TODO letter item id (sending mailId for body, client stores them based on id)
+							<< io::write<NetUInt32>(0)			// unknown
 							<< io::write<NetUInt32>(mail.getStationery())
 							<< io::write<NetUInt32>(mail.getMoney())
 							<< io::write<NetUInt32>(mail.getCheckMasks())
-							// TODO time until expires
-							<< io::write<float>(30.0f)
-							// TOOD mail template from dbc
-							<< io::write<NetUInt32>(0)
+							<< io::write<float>(30.0f)			// TODO time until expires
+							<< io::write<NetUInt32>(0)			// TOOD mail template from dbc
 							<< io::write_range(mail.getSubject()) << io::write<NetUInt8>(0);
 
 						UInt8 itemCount = items.size();
@@ -3021,21 +3017,19 @@ namespace wowpp
 									<< io::write<NetUInt32>(0)
 									<< io::write<NetUInt32>(0);
 							}
-
 							out_packet
 								<< io::write<NetUInt32>(items[i].second.randomPropertyIndex)
 								<< io::write<NetUInt32>(items[i].second.randomSuffixIndex)
-								<< io::write<NetUInt32>(items[i].second.stackCount)
-								// TODO: spellCharges
-								<< io::write<NetUInt32>(0)
-								// TODO: maxDurability
-								<< io::write<NetUInt32>(items[i].second.durability)
+								<< io::write<NetUInt8>(items[i].second.stackCount)
+								<< io::write<NetUInt32>(0)								// TODO: spellCharges
+								<< io::write<NetUInt32>(items[i].second.durability)		// TODO: maxDurability
 								<< io::write<NetUInt32>(items[i].second.durability);
-						}
+						}	// End for(i)
 
 						UInt16 mailSize = static_cast<UInt16>(out_packet.sink().position() - sizePos);
 						out_packet.writePOD(sizePos, mailSize);
-					}
+					}	// End foreach(mail)
+
 					out_packet.finish();
 				}
 			}
