@@ -352,8 +352,6 @@ namespace wowpp
 
 	void GameObject::relocate(const math::Vector3 &position, float o, bool fire/* = true*/)
 	{
-		float oldO = m_o;
-
 		m_position = position;
 		m_o = o;
 
@@ -374,7 +372,6 @@ namespace wowpp
 
 	void GameObject::setOrientation(float o)
 	{
-		float oldO = m_o;
 		m_o = o;
 
 		// TODO

@@ -934,7 +934,6 @@ namespace wowpp
 			}
 			else if (targetUnit->isAlive())
 			{
-				bool positive = caster.isHostileTo(*targetUnit);
 				UInt32 auraDispelType = effect.miscvaluea();
 				targetUnit->getAuras().removeAurasDueToDispel(auraDispelType, totalPoints);
 			}
@@ -1699,7 +1698,7 @@ namespace wowpp
 
 				if (caster.isGameCharacter())
 				{
-					auto added = reinterpret_cast<GameCharacter&>(caster).applySpellMod(
+					reinterpret_cast<GameCharacter&>(caster).applySpellMod(
 						spell_mod_op::Damage, m_spell.id(), totalDamage);
 				}
 
@@ -1851,7 +1850,7 @@ namespace wowpp
 			}
 			else if (targetUnit->isAlive())
 			{
-				UInt32 auraDispelType = effect.miscvaluea();
+				//UInt32 auraDispelType = effect.miscvaluea();
 				for (UInt32 i = 0; i < totalPoints; i++)
 				{
 					// TODO:

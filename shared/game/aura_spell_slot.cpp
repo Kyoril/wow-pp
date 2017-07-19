@@ -122,10 +122,6 @@ namespace wowpp
 		if (hasValidSlot())
 		{
 			// Update owner fields
-			auto *caster = getCaster();
-
-			UInt32 index = m_slot / 4;
-			UInt32 byte = (m_slot % 4) * 8;
 			m_owner->setUInt32Value(unit_fields::AuraEffect + m_slot, 0);
 		}
 	}

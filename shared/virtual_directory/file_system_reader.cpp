@@ -63,7 +63,7 @@ namespace wowpp
 
 			if (static_cast<std::ifstream &>(*file))
 			{
-				return std::move(file);
+				return file;
 			}
 
 			return std::unique_ptr<std::istream>();

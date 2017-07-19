@@ -2038,7 +2038,6 @@ namespace wowpp
 			return;
 		}
 
-		float o = getOrientation();
 		math::Vector3 location(getLocation());
 
 		const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);

@@ -96,7 +96,7 @@ namespace wowpp
 				Vector3 p = rayDir.cross(v2);
 				float det = v1.dot(p);
 
-				if ((ignoreBackface && det < 1e-5) || ::abs(det) < 1e-5)
+				if ((ignoreBackface && det < 1e-5) || std::abs(det) < 1e-5)
 					return { false, 0.0f };
 
 				Vector3 t = origin * upscaleFactor - v0;

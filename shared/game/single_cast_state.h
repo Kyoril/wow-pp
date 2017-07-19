@@ -24,9 +24,11 @@
 #include "spell_cast.h"
 #include "attack_table.h"
 #include "common/countdown.h"
-#include "game_object.h"
+#include "game_unit.h"
+#include "world_instance.h"
 #include "shared/proto_data/spells.pb.h"
 #include "aura_spell_slot.h"
+#include "binary_io/vector_sink.h"
 
 namespace wowpp
 {
@@ -119,7 +121,7 @@ namespace wowpp
 				tileIndex,
 				[&buffer, &packet, &caster](ITileSubscriber & subscriber)
 			{
-				if (subscriber.getControlledObject() == &caster)
+				if (reinterpret_cast<GameUnit*>(subscriber.getControlledObject()) == &caster)
 				{
 					subscriber.sendPacket(
 						packet,

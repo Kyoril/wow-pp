@@ -490,7 +490,6 @@ namespace wowpp
 	bool GameCharacter::completeQuest(UInt32 quest)
 	{
 		// Check all quests in the quest log
-		bool updateQuestObjects = false;
 		for (UInt8 i = 0; i < MaxQuestsOnLog; ++i)
 		{
 			auto logId = getUInt32Value(character_fields::QuestLog1_1 + i * 4);
