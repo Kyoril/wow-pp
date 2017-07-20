@@ -696,7 +696,7 @@ namespace wowpp
 
 			if (m_cast.getExecuter().isCreature())
 			{
-				reinterpret_cast<GameCreature&>(m_cast.getExecuter()).raiseTrigger(trigger_event::OnSpellCast, { m_spell.id() });
+				reinterpret_cast<GameCreature&>(m_cast.getExecuter()).raiseTrigger(trigger_event::OnSpellCast, { m_spell.id() }, &m_cast.getExecuter());
 			}
 		}
 
@@ -1258,7 +1258,7 @@ namespace wowpp
 					if (strongTarget->isCreature())
 					{
 						std::static_pointer_cast<GameCreature>(strongTarget)->raiseTrigger(
-							trigger_event::OnSpellHit, { m_spell.id() });
+							trigger_event::OnSpellHit, { m_spell.id() }, &m_cast.getExecuter());
 					}
 
 					reinterpret_cast<GameCharacter&>(*strongCaster).onQuestSpellCastCredit(m_spell.id(), *strongTarget);

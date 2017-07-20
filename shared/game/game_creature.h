@@ -113,9 +113,9 @@ namespace wowpp
 			return m_lootRecipients.size();
 		}
 		///
-		void raiseTrigger(trigger_event::Type e);
+		void raiseTrigger(trigger_event::Type e, GameUnit *triggeringUnit = nullptr);
 		///
-		void raiseTrigger(trigger_event::Type e, const std::vector<UInt32> &data);
+		void raiseTrigger(trigger_event::Type e, const std::vector<UInt32> &data, GameUnit *triggeringUnit = nullptr);
 		/// @copydoc GameObject::providesQuest()
 		bool providesQuest(UInt32 questId) const override;
 		/// @copydoc GameObject::endsQuest()

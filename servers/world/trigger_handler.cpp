@@ -221,6 +221,8 @@ namespace wowpp
 			return;
 		}
 
+		auto triggeringUnit = context.triggeringUnit.lock();
+
 		// Prepare packet data
 		std::vector<char> buffer;
 		io::VectorSink sink(buffer);
@@ -230,7 +232,7 @@ namespace wowpp
 			game::chat_msg::MonsterSay,
 			game::language::Universal,
 			"",
-			0,			// TODO: Make parameter dependant
+			triggeringUnit ? triggeringUnit->getGuid() : 0,			// TODO: Make parameter dependant
 			getActionText(action, 0), 
 			reinterpret_cast<GameUnit*>(target)
 			);
@@ -278,6 +280,8 @@ namespace wowpp
 			WLOG("TRIGGER_ACTION_YELL: Needs a unit target, but target is no unit - action ignored");
 			return;
 		}
+		
+		auto triggeringUnit = context.triggeringUnit.lock();
 
 		// Prepare packet
 		std::vector<char> buffer;
@@ -288,7 +292,7 @@ namespace wowpp
 			game::chat_msg::MonsterYell, 
 			game::language::Universal,
 			"",
-			0,			// TODO: Make parameter dependant
+			triggeringUnit ? triggeringUnit->getGuid() : 0,			// TODO: Make parameter dependant
 			getActionText(action, 0), 
 			reinterpret_cast<GameUnit*>(target)
 			);
@@ -961,8 +965,8 @@ namespace wowpp
 		{
 		case trigger_action_target::OwningObject:
 			return context.owner;
-		case trigger_action_target::SpellCaster:
-			return context.spellCaster;
+		case trigger_action_target::TriggeringUnit:
+			return context.triggeringUnit.lock().get();
 		case trigger_action_target::OwningUnitVictim:
 			return (context.owner && context.owner->isCreature() ? reinterpret_cast<GameUnit*>(context.owner)->getVictim() : nullptr);
 		case trigger_action_target::NamedWorldObject:

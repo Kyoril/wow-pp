@@ -401,7 +401,7 @@ namespace wowpp
 		/// Fired when unit started active casting (excluding proc)
 		simple::signal<void(const proto::SpellEntry &)> startedCasting;
 		/// Fired when a unit trigger should be executed.
-		simple::signal<void(const proto::TriggerEntry &, GameUnit &)> unitTrigger;
+		simple::signal<void(const proto::TriggerEntry &, GameUnit &, GameUnit *)> unitTrigger;
 		/// Fired when a unit state changed.
 		simple::signal<void(UInt32, bool)> unitStateChanged;
 		/// Fired when this unit enters or leaves stealth mode.

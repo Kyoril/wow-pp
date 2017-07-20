@@ -82,7 +82,7 @@ namespace wowpp
 						{
 							if (e.data_size() > 0)
 							{
-								takenDamage.connect([this, trigger, &e](GameUnit *, UInt32 damage, game::DamageType type) {
+								takenDamage.connect([this, trigger, &e](GameUnit *attacker, UInt32 damage, game::DamageType type) {
 									const UInt32 maxHealth = getUInt32Value(unit_fields::MaxHealth);
 									const UInt32 health = getUInt32Value(unit_fields::Health);
 									
@@ -91,7 +91,7 @@ namespace wowpp
 									if (oldPCT > e.data(0) &&
 										healthPCT <= e.data(0))
 									{
-										unitTrigger(std::cref(*trigger), std::ref(*this));
+										unitTrigger(std::cref(*trigger), std::ref(*this), attacker);
 									}
 								});
 							}
@@ -339,7 +339,7 @@ namespace wowpp
 		m_unitLoot = std::move(unitLoot);
 	}
 
-	void GameCreature::raiseTrigger(trigger_event::Type e)
+	void GameCreature::raiseTrigger(trigger_event::Type e, GameUnit *triggeringUnit/* = nullptr*/)
 	{
 		for (const auto &triggerId : getEntry().triggers())
 		{
@@ -350,14 +350,14 @@ namespace wowpp
 				{
 					if (triggerEvent.type() == e)
 					{
-						unitTrigger(std::cref(*triggerEntry), std::ref(*this));
+						unitTrigger(std::cref(*triggerEntry), std::ref(*this), triggeringUnit);
 					}
 				}
 			}
 		}
 	}
 
-	void GameCreature::raiseTrigger(trigger_event::Type e, const std::vector<UInt32>& data)
+	void GameCreature::raiseTrigger(trigger_event::Type e, const std::vector<UInt32>& data, GameUnit *triggeringUnit/* = nullptr*/)
 	{
 		for (const auto &triggerId : getEntry().triggers())
 		{
@@ -391,7 +391,7 @@ namespace wowpp
 					}
 				}
 
-				unitTrigger(std::cref(*triggerEntry), std::ref(*this));
+				unitTrigger(std::cref(*triggerEntry), std::ref(*this), triggeringUnit);
 			}
 		}
 	}

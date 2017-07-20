@@ -58,12 +58,12 @@
          </item>
          <item>
           <property name="text">
-           <string>Triggering Unit</string>
+           <string>Trigger Owner</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>Triggering Unit's Target</string>
+           <string>Trigger Owner's Target</string>
           </property>
          </item>
          <item>
@@ -79,6 +79,11 @@
          <item>
           <property name="text">
            <string>Named Creatures</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Triggering Unit</string>
           </property>
          </item>
         </widget>

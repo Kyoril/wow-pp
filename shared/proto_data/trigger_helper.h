@@ -193,8 +193,8 @@ namespace wowpp
 			NamedWorldObject = 4,
 			/// Named creature.
 			NamedCreature = 5,
-			/// Unit which raised this trigger by casting a spell.
-			SpellCaster = 6,
+			/// Unit which raised this trigger by causing an event.
+			TriggeringUnit = 6,
 
 			Invalid,
 			Count_ = Invalid

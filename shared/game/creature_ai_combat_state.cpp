@@ -62,6 +62,7 @@ namespace wowpp
 		CreatureAIState::onEnter();
 
 		// Add initial threat
+		GameUnit* initiatorCopy = m_combatInitiator;
 		addThreat(*m_combatInitiator, 0.0f);
 		m_combatInitiator = nullptr;
 
@@ -164,7 +165,7 @@ namespace wowpp
 		controlled.removeLootRecipients();
 
 		// Raise OnAggro triggers
-		controlled.raiseTrigger(trigger_event::OnAggro);
+		controlled.raiseTrigger(trigger_event::OnAggro, initiatorCopy);
 
 		// Apply initial spell cooldowns
 		for (const auto &entry : controlled.getEntry().creaturespells())

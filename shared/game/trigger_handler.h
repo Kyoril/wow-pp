@@ -40,15 +40,10 @@ namespace wowpp
 			GameObject *owner;
 			/// Id of the spell that triggered this trigger with it's hit.
 			UInt32 spellHitId;
-			/// Caster of the spell that raised this trigger or nullptr if not suitable for this trigger event.
-			GameUnit *spellCaster;
+			/// Unit that raised this trigger by raising an event or nullptr if not suitable for this trigger event.
+			std::weak_ptr<GameUnit> triggeringUnit;
 
-			TriggerContext(GameObject *owner_)
-				: owner(owner_)
-				, spellHitId(0)
-				, spellCaster(nullptr)
-			{
-			}
+			explicit TriggerContext(GameObject *owner_, GameUnit* triggering);
 		};
 
 		struct ITriggerHandler

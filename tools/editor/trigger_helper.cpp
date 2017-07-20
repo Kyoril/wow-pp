@@ -103,6 +103,8 @@ namespace wowpp
 				return temp.arg(QString("(Creature: '%1')").arg(action.targetname().c_str()));
 			case trigger_action_target::NamedWorldObject:
 				return temp.arg(QString("(World Object: '%1')").arg(action.targetname().c_str()));
+			case trigger_action_target::TriggeringUnit:
+				return temp.arg("(Triggering Unit)");
 			default:
 				return temp.arg("(INVALID)");
 			}
