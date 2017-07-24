@@ -1678,6 +1678,7 @@ namespace wowpp
 		// Perform interaction checks (distance, los, reputation etc.)
 		if (!vendor->isInteractableFor(*m_character))
 		{
+			WLOG("Vendor isn't interactable!");
 			return;
 		}
 
@@ -1707,6 +1708,79 @@ namespace wowpp
 		{
 			WLOG("Not enough money");
 			return;
+		}
+	}
+	void Player::handleBuyBackItem(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 vendorGuid = 0;
+		UInt32 slot = 0;
+		if (!(game::client_read::buyBackItem(packet, vendorGuid, slot)))
+		{
+			return;
+		}
+
+		// Find npc guid and perform some checks
+		GameUnit* vendor = dynamic_cast<GameUnit*>(m_character->getWorldInstance()->findObjectByGUID(vendorGuid));
+		if (vendor == nullptr)
+		{
+			// Vendor doesn't exist
+			WLOG("Vendor doesn't exist");
+			return;
+		}
+
+		// Also make sure that this npc offers repair support at all
+		if ((vendor->getUInt32Value(unit_fields::NpcFlags) & game::unit_npc_flags::Vendor) == 0)
+		{
+			WLOG("Vendor exists and is friendly, but doesn't offer reparation");
+			return;
+		}
+
+		// Perform interaction checks (distance, los, reputation etc.)
+		if (!vendor->isInteractableFor(*m_character))
+		{
+			WLOG("Vendor isn't interactable!");
+			return;
+		}
+
+		auto &inv = m_character->getInventory();
+
+		// Get the item instance...
+		auto itemInst = inv.getItemAtSlot(static_cast<UInt16>(slot));
+		if (!itemInst)
+		{
+			WLOG("Could not find buyback item at slot " << slot);
+			return;
+		}
+
+		// Get the sell price
+		const UInt32 fieldSlot = slot - player_buy_back_slots::Start;
+		const UInt32 buyBackPrice = m_character->getUInt32Value(character_fields::BuybackPrice_1 + fieldSlot);
+		const UInt32 coinage = m_character->getUInt32Value(character_fields::Coinage);
+		if (coinage < buyBackPrice)
+		{
+			WLOG("Not enough money to buy back item!");
+			return;
+		}
+
+		// ... clear character field slots...
+		m_character->setUInt64Value(character_fields::VendorBuybackSlot_1 + (fieldSlot * 2), 0);
+		m_character->setUInt32Value(character_fields::BuybackPrice_1 + fieldSlot, 0);
+		m_character->setUInt32Value(character_fields::BuybackTimestamp_1 + fieldSlot, 0);
+
+		// ... notify client about old item instance destruction
+		inv.itemInstanceDestroyed(itemInst, slot);
+
+		// ... and add the item back to the inventory!
+		auto result = inv.addItem(itemInst);
+		if (result != game::inventory_change_failure::Okay)
+		{
+			m_character->inventoryChangeFailure(result, itemInst.get(), nullptr);
+			return;
+		}
+		else
+		{
+			// Remove money
+			m_character->setUInt32Value(character_fields::Coinage, coinage - buyBackPrice);
 		}
 	}
 }

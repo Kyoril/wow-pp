@@ -1085,6 +1085,12 @@ namespace wowpp
 				UInt64 &out_itemGuid,
 				UInt8 &out_guildBank
 			);
+
+			bool buyBackItem(
+				io::Reader &packet,
+				UInt64 &out_vendorGuid,
+				UInt32 &out_slot
+			);
 		};
 
 		namespace server_write

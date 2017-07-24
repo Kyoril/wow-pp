@@ -163,6 +163,7 @@ namespace wowpp
 				RequestPartyMemberStats			= 0x27F,
 				MailQueryNextTime				= 0x284,
 				GroupRaidConvert				= 0x28E,
+				BuyBackItem						= 0x290,
 				RepairItem						= 0x2A8,
 				GroupAssistentLeader			= 0x28F,
 				ToggleHelm						= 0x2B9,

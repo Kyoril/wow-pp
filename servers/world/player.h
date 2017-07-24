@@ -256,6 +256,7 @@ namespace wowpp
 		void handleAckCode(game::Protocol::IncomingPacket &packet, UInt16 opCode);
 		void handleZoneUpdate(game::Protocol::IncomingPacket &packet);
 		void handleRepairItem(game::Protocol::IncomingPacket &packet);
+		void handleBuyBackItem(game::Protocol::IncomingPacket &packet);
 
 	private:
 

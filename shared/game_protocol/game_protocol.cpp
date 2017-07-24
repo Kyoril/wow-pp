@@ -4205,6 +4205,12 @@ namespace wowpp
 					>> io::read<NetUInt64>(out_itemGuid)
 					>> io::read<NetUInt8>(out_guildBank);
 			}
+			bool buyBackItem(io::Reader & packet, UInt64 & out_vendorGuid, UInt32 & out_slot)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_vendorGuid)
+					>> io::read<NetUInt32>(out_slot);
+			}
 		}
 
 		wowpp::game::WhoResponseEntry::WhoResponseEntry(const GameCharacter & character)
