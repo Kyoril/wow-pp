@@ -469,17 +469,17 @@ namespace wowpp
 		void setFactionTemplate(const proto::FactionTemplateEntry &faction);
 
 		/// 
-		bool isHostileToPlayers();
+		bool isHostileToPlayers() const;
 		/// 
-		bool isNeutralToAll();
+		bool isNeutralToAll() const;
 		/// 
-		bool isFriendlyTo(const proto::FactionTemplateEntry &faction);
+		bool isFriendlyTo(const proto::FactionTemplateEntry &faction) const;
 		/// 
-		bool isFriendlyTo(GameUnit &unit);
+		bool isFriendlyTo(GameUnit &unit) const;
 		/// 
-		bool isHostileTo(const proto::FactionTemplateEntry &faction);
+		bool isHostileTo(const proto::FactionTemplateEntry &faction) const;
 		/// 
-		bool isHostileTo(GameUnit &unit);
+		bool isHostileTo(const GameUnit &unit) const;
 
 		/// Gets the timer queue object needed for countdown events.
 		TimerQueue &getTimers() {
@@ -582,9 +582,9 @@ namespace wowpp
 		/// Determines whether this unit is actually in combat with at least one other unit.
 		bool isInCombat() const;
 		/// Determines whether another game object is in line of sight.
-		bool isInLineOfSight(GameObject &other);
+		bool isInLineOfSight(const GameObject &other) const;
 		/// Determines whether a position is in line of sight.
-		bool isInLineOfSight(const math::Vector3 &position);
+		bool isInLineOfSight(const math::Vector3 &position) const;
 		///
 		bool isMounted() const {
 			return getUInt32Value(unit_fields::MountDisplayId) != 0;
@@ -887,6 +887,8 @@ namespace wowpp
 		float getManaBonusFromIntellect() const;
 		/// 
 		float getMeleeReach() const;
+		/// Determines if this unit is interactable for another unit.
+		bool isInteractableFor(const GameUnit &interactor) const;
 
 	protected:
 

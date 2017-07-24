@@ -1651,4 +1651,64 @@ namespace wowpp
 
 		m_character->setZone(zoneId);
 	}
+
+	void Player::handleRepairItem(game::Protocol::IncomingPacket & packet)
+	{
+		UInt64 npcGuid = 0, itemGuid = 0;
+		UInt8 guildBank = 0;
+		if (!(game::client_read::repairItem(packet, npcGuid, itemGuid, guildBank)))
+		{
+			return;
+		}
+
+		// Find npc guid and perform some checks
+		GameUnit* vendor = dynamic_cast<GameUnit*>(m_character->getWorldInstance()->findObjectByGUID(npcGuid));
+		if (vendor == nullptr)
+		{
+			// Vendor doesn't exist
+			WLOG("Vendor doesn't exist");
+			return;
+		}
+
+		// Also make sure that this npc offers repair support at all
+		if ((vendor->getUInt32Value(unit_fields::NpcFlags) & game::unit_npc_flags::Repair) == 0)
+		{
+			WLOG("Vendor exists and is friendly, but doesn't offer reparation");
+			return;
+		}
+
+		// Perform interaction checks (distance, los, reputation etc.)
+		if (!vendor->isInteractableFor(*m_character))
+		{
+			return;
+		}
+
+		// TODO: Reduce repair price based on reputation
+
+		UInt32 totalCost = 0;
+		if (itemGuid != 0)
+		{
+			// Repair a single item
+			UInt16 itemSlot = 0;
+			if (!m_character->getInventory().findItemByGUID(itemGuid, itemSlot))
+			{
+				WLOG("Item to repair not found in players inventory");
+				return;
+			}
+			
+			// Calculate total cost by item at slot
+			totalCost = m_character->getInventory().repairItem(itemSlot);
+		}
+		else
+		{
+			// Calculate total cost by all items in the inventory
+			totalCost = m_character->getInventory().repairAllItems();
+		}
+
+		if (totalCost > 0)
+		{
+			WLOG("Not enough money");
+			return;
+		}
+	}
 }

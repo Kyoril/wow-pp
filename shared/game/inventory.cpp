@@ -1355,6 +1355,7 @@ namespace wowpp
 		           absoluteSlot >> 8 >= player_inventory_slots::Start &&
 		           absoluteSlot >> 8 < player_inventory_slots::End);
 	}
+
 	bool Inventory::isBagBarSlot(UInt16 absoluteSlot)
 	{
 		return (
@@ -1363,6 +1364,80 @@ namespace wowpp
 			(absoluteSlot & 0xFF) < player_inventory_slots::End
 			);
 	}
+
+	UInt32 Inventory::repairAllItems()
+	{
+		UInt32 totalCost = 0;
+
+		// Repair everything equipped and in main bag
+		for (UInt8 slot = player_equipment_slots::Start; slot < player_inventory_pack_slots::End; ++slot)
+		{
+			totalCost += repairItem(getAbsoluteSlot(player_inventory_slots::Bag_0, slot));
+		}
+
+		// Also check equipped bag contents
+		for (UInt8 bagSlot = player_inventory_slots::Start; bagSlot < player_inventory_slots::End; ++bagSlot)
+		{
+			const UInt16 absoluteBagSlot = getAbsoluteSlot(player_inventory_slots::Bag_0, bagSlot);
+
+			// Check if bag exists
+			auto bag = std::static_pointer_cast<GameBag>(getItemAtSlot(absoluteBagSlot));
+			if (!bag)
+			{
+				continue;
+			}
+
+			// Iterate bag items
+			for (UInt8 bagItemSlot = 0; bagItemSlot < static_cast<UInt8>(bag->getSlotCount()); ++bagItemSlot)
+			{
+				totalCost += repairItem(getAbsoluteSlot(bagSlot, bagItemSlot));
+			}
+		}
+
+		return totalCost;
+	}
+
+	UInt32 Inventory::repairItem(UInt16 absoluteSlot)
+	{
+		UInt32 totalCost = 0;
+
+		// Look for item instance
+		auto item = getItemAtSlot(absoluteSlot);
+		if (!item)
+		{
+			return totalCost;
+		}
+
+		// Get max durability
+		const UInt32 maxDurability = item->getEntry().durability();
+		if (maxDurability == 0)
+		{
+			return totalCost;
+		}
+
+		// Get current durability
+		const UInt32 durability = item->getUInt32Value(item_fields::Durability);
+		if (durability >= maxDurability)
+		{
+			return totalCost;
+		}
+
+		// Okay, we have something to repair
+		// TODO: Calculate repair cost and try to consume money
+
+		// Repair the item and notify the owner
+		item->setUInt32Value(item_fields::Durability, maxDurability);
+		itemInstanceUpdated(std::cref(item), 0);
+
+		// Reapply item stats if needed
+		if (durability == 0 && isEquipmentSlot(absoluteSlot))
+		{
+			m_owner.applyItemStats(*item, true);
+		}
+
+		return totalCost;
+	}
+
 	void Inventory::addRealmData(const ItemData &data)
 	{
 		m_realmData.push_back(data);

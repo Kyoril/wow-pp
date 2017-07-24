@@ -197,6 +197,13 @@ namespace wowpp
 		/// Determines whether the given slot is a slot in a bag bar.
 		static bool isBagBarSlot(UInt16 absoluteSlot);
 
+		/// Tries to repair all items in the players bags and also consumes money from the owner.
+		/// @returns Repair cost that couldn't be consumed, so if this is greater than 0, there was an error.
+		UInt32 repairAllItems();
+		/// Tries to repair an item at the given slot and also consume money from the owner.
+		/// @returns Repair cost that couldn't be consumed, so if this is greater than 0, there was an error.
+		UInt32 repairItem(UInt16 absoluteSlot);
+
 	public:
 
 		/// Adds a new realm data entry to the inventory. Note that this method should only be called

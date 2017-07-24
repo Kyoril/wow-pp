@@ -2564,6 +2564,32 @@ namespace wowpp
 		return reach > 2.0f ? reach : 2.0f;
 	}
 
+	bool GameUnit::isInteractableFor(const GameUnit & interactor) const
+	{
+		// Check faction
+		if (isHostileTo(interactor))
+		{
+			return false;
+		}
+
+		// Check out of range
+		const float boundingRadius = getFloatValue(unit_fields::BoundingRadius) + interactor.getFloatValue(unit_fields::BoundingRadius);
+		const float interactionDist = 5.0f;
+		const float maxDist = boundingRadius + interactionDist;
+		if (getSquaredDistanceTo(interactor) > (maxDist * maxDist))
+		{
+			return false;
+		}
+
+		// Check line of sight
+		if (!isInLineOfSight(interactor))
+		{
+			return false;
+		}
+
+		return true;
+	}
+
 	void GameUnit::onSpellCastEnded(bool succeeded)
 	{
 		// Check if we need to trigger auto attack again
@@ -2729,18 +2755,18 @@ namespace wowpp
 		factionChanged(*this);
 	}
 
-	bool GameUnit::isHostileToPlayers()
+	bool GameUnit::isHostileToPlayers() const
 	{
 		const UInt32 factionMaskPlayer = 1;
 		return (m_factionTemplate->enemymask() & factionMaskPlayer) != 0;
 	}
 
-	bool GameUnit::isNeutralToAll()
+	bool GameUnit::isNeutralToAll() const
 	{
 		return (m_factionTemplate->enemymask() == 0 && m_factionTemplate->friendmask() == 0 && m_factionTemplate->enemies().empty());
 	}
 
-	bool GameUnit::isFriendlyTo(const proto::FactionTemplateEntry &faction)
+	bool GameUnit::isFriendlyTo(const proto::FactionTemplateEntry &faction) const
 	{
 		if (m_factionTemplate->id() == faction.id())
 		{
@@ -2768,12 +2794,12 @@ namespace wowpp
 		return ((m_factionTemplate->friendmask() & faction.selfmask()) != 0)/* || ((m_factionTemplate->selfmask() & faction.friendmask()) != 0)*/;
 	}
 
-	bool GameUnit::isFriendlyTo(GameUnit &unit)
+	bool GameUnit::isFriendlyTo(GameUnit &unit) const
 	{
 		return isFriendlyTo(unit.getFactionTemplate());
 	}
 
-	bool GameUnit::isHostileTo(const proto::FactionTemplateEntry &faction)
+	bool GameUnit::isHostileTo(const proto::FactionTemplateEntry &faction) const
 	{
 		if (m_factionTemplate->id() == faction.id())
 		{
@@ -2813,7 +2839,7 @@ namespace wowpp
 		return false;
 	}
 
-	bool GameUnit::isHostileTo(GameUnit &unit)
+	bool GameUnit::isHostileTo(const GameUnit &unit) const
 	{
 		return isHostileTo(unit.getFactionTemplate());
 	}
@@ -2823,13 +2849,13 @@ namespace wowpp
 		return ((getUInt32Value(unit_fields::UnitFlags) & game::unit_flags::InCombat) != 0);
 	}
 
-	bool GameUnit::isInLineOfSight(GameObject &other)
+	bool GameUnit::isInLineOfSight(const GameObject &other) const
 	{
 		// TODO: Determine unit's height based on unit model for correct line of sight calculation
 		return isInLineOfSight(other.getLocation() + math::Vector3(0.0f, 0.0f, 2.0f));
 	}
 
-	bool GameUnit::isInLineOfSight(const math::Vector3 &position)
+	bool GameUnit::isInLineOfSight(const math::Vector3 &position) const
 	{
 		if (!m_worldInstance) {
 			return false;

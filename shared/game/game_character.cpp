@@ -2395,7 +2395,7 @@ namespace wowpp
 		for (UInt8 i = player_equipment_slots::Start; i < player_equipment_slots::End; ++i)
 		{
 			auto item = m_inventory.getItemAtSlot(Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, i));
-			if (item)
+			if (item && (item->getEntry().durability() == 0 || item->getUInt32Value(item_fields::Durability) > 0))
 			{
 				// Add armor value from item
 				baseArmor += item->getEntry().armor();
@@ -2728,8 +2728,7 @@ namespace wowpp
 
 	void GameCharacter::applyItemStats(GameItem &item, bool apply)
 	{
-		if (item.getEntry().durability() == 0 ||
-		        item.getUInt32Value(item_fields::Durability) > 0)
+		if (item.getEntry().durability() == 0 || item.getUInt32Value(item_fields::Durability) > 0)
 		{
 			// Apply values
 			for (int i = 0; i < item.getEntry().stats_size(); ++i)
@@ -2826,30 +2825,30 @@ namespace wowpp
 					updateResistance(resistMod);
 				}
 			}
-		}
 
-		if (apply)
-		{
-			SpellTargetMap targetMap;
-			targetMap.m_unitTarget = getGuid();
-			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
-
-			for (auto &spell : item.getEntry().spells())
+			if (apply)
 			{
-				// Trigger == onEquip?
-				if (spell.trigger() == game::item_spell_trigger::OnEquip)
+				SpellTargetMap targetMap;
+				targetMap.m_unitTarget = getGuid();
+				targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+
+				for (auto &spell : item.getEntry().spells())
 				{
-					castSpell(targetMap, spell.spell(), { 0, 0, 0 }, 0, true, item.getGuid());
+					// Trigger == onEquip?
+					if (spell.trigger() == game::item_spell_trigger::OnEquip)
+					{
+						castSpell(targetMap, spell.spell(), { 0, 0, 0 }, 0, true, item.getGuid());
+					}
 				}
 			}
-		}
-		else
-		{
-			getAuras().removeAllAurasDueToItem(item.getGuid());
-		}
+			else
+			{
+				getAuras().removeAllAurasDueToItem(item.getGuid());
+			}
 
-		updateArmor();
-		updateDamage();
+			updateArmor();
+			updateDamage();
+		}
 	}
 
 	void GameCharacter::updateManaRegen()

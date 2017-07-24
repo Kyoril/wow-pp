@@ -4198,6 +4198,13 @@ namespace wowpp
 					>> io::read<NetUInt64>(out_guid);
 				return false;
 			}
+			bool repairItem(io::Reader & packet, UInt64 & out_npcGuid, UInt64 & out_itemGuid, UInt8 & out_guildBank)
+			{
+				return packet
+					>> io::read<NetUInt64>(out_npcGuid)
+					>> io::read<NetUInt64>(out_itemGuid)
+					>> io::read<NetUInt8>(out_guildBank);
+			}
 		}
 
 		wowpp::game::WhoResponseEntry::WhoResponseEntry(const GameCharacter & character)

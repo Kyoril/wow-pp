@@ -1078,6 +1078,13 @@ namespace wowpp
 				UInt32 &out_entry,
 				UInt64 &out_guid
 			);
+
+			bool repairItem(
+				io::Reader &packet,
+				UInt64 &out_npcGuid,
+				UInt64 &out_itemGuid,
+				UInt8 &out_guildBank
+			);
 		};
 
 		namespace server_write

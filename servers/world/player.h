@@ -255,6 +255,7 @@ namespace wowpp
 		void handlePlayedTime(game::Protocol::IncomingPacket &packet);
 		void handleAckCode(game::Protocol::IncomingPacket &packet, UInt16 opCode);
 		void handleZoneUpdate(game::Protocol::IncomingPacket &packet);
+		void handleRepairItem(game::Protocol::IncomingPacket &packet);
 
 	private:
 
