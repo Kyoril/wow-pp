@@ -51,6 +51,7 @@ namespace wowpp
 	Inventory::Inventory(GameCharacter &owner)
 		: m_owner(owner)
 		, m_freeSlots(player_inventory_pack_slots::End - player_inventory_pack_slots::Start)	// Default slot count with only a backpack
+		, m_nextBuyBackSlot(player_buy_back_slots::Start)
 	{
 		// Warning: m_owner might not be completely constructed at this point
 	}
@@ -518,7 +519,8 @@ namespace wowpp
 
 		return game::inventory_change_failure::Okay;
 	}
-	game::InventoryChangeFailure Inventory::removeItem(UInt16 absoluteSlot, UInt16 stacks/* = 0*/)
+
+	game::InventoryChangeFailure Inventory::removeItem(UInt16 absoluteSlot, UInt16 stacks/* = 0*/, bool sold/* = false*/)
 	{
 		// Try to find item
 		auto it = m_itemsBySlot.find(absoluteSlot);
@@ -572,12 +574,67 @@ namespace wowpp
 			}
 
 			// Notify about destruction
-			itemInstanceDestroyed(item, absoluteSlot);
+			if (!sold)
+				itemInstanceDestroyed(item, absoluteSlot);
 		}
 		else
 		{
 			item->setUInt32Value(item_fields::StackCount, stackCount - stacks);
 			itemInstanceUpdated(it->second, absoluteSlot);
+		}
+
+		// If the item has been sold...
+		if (sold)
+		{
+			// Find the next free buyback slot
+			UInt16 oldestFieldSlot = 0;
+			UInt16 slot = player_buy_back_slots::Start;
+			UInt32 oldestSlotTime = std::numeric_limits<UInt32>::max();
+
+			do
+			{
+				const UInt16 fieldSlot = slot - player_buy_back_slots::Start;
+				const UInt64 buyBackGuid = m_owner.getUInt64Value(character_fields::VendorBuybackSlot_1 + (fieldSlot * 2));
+				if (buyBackGuid == 0)
+				{
+					// Found a free slot
+					break;
+				}
+				else
+				{
+					const UInt32 slotTime = m_owner.getUInt32Value(character_fields::BuybackTimestamp_1 + fieldSlot);
+					if (slotTime < oldestSlotTime)
+					{
+						oldestSlotTime = slotTime;
+						oldestFieldSlot = slot;
+					}
+				}
+			} while (++slot < player_buy_back_slots::End);
+
+			// Check if there is a slot available
+			if (slot >= player_buy_back_slots::End)
+			{
+				// No free slot available, discard the oldest one
+				auto itemInst = m_itemsBySlot[oldestFieldSlot];
+				if (itemInst)
+				{
+					itemInstanceDestroyed(std::cref(itemInst), oldestFieldSlot);
+					m_itemsBySlot.erase(oldestFieldSlot);
+				}
+
+				slot = oldestFieldSlot;
+			}
+
+			const UInt32 slotTime = ::time(nullptr);
+			const UInt16 fieldSlot = slot - player_buy_back_slots::Start;
+
+			// Save in new slot location
+			m_itemsBySlot[slot] = item;
+
+			// Update slots
+			m_owner.setUInt64Value(character_fields::VendorBuybackSlot_1 + (fieldSlot * 2), item->getGuid());
+			m_owner.setUInt32Value(character_fields::BuybackPrice_1 + fieldSlot, item->getEntry().sellprice() * stacks);	// TODO: Use ACTUAL sell price because of rep discount etc.
+			m_owner.setUInt32Value(character_fields::BuybackTimestamp_1 + fieldSlot, slotTime + 30 * 3600);					// Slot time value used for sorting
 		}
 
 		// Quest check
@@ -1365,6 +1422,11 @@ namespace wowpp
 			);
 	}
 
+	bool Inventory::isBuyBackSlot(UInt16 absoluteSlot)
+	{
+		return (absoluteSlot >= player_buy_back_slots::Start && absoluteSlot < player_buy_back_slots::End);
+	}
+
 	UInt32 Inventory::repairAllItems()
 	{
 		UInt32 totalCost = 0;
@@ -1442,6 +1504,7 @@ namespace wowpp
 	{
 		m_realmData.push_back(data);
 	}
+
 	void Inventory::addSpawnBlocks(std::vector<std::vector<char>> &out_blocks)
 	{
 		// Reconstruct realm data if available

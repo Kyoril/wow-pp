@@ -886,6 +886,10 @@ namespace wowpp
 			bool isFirstItem = true;
 			for (auto &item : items)
 			{
+				// Don't save buyback slots into the database!
+				if (Inventory::isBuyBackSlot(item.slot))
+					continue;
+
 				if (!isFirstItem) strm << ",";
 				else
 				{

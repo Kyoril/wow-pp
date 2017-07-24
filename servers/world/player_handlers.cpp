@@ -1023,10 +1023,8 @@ namespace wowpp
 			return;
 		}
 
-		// TODO: Check vendor distance
-
-		// Is currently hostile?
-		if (reinterpret_cast<GameCreature*>(vendor)->isHostileTo(*m_character))
+		// Check interaction conditions
+		if (!reinterpret_cast<GameUnit*>(vendor)->isInteractableFor(*m_character))
 		{
 			sendProxyPacket(
 				std::bind(game::server_write::sellItem, std::placeholders::_1, game::sell_error::CantFindVendor, 0, itemGuid, 0));
@@ -1059,7 +1057,7 @@ namespace wowpp
 			return;
 		}
 
-		m_character->getInventory().removeItem(itemSlot, stack);
+		m_character->getInventory().removeItem(itemSlot, stack, true);
 		m_character->setUInt32Value(character_fields::Coinage, m_character->getUInt32Value(character_fields::Coinage) + money);
 	}
 

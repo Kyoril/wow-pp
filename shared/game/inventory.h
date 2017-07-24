@@ -121,8 +121,9 @@ namespace wowpp
 		/// @param absoluteSlot The item slot to delete from.
 		/// @param stacks The number of stacks to remove. If 0, ALL stacks will be removed. Stacks are capped automatically,
 		///               so that if stacks >= actual item stacks, simply all stacks will be removed as well.
+		/// @param sold If set to true, the item will be moved to the list of buyback items.
 		/// @returns game::inventory_change_failure::Okay if succeeded.
-		game::InventoryChangeFailure removeItem(UInt16 absoluteSlot, UInt16 stacks = 0);
+		game::InventoryChangeFailure removeItem(UInt16 absoluteSlot, UInt16 stacks = 0, bool sold = false);
 		/// Tries to remove an item by it's guid. This is basically just a shortcut to findItemByGUID() and removeItem().
 		/// @param guid The item guid.
 		/// @param stacks The number of stacks to remove. If 0, ALL stacks will be removed. Stacks are capped automatically,
@@ -196,6 +197,8 @@ namespace wowpp
 		static bool isBagSlot(UInt16 absoluteSlot);
 		/// Determines whether the given slot is a slot in a bag bar.
 		static bool isBagBarSlot(UInt16 absoluteSlot);
+		/// Determines whether the given slot is a buyback slot.
+		static bool isBuyBackSlot(UInt16 absoluteSlot);
 
 		/// Tries to repair all items in the players bags and also consumes money from the owner.
 		/// @returns Repair cost that couldn't be consumed, so if this is greater than 0, there was an error.
@@ -253,6 +256,8 @@ namespace wowpp
 		std::map<UInt64, simple::scoped_connection> m_itemDespawnSignals;
 
 		std::map<UInt32, UInt8> m_setItems;
+		/// The next buyback slot to be used.
+		UInt8 m_nextBuyBackSlot;
 	};
 
 	/// Serializes this inventory.
