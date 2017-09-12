@@ -25,17 +25,35 @@
 #  License text for the above reference.)
 
 if( WIN32 )
-	find_path( MYSQL_INCLUDE_DIR
-		NAMES "mysql.h"
-		PATHS "$ENV{ProgramW6432}/MySQL/*/include"
-			  "$ENV{PROGRAMFILES}/MySQL/*/include"
-			  "$ENV{SYSTEMDRIVE}/MySQL/*/include" )
-	
-	find_library( MYSQL_LIBRARY
-		NAMES "mysqlclient" "mysqlclient_r" "libmysql"
-		PATHS "$ENV{ProgramW6432}/MySQL/*/lib"
-		      "$ENV{PROGRAMFILES}/MySQL/*/lib"
-			  "$ENV{SYSTEMDRIVE}/MySQL/*/lib" )
+    set(MYSQL_CONNECTOR_HINTS "$ENV{ProgramW6432}/MySQL/*Connector*/"
+                              "$ENV{PROGRAMFILES}/MySQL/*Connector*/"
+                              "$ENV{SYSTEMDRIVE}/MySQL/*Connector*/" )
+
+    foreach (hint ${MYSQL_CONNECTOR_HINTS})
+        if (NOT MYSQL_INCLUDE_DIR)
+            file(GLOB_RECURSE MYSQL_INCLUDE_DIR "${hint}/include/mysql.h")
+        endif()
+        if (NOT MYSQL_LIBRARY)
+            file(GLOB_RECURSE MYSQL_LIBRARY "${hint}/lib/libmysql.lib")
+        endif()
+        if (NOT MYSQL_LIBRARY)
+            file(GLOB_RECURSE MYSQL_LIBRARY "${hint}/lib/mysqlclient.lib")
+        endif()
+        if (NOT MYSQL_LIBRARY)
+            file(GLOB_RECURSE MYSQL_LIBRARY "${hint}/lib/mysqlclient_r.lib")
+        endif()
+    endforeach(hint)
+
+    if (MYSQL_INCLUDE_DIR)
+        get_filename_component(MYSQL_INCLUDE_DIR ${MYSQL_INCLUDE_DIR} DIRECTORY)
+    endif()
+
+    if(MYSQL_LIBRARY)
+        string(REPLACE ".lib" ".dll" MYSQL_DLL ${MYSQL_LIBRARY})
+        if (NOT EXISTS ${MYSQL_DLL})
+            message(FATAL_ERROR "MySQL DLL matching ${MYSQL_LIBRARY} not found")
+        endif()
+    endif()
 else()
 	find_path( MYSQL_INCLUDE_DIR
 		NAMES "mysql.h"
