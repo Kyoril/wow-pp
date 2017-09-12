@@ -162,6 +162,11 @@ project(WoW)
 	
 	# Add mysql include directories
 	include_directories(${MYSQL_INCLUDE_DIR})
+
+    # Windows machines will need the DLL copied into the bin directory
+    if (WIN32)
+        install(FILES ${MYSQL_DLL} DESTINATION bin)
+    endif()
 	
 	# Build with developer commands
 	option(WOWPP_WITH_DEV_COMMANDS "If checked, developer commands will be available." OFF)
