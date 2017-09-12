@@ -19,15 +19,9 @@
 # and lore are copyrighted by Blizzard Entertainment, Inc.
 # 
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/detour")
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/detour_crowd")
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/detour_tile_cache")
-
 # Include subdirectories
 add_subdirectory(cppformat)
-add_subdirectory(detour)
-add_subdirectory(detour_crowd)
-add_subdirectory(detour_tile_cache)
+add_subdirectory(namigator)
 
 if(WOWPP_BUILD_EDITOR OR WOWPP_BUILD_TOOLS)
 	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/recast")
