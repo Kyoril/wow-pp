@@ -5,7 +5,7 @@ file(GLOB codeFiles
 	"*.cpp"
 )
 
-add_library(base64 ${codeFiles})
+add_library(base64 STATIC ${codeFiles})
 
 # Solution folder
 if(MSVC)

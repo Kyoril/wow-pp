@@ -29,7 +29,7 @@ cmake_minimum_required(VERSION 2.8)
 	source_group(src FILES ${srcFiles})
 	
 	# Add library project
-	add_library(sql_wrapper ${srcFiles})
+	add_library(sql_wrapper STATIC ${srcFiles})
 
 	# Solution folder
 	if(MSVC)

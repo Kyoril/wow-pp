@@ -30,7 +30,7 @@ cmake_minimum_required(VERSION 2.8)
 	source_group(src FILES ${srcFiles})
 	
 	# Add library project
-	add_library(virtual_directory ${srcFiles})
+	add_library(virtual_directory STATIC ${srcFiles})
 	add_precompiled_header(virtual_directory "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 	
 	target_link_libraries(virtual_directory ${Boost_LIBRARIES})

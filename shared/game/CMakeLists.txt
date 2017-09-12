@@ -22,7 +22,7 @@
 # We want at least CMake 2.8
 cmake_minimum_required(VERSION 2.8)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/../../deps/namigator")
 
 # Collect source and header files
 add_lib(game)

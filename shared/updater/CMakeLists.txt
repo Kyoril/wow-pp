@@ -30,7 +30,7 @@ remove_pch_cpp(srcFiles "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp")
 source_group(src FILES ${srcFiles})
 
 # Add library project
-add_library(updater ${srcFiles})
+add_library(updater STATIC ${srcFiles})
 add_precompiled_header(updater "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 
 target_link_libraries(updater 

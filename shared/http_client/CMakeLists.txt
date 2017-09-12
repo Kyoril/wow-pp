@@ -27,7 +27,7 @@ remove_pch_cpp(srcFiles "${CMAKE_CURRENT_SOURCE_DIR}/pch.cpp")
 source_group(src FILES ${srcFiles})
 	
 # Add library project
-add_library(http_client ${srcFiles})
+add_library(http_client STATIC ${srcFiles})
 add_precompiled_header(http_client "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 
 # Link shared libraries

@@ -29,7 +29,7 @@ cmake_minimum_required(VERSION 2.8)
 	source_group(src FILES ${srcFiles})
 	
 	# Add library project
-	add_library(math ${srcFiles})
+	add_library(math STATIC ${srcFiles})
 
 	target_link_libraries(math ${OPENSSL_LIBRARIES})
 

@@ -30,7 +30,7 @@ cmake_minimum_required(VERSION 2.8)
 	source_group(src FILES ${srcFiles})
 	
 	# Add library project
-	add_library(mysql_wrapper ${srcFiles})
+	add_library(mysql_wrapper STATIC ${srcFiles})
 	add_precompiled_header(mysql_wrapper "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 	
 	# Link shared libraries

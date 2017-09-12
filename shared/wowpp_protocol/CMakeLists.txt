@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 2.8)
 	source_group(src\\binary_io FILES ${binaryIOFiles})
 	
 	# Add library project
-	add_library(wowpp_protocol ${srcFiles} ${networkFiles} ${binaryIOFiles})
+	add_library(wowpp_protocol STATIC ${srcFiles} ${networkFiles} ${binaryIOFiles})
 	add_precompiled_header(wowpp_protocol "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 	
 	# Link shared libraries
