@@ -20,6 +20,7 @@
 //
 
 #include "pch.h"
+#include <boost/algorithm/string/predicate.hpp>
 #include "http_incoming_request.h"
 #include "common/constants.h"
 #include "base64/base64.h"
@@ -224,7 +225,7 @@ namespace wowpp
 						return receive_state::Malformed;
 					}
 
-					if (name == "Content-Length")
+					if (boost::iequals(name, "Content-Length"))
 					{
 						estimatedContentLength = atoi(value.c_str());
 					}
