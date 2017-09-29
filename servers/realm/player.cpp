@@ -339,6 +339,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(MailGetBody, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MailTakeMoney, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GetChannelMemberCount, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(SetAmmo, game::session_status::LoggedIn)
 
 #undef WOWPP_HANDLE_PACKET
 #undef QUOTE
@@ -2859,5 +2860,42 @@ namespace wowpp
 		// Match Count is request count right now
 		sendPacket(
 			std::bind(game::server_write::itemNameQueryResponse, std::placeholders::_1, itemEntry, std::cref(name), entry->inventorytype()));
+	}
+
+	void Player::handleSetAmmo(game::IncomingPacket &packet)
+	{
+		UInt32 item = 0;
+
+		if (!m_gameCharacter)
+		{
+			return;
+		}
+
+		if (!(game::client_read::setAmmo(packet, item)))
+		{
+			return;
+		}
+
+		if (!item)
+		{
+			return;
+		}
+
+		if (this->getGameCharacter()->getUInt32Value(character_fields::AmmoId) == item)
+		{
+			return;
+		}
+
+		const auto ammoItem = m_project.items.getById(item);
+
+		if (ammoItem)
+		{
+			if (!ammoItem->has_ammotype())
+			{
+				return;
+			}
+			//ILOG("item: " << item);
+			m_gameCharacter->setUInt32Value(character_fields::AmmoId, item);
+		}
 	}
 }

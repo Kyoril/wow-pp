@@ -4211,6 +4211,11 @@ namespace wowpp
 					>> io::read<NetUInt64>(out_vendorGuid)
 					>> io::read<NetUInt32>(out_slot);
 			}
+			bool setAmmo(io::Reader & packet, UInt32 & out_item)
+			{
+				return packet
+					>> io::read<NetUInt32>(out_item);
+			}				
 		}
 
 		wowpp::game::WhoResponseEntry::WhoResponseEntry(const GameCharacter & character)

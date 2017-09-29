@@ -160,6 +160,7 @@ namespace wowpp
 				MailCreateItemText				= 0x24A,
 				LearnTalent						= 0x251,
 				TogglePvP						= 0x253,
+				SetAmmo							= 0x268,
 				RequestPartyMemberStats			= 0x27F,
 				MailQueryNextTime				= 0x284,
 				GroupRaidConvert				= 0x28E,

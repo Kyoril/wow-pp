@@ -1091,6 +1091,11 @@ namespace wowpp
 				UInt64 &out_vendorGuid,
 				UInt32 &out_slot
 			);
+
+			bool setAmmo(
+				io::Reader &packet,
+				UInt32 &out_item
+			);
 		};
 
 		namespace server_write
