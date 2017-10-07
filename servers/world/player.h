@@ -188,7 +188,10 @@ namespace wowpp
 		void setTradeSession(std::shared_ptr<TradeData> data);
 
 		void applyAmmoBonuses(UInt32 ammoID);
+
 		bool checkAmmoCompatibility(const proto::ItemEntry* item);
+
+		void removeAmmo();
 
 	private:
 

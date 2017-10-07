@@ -1694,7 +1694,9 @@ namespace wowpp
 			return false;
 		}
 			
-		switch (item->subclass())
+		UInt32 subClass = weapon->getEntry().subclass();
+
+		switch (subClass)
 		{
 		case game::ItemSubclassWeapon::Bow:
 			if (item->subclass() != game::item_subclass_projectile::Arrow)

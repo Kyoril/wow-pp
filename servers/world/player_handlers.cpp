@@ -312,6 +312,13 @@ namespace wowpp
 		auto result = inv.swapItems(
 			Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, srcSlot),
 			Inventory::getAbsoluteSlot(player_inventory_slots::Bag_0, dstSlot));
+
+		//if ranged weapon removed
+		if (srcSlot == 17)
+		{
+			removeAmmo();
+		}
+		
 		if (!result)
 		{
 			// An error happened
@@ -1800,7 +1807,7 @@ namespace wowpp
 
 		if (!item)
 		{
-			m_character->setUInt32Value(character_fields::AmmoId, 0);
+			removeAmmo();
 			return;
 		}
 
@@ -1823,6 +1830,12 @@ namespace wowpp
 				applyAmmoBonuses(item);
 			}				
 		}
+	}
+
+	void Player::removeAmmo()
+	{
+		m_character->setUInt32Value(character_fields::AmmoId, 0);
+		applyAmmoBonuses(0);
 	}
 
 }
