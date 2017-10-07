@@ -1693,11 +1693,6 @@ namespace wowpp
 		{
 			return false;
 		}
-
-		if (!weapon || item->itemclass() != game::item_class::Weapon)
-		{
-			return false;
-		}
 			
 		switch (item->subclass())
 		{

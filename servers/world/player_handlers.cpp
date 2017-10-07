@@ -1800,6 +1800,7 @@ namespace wowpp
 
 		if (!item)
 		{
+			m_character->setUInt32Value(character_fields::AmmoId, 0);
 			return;
 		}
 
@@ -1816,9 +1817,12 @@ namespace wowpp
 			{
 				return;
 			}
-			m_character->setUInt32Value(character_fields::AmmoId, item);			
+			if (checkAmmoCompatibility(ammoItem))
+			{
+				m_character->setUInt32Value(character_fields::AmmoId, item);
+				applyAmmoBonuses(item);
+			}				
 		}
-		applyAmmoBonuses(item);
 	}
 
 }
