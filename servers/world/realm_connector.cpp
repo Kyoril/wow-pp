@@ -771,6 +771,7 @@ namespace wowpp
 			WOWPP_HANDLE_PLAYER_PACKET(ZoneUpdate)
 			WOWPP_HANDLE_PLAYER_PACKET(RepairItem)
 			WOWPP_HANDLE_PLAYER_PACKET(BuyBackItem)
+			WOWPP_HANDLE_PLAYER_PACKET(SetAmmo)
 #undef WOWPP_HANDLE_PLAYER_PACKET
 
 			// Movement packets get special treatment

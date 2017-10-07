@@ -339,7 +339,6 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(MailGetBody, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MailTakeMoney, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GetChannelMemberCount, game::session_status::LoggedIn)
-			WOWPP_HANDLE_PACKET(SetAmmo, game::session_status::LoggedIn)
 
 #undef WOWPP_HANDLE_PACKET
 #undef QUOTE
@@ -797,7 +796,7 @@ namespace wowpp
 		// TEST: If it is a hunter, set ammo
 		if (m_gameCharacter->getClass() == char_class::Hunter)
 		{
-			m_gameCharacter->setUInt32Value(character_fields::AmmoId, 2512);
+			//m_gameCharacter->setUInt32Value(character_fields::AmmoId, 2512);
 		}
 
 		// Load the social list
@@ -2862,7 +2861,7 @@ namespace wowpp
 			std::bind(game::server_write::itemNameQueryResponse, std::placeholders::_1, itemEntry, std::cref(name), entry->inventorytype()));
 	}
 
-	void Player::handleSetAmmo(game::IncomingPacket &packet)
+	/*void Player::handleSetAmmo(game::IncomingPacket &packet)
 	{
 		UInt32 item = 0;
 
@@ -2880,7 +2879,7 @@ namespace wowpp
 		{
 			return;
 		}
-
+		UInt32 temp = getGameCharacter()->getUInt32Value(character_fields::AmmoId);
 		if (this->getGameCharacter()->getUInt32Value(character_fields::AmmoId) == item)
 		{
 			return;
@@ -2894,8 +2893,9 @@ namespace wowpp
 			{
 				return;
 			}
-			//ILOG("item: " << item);
+			ILOG("item: " << item);
 			m_gameCharacter->setUInt32Value(character_fields::AmmoId, item);
+			m_gameCharacter->setFloatValue(UnitMods::DamageRanged, 1.0f);
 		}
-	}
+	}*/
 }

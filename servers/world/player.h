@@ -257,6 +257,7 @@ namespace wowpp
 		void handleZoneUpdate(game::Protocol::IncomingPacket &packet);
 		void handleRepairItem(game::Protocol::IncomingPacket &packet);
 		void handleBuyBackItem(game::Protocol::IncomingPacket &packet);
+		void handleSetAmmo(game::IncomingPacket &packet);
 
 	private:
 

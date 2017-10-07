@@ -1783,4 +1783,42 @@ namespace wowpp
 			m_character->setUInt32Value(character_fields::Coinage, coinage - buyBackPrice);
 		}
 	}
+
+	void Player::handleSetAmmo(game::Protocol::IncomingPacket & packet)
+	{
+		UInt32 item = 0;
+
+		if (!m_character)
+		{
+			return;
+		}
+
+		if (!(game::client_read::setAmmo(packet, item)))
+		{
+			return;
+		}
+
+		if (!item)
+		{
+			return;
+		}
+
+		if (m_character->getUInt32Value(character_fields::AmmoId) == item)
+		{
+			return;
+		}
+
+		const auto ammoItem = m_project.items.getById(item);
+
+		if (ammoItem)
+		{
+			if (!ammoItem->has_ammotype())
+			{
+				return;
+			}
+			m_character->setUInt32Value(character_fields::AmmoId, item);
+			
+		}
+	}
+
 }

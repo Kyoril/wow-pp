@@ -327,6 +327,6 @@ namespace wowpp
 		void handleMailTakeMoney(game::IncomingPacket &packet);
 		void handleMailDelete(game::IncomingPacket &packet);
 		void handleGetChannelMemberCount(game::IncomingPacket &packet);
-		void handleSetAmmo(game::IncomingPacket &packet);
+		
 	};
 }
