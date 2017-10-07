@@ -1816,9 +1816,9 @@ namespace wowpp
 			{
 				return;
 			}
-			m_character->setUInt32Value(character_fields::AmmoId, item);
-			
+			m_character->setUInt32Value(character_fields::AmmoId, item);			
 		}
+		applyAmmoBonuses(item);
 	}
 
 }

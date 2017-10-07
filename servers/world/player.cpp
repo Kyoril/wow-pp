@@ -1670,4 +1670,61 @@ namespace wowpp
 		sendProxyPacket(
 			std::bind(game::server_write::sendTradeStatus, std::placeholders::_1, static_cast<UInt32>(status), guid, errorCode != 0, errorCode, itemCategory));
 	}
+
+	void Player::applyAmmoBonuses(UInt32 ammoID)
+	{
+		if (!ammoID)
+		{
+			return;
+		}
+		//TODO
+	}
+
+	bool Player::checkAmmoCompatibility(const proto::ItemEntry* item)
+	{
+		if (!item)
+		{
+			return false;
+		}
+			
+		auto weapon = m_character->getInventory().getWeaponByAttackType(game::WeaponAttack::RangedAttack, true, true);
+
+		if (!weapon)
+		{
+			return false;
+		}
+
+		if (!weapon || item->itemclass() != game::item_class::Weapon)
+		{
+			return false;
+		}
+			
+		switch (item->subclass())
+		{
+		case game::ItemSubclassWeapon::Bow:
+			if (item->subclass() != game::item_subclass_projectile::Arrow)
+			{
+				return false;
+			}
+			break;
+		case game::ItemSubclassWeapon::CrossBow:
+			if (item->subclass() != game::item_subclass_projectile::Arrow)
+			{
+				return false;
+			}
+			break;
+		case game::ItemSubclassWeapon::Gun:
+			if (item->subclass() != game::item_subclass_projectile::Bullet)
+			{
+				return false;
+			}
+			break;
+		default:
+			return false;
+		}
+
+		return true;
+
+	}
+
 }
