@@ -793,12 +793,6 @@ namespace wowpp
 		m_gameCharacter = std::move(character);
 		m_gameCharacter->setZone(charEntry->zoneId);
 
-		// TEST: If it is a hunter, set ammo
-		if (m_gameCharacter->getClass() == char_class::Hunter)
-		{
-			//m_gameCharacter->setUInt32Value(character_fields::AmmoId, 2512);
-		}
-
 		// Load the social list
 		m_social.reset(new PlayerSocial(m_manager, *this));
 		m_database.getCharacterSocialList(m_characterId, *m_social);
@@ -2860,42 +2854,4 @@ namespace wowpp
 		sendPacket(
 			std::bind(game::server_write::itemNameQueryResponse, std::placeholders::_1, itemEntry, std::cref(name), entry->inventorytype()));
 	}
-
-	/*void Player::handleSetAmmo(game::IncomingPacket &packet)
-	{
-		UInt32 item = 0;
-
-		if (!m_gameCharacter)
-		{
-			return;
-		}
-
-		if (!(game::client_read::setAmmo(packet, item)))
-		{
-			return;
-		}
-
-		if (!item)
-		{
-			return;
-		}
-		UInt32 temp = getGameCharacter()->getUInt32Value(character_fields::AmmoId);
-		if (this->getGameCharacter()->getUInt32Value(character_fields::AmmoId) == item)
-		{
-			return;
-		}
-
-		const auto ammoItem = m_project.items.getById(item);
-
-		if (ammoItem)
-		{
-			if (!ammoItem->has_ammotype())
-			{
-				return;
-			}
-			ILOG("item: " << item);
-			m_gameCharacter->setUInt32Value(character_fields::AmmoId, item);
-			m_gameCharacter->setFloatValue(UnitMods::DamageRanged, 1.0f);
-		}
-	}*/
 }
