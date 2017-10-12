@@ -189,7 +189,7 @@ namespace wowpp
 
 		void applyAmmoBonuses(UInt32 ammoID);
 
-		bool checkAmmoCompatibility(const proto::ItemEntry* item);
+		bool checkAmmoCompatibility(const proto::ItemEntry& item);
 
 		void removeAmmo();
 

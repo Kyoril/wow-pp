@@ -1824,7 +1824,8 @@ namespace wowpp
 			{
 				return;
 			}
-			if (checkAmmoCompatibility(ammoItem))
+			wowpp::proto::ItemEntry &itemRef = reinterpret_cast<wowpp::proto::ItemEntry&>(*ammoItem);
+			if (checkAmmoCompatibility(itemRef))
 			{
 				m_character->setUInt32Value(character_fields::AmmoId, item);
 				applyAmmoBonuses(item);

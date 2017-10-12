@@ -1680,13 +1680,8 @@ namespace wowpp
 		//TODO
 	}
 
-	bool Player::checkAmmoCompatibility(const proto::ItemEntry* item)
+	bool Player::checkAmmoCompatibility(const proto::ItemEntry& item)
 	{
-		if (!item)
-		{
-			return false;
-		}
-			
 		auto weapon = m_character->getInventory().getWeaponByAttackType(game::WeaponAttack::RangedAttack, true, true);
 
 		if (!weapon)
@@ -1699,19 +1694,19 @@ namespace wowpp
 		switch (subClass)
 		{
 		case game::ItemSubclassWeapon::Bow:
-			if (item->subclass() != game::item_subclass_projectile::Arrow)
+			if (item.subclass() != game::item_subclass_projectile::Arrow)
 			{
 				return false;
 			}
 			break;
 		case game::ItemSubclassWeapon::CrossBow:
-			if (item->subclass() != game::item_subclass_projectile::Arrow)
+			if (item.subclass() != game::item_subclass_projectile::Arrow)
 			{
 				return false;
 			}
 			break;
 		case game::ItemSubclassWeapon::Gun:
-			if (item->subclass() != game::item_subclass_projectile::Bullet)
+			if (item.subclass() != game::item_subclass_projectile::Bullet)
 			{
 				return false;
 			}
