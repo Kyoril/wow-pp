@@ -54,6 +54,7 @@
 #include <iterator>
 #include <exception>
 #include <type_traits>
+#include <thread>
 
 // Boost Libraies
 #include <boost/optional.hpp>
@@ -66,7 +67,6 @@
 #include <boost/iostreams/concepts.hpp>
 #include <boost/uuid/sha1.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/thread.hpp>
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>

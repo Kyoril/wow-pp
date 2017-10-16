@@ -57,7 +57,6 @@
 #include <boost/iostreams/concepts.hpp>
 #include <boost/uuid/sha1.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/thread.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/type_traits/is_float.hpp>

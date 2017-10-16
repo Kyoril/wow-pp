@@ -96,8 +96,9 @@ namespace wowpp
 
 		if (options.displayTime)
 		{
+			const auto timeT = std::chrono::system_clock::to_time_t(entry.time);
 			stream
-			        << entry.time
+			        << std::put_time(std::localtime(&timeT), "%Y-%b-%d %H:%M:%S")
 			        << stream.widen(' ');
 		}
 

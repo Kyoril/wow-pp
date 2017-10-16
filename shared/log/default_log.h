@@ -40,7 +40,7 @@ namespace wowpp
 		::wowpp::g_DefaultLog.signal()( \
 		                                ::wowpp::LogEntry(level, \
 		                                        WOWPP_LOG_FORMATTER_NAME.str(), \
-		                                        ::boost::posix_time::second_clock::local_time() \
+		                                        ::std::chrono::system_clock::now() \
 		                                                 ) \
 		                              ); \
 	}

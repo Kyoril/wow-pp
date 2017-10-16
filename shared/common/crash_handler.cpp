@@ -22,6 +22,7 @@
 #include "pch.h"
 #include "crash_handler.h"
 #include "log/default_log_levels.h"
+#include <chrono>
 
 #ifdef _MSC_VER
 #	include <windows.h>
@@ -163,12 +164,13 @@ namespace wowpp
 		{
 			{
 				std::ostringstream fileName;
-				fileName.imbue(std::locale(std::cout.getloc(),
-				                           new boost::posix_time::time_facet("%Y_%m_%d_%H_%M_%S")));
 
-				const boost::posix_time::ptime currentTime =
-				    boost::posix_time::second_clock::local_time();
-				fileName << "backtrace_" << currentTime << ".txt";
+
+				auto now = std::chrono::system_clock::now();
+				auto timeT = std::chrono::system_clock::to_time_t(now);
+
+				std::ostringstream fileName;
+				fileName << "backtrace_" << std::put_time(std::localtime(&timeT), "%Y_%m_%d_%H_%M_%S") << ".txt";
 
 				std::ofstream backtraceFile(fileName.str());
 				if (!backtraceFile)

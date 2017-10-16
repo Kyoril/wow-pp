@@ -22,12 +22,13 @@
 #pragma once
 
 #include "common/typedefs.h"
+#include <chrono>
 
 namespace wowpp
 {
 	struct LogLevel;
 
-	typedef boost::posix_time::ptime LogTime;
+	typedef std::chrono::time_point<std::chrono::system_clock> LogTime;
 
 
 	class LogEntry
