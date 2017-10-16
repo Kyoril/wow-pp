@@ -47,6 +47,6 @@ namespace wowpp
 
 		boost::asio::io_service m_queue;
 		std::unique_ptr<boost::asio::io_service::work> m_keepWorkerAlive;
-		boost::thread m_worker;
+		std::thread m_worker;
 	};
 }

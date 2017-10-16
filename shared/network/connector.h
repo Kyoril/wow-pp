@@ -157,7 +157,7 @@ namespace wowpp
 	{
 		const typename Super::Socket::endpoint_type endpoint(
 		    iterator->endpoint().address(),
-		    static_cast<boost::uint16_t>(m_port)
+		    static_cast<std::uint16_t>(m_port)
 		);
 
 		const auto this_ = std::static_pointer_cast<Connector<P, MySocket> >(this->shared_from_this());

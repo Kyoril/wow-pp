@@ -33,6 +33,10 @@ project(WoW)
 	# Enable solution folders in msvc
 	if(MSVC)
 		set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+		
+		# Disable iterator debugging on MSVC++ as it extremely slows down debugging!
+		add_definitions("-D_HAS_ITERATOR_DEBUGGING=0")
+		#add_definitions("-D_ITERATOR_DEBUG_LEVEL=0")
 	endif(MSVC)
 
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

@@ -273,7 +273,6 @@ namespace wowpp
 #error Looks like an unsupported operating system
 #endif
 
-
 namespace wowpp
 {
 	std::unique_ptr<CrashHandler> CrashHandler::m_instance;

@@ -21,6 +21,9 @@
 
 #include "pch.h"
 #include "background_worker.h"
+#include <mutex>
+#include <condition_variable>
+#include <thread>
 
 namespace wowpp
 {
@@ -43,19 +46,19 @@ namespace wowpp
 	void BackgroundWorker::flush()
 	{
 		//this works with exactly one worker thread
-		boost::mutex mutex;
+		std::mutex mutex;
 		bool hasFinished = false;
-		boost::condition_variable finished;
+		std::condition_variable finished;
 		m_queue.post(
 		    [&]()
 		{
 			{
-				boost::mutex::scoped_lock lock(mutex);
+				std::unique_lock<std::mutex> lock(mutex);
 				hasFinished = true;
 				finished.notify_one();
 			}
 		});
-		boost::unique_lock<boost::mutex> lock(mutex);
+		std::unique_lock<std::mutex> lock(mutex);
 		while (!hasFinished)
 		{
 			finished.wait(lock);
