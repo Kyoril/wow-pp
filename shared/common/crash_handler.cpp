@@ -163,9 +163,6 @@ namespace wowpp
 		void handleSignal(int number)
 		{
 			{
-				std::ostringstream fileName;
-
-
 				auto now = std::chrono::system_clock::now();
 				auto timeT = std::chrono::system_clock::to_time_t(now);
 
