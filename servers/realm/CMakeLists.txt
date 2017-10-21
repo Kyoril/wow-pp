@@ -37,7 +37,7 @@ cmake_minimum_required(VERSION 2.8)
 	
 	# Link required shared libs
 	target_link_libraries(realm common log game_protocol wowpp_protocol sql_wrapper mysql_wrapper virtual_directory game base64 http web_services proto_data math detour)
-	
+
 	# Link dependency libraries
 	target_link_libraries(realm ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY} ${PROTOBUF_LIBRARIES} cppformat)
 	if(UNIX AND NOT APPLE)

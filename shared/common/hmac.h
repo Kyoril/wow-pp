@@ -37,7 +37,10 @@ namespace wowpp
 		HMACHash finalizeHash();
 
 	private:
-
+	
+		struct hmac_ctx_st* getContext();
+		
+	private:
 		//hack to save us from including openssl/sha.h everywhere
 		struct Context;
 		std::shared_ptr<Context> m_context;

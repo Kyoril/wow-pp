@@ -28,10 +28,36 @@
 
 namespace wowpp
 {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 	struct OpenSSL_HMACHashSink::Context : HMAC_CTX
 	{
-
 	};
+	
+#else
+	struct OpenSSL_HMACHashSink::Context
+	{
+		HMAC_CTX* Ctx;
+		
+		Context()
+			: Ctx(nullptr)
+		{		
+		}
+		Context(const std::array<unsigned char, 16>& key)
+			: Ctx(nullptr)
+		{
+			Ctx = HMAC_CTX_new();
+			HMAC_Init_ex(Ctx, key.data(), key.size(), EVP_sha1(), nullptr);
+		}
+		~Context()
+		{
+			if (Ctx)
+			{
+				HMAC_CTX_free(Ctx);
+				Ctx = nullptr;
+			}
+		}
+	};
+#endif
 
 	OpenSSL_HMACHashSink::OpenSSL_HMACHashSink()
 	{
@@ -50,9 +76,9 @@ namespace wowpp
 		}
 
 #ifdef __APPLE__
-		HMAC_Update(m_context.get(), reinterpret_cast<const unsigned char *>(data), static_cast<size_t>(length));
+		HMAC_Update(reinterpret_cast<HMAC_CTX*>(getContext()), reinterpret_cast<const unsigned char *>(data), static_cast<size_t>(length));
 #else
-		if (!HMAC_Update(m_context.get(), reinterpret_cast<const unsigned char *>(data), static_cast<size_t>(length)))
+		if (!HMAC_Update(reinterpret_cast<HMAC_CTX*>(getContext()), reinterpret_cast<const unsigned char *>(data), static_cast<size_t>(length)))
 		{
 			throw std::runtime_error("HMAC_Update failed");
 		}
@@ -68,9 +94,9 @@ namespace wowpp
 		unsigned int len = 0;
 
 #ifdef __APPLE__
-		HMAC_Final(m_context.get(), digest.data(), &len);
+		HMAC_Final(reinterpret_cast<HMAC_CTX*>(getContext()), digest.data(), &len);
 #else
-		if (!HMAC_Final(m_context.get(), digest.data(), &len))
+		if (!HMAC_Final(reinterpret_cast<HMAC_CTX*>(getContext()), digest.data(), &len))
 		{
 			throw std::runtime_error("HMAC_Final failed");
 		}
@@ -81,6 +107,16 @@ namespace wowpp
 		return digest;
 	}
 
+	hmac_ctx_st* OpenSSL_HMACHashSink::getContext()
+	{
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+		return m_context.get();
+#else
+		return reinterpret_cast<hmac_ctx_st*>(m_context->Ctx);
+#endif
+
+	}
+	
 	void OpenSSL_HMACHashSink::createContext()
 	{
 		// Setup key
@@ -101,7 +137,8 @@ namespace wowpp
 		m_key[i++] = 0x04;
 		m_key[i++] = 0xE2;
 		m_key[i++] = 0xAA;
-
+		
+ #if OPENSSL_VERSION_NUMBER < 0x10100000L
 		m_context = std::make_shared<Context>();
 		HMAC_CTX_init(m_context.get());
 #ifdef __APPLE__
@@ -112,6 +149,10 @@ namespace wowpp
 			throw std::runtime_error("HMAC_Init_ex failed");
 		}
 #endif
+#else
+		m_context = std::make_shared<Context>(std::ref(m_key));
+#endif
+
 	}
 
 
