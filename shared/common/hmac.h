@@ -29,6 +29,13 @@ namespace wowpp
 	/// Generates a HMAC hash.
 	struct OpenSSL_HMACHashSink : boost::iostreams::sink
 	{
+	private:
+
+		//hack to save us from including openssl/sha.h everywhere
+		struct Context;
+
+	public:
+
 		typedef char char_type;
 		typedef boost::iostreams::sink_tag category;
 
@@ -37,12 +44,14 @@ namespace wowpp
 		HMACHash finalizeHash();
 
 	private:
-	
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+		Context* getContext();
+#else
 		struct hmac_ctx_st* getContext();
-		
+#endif
+
 	private:
-		//hack to save us from including openssl/sha.h everywhere
-		struct Context;
 		std::shared_ptr<Context> m_context;
 
 		void createContext();

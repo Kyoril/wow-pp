@@ -107,15 +107,17 @@ namespace wowpp
 		return digest;
 	}
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+	OpenSSL_HMACHashSink::Context* OpenSSL_HMACHashSink::getContext()
+	{
+		return m_context.get();
+	}
+#else
 	hmac_ctx_st* OpenSSL_HMACHashSink::getContext()
 	{
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-		return m_context.get();
-#else
 		return reinterpret_cast<hmac_ctx_st*>(m_context->Ctx);
-#endif
-
 	}
+#endif
 	
 	void OpenSSL_HMACHashSink::createContext()
 	{
