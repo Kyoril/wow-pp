@@ -130,7 +130,7 @@ project(WoW)
 	
 	# Find boost
 	set(Boost_USE_STATIC_LIBS ON)
-	find_package(Boost 1.65.1 REQUIRED COMPONENTS system date_time iostreams filesystem regex chrono program_options unit_test_framework)
+	find_package(Boost 1.58.0 REQUIRED COMPONENTS system date_time iostreams filesystem regex chrono program_options unit_test_framework)
 	
 	# Find protobuf
 	find_package(Protobuf REQUIRED)
