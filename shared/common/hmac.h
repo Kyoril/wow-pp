@@ -21,6 +21,8 @@
 
 #pragma once
 
+#include <openssl/opensslv.h>
+
 namespace wowpp
 {
 	/// Represents a SHA1 hash in it's binary form
