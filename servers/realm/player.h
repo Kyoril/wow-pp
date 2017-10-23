@@ -84,6 +84,7 @@ namespace wowpp
 	/// Player connection class.
 	class Player final
 			: public game::IConnectionListener
+			, public std::enable_shared_from_this<Player>
 	{
 	private:
 

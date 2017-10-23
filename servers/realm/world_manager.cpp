@@ -41,7 +41,7 @@ namespace wowpp
 		const auto w = std::find_if(
 		                   m_worlds.begin(),
 						   m_worlds.end(),
-		                   [&world](const std::unique_ptr<World> &w)
+		                   [&world](const WorldPtr &w)
 		{
 			return (&world == w.get());
 		});
@@ -59,10 +59,10 @@ namespace wowpp
 		return m_worlds.size() >= m_worldCapacity;
 	}
 
-	void WorldManager::addWorld(std::unique_ptr<World> added)
+	void WorldManager::addWorld(std::shared_ptr<World> added)
 	{
 		ASSERT(added);
-		m_worlds.push_back(std::move(added));
+		m_worlds.push_back(added);
 	}
 
 	World * WorldManager::getWorldByMapId(UInt32 mapId)
@@ -70,7 +70,7 @@ namespace wowpp
 		const auto w = std::find_if(
 			m_worlds.begin(),
 			m_worlds.end(),
-			[mapId](const std::unique_ptr<World> &w)
+			[mapId](const WorldPtr &w)
 		{
 			return w->isMapSupported(mapId);
 		});
@@ -88,7 +88,7 @@ namespace wowpp
 		const auto w = std::find_if(
 			m_worlds.begin(),
 			m_worlds.end(),
-			[instanceId](const std::unique_ptr<World> &w)
+			[instanceId](const WorldPtr &w)
 		{
 			return w->hasInstance(instanceId);
 		});

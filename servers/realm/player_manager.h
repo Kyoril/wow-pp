@@ -39,7 +39,8 @@ namespace wowpp
 
 	public:
 
-		typedef std::vector<std::unique_ptr<Player>> Players;
+		typedef std::shared_ptr<Player> PlayerPtr;
+		typedef std::vector<PlayerPtr> Players;
 
 	public:
 
@@ -62,7 +63,7 @@ namespace wowpp
 		/// Determines whether the player capacity limit has been reached.
 		bool hasPlayerCapacityBeenReached() const;
 		/// Adds a new player instance to the manager.
-		void addPlayer(std::unique_ptr<Player> added);
+		void addPlayer(PlayerPtr added);
 		/// Gets a player by his account name.
 		Player *getPlayerByAccountName(const String &accountName);
 		/// Gets a player by his character database id.

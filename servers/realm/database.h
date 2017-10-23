@@ -67,7 +67,6 @@ namespace wowpp
 		virtual bool setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) = 0;
 		virtual bool teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome = false) = 0;
 		virtual bool learnSpell(DatabaseId characterId, UInt32 spellId) = 0;
-
 		virtual bool createGroup(UInt64 groupId, UInt64 leader) = 0;
 		virtual bool disbandGroup(UInt64 groupId) = 0;
 		virtual bool addGroupMember(UInt64 groupId, UInt64 member) = 0;
@@ -143,35 +142,7 @@ namespace wowpp
 		explicit AsyncDatabase(IDatabase &database,
 			ActionDispatcher asyncWorker,
 			ActionDispatcher resultDispatcher);
-
-		/**
-		* @brief asyncRequest begins an async request to the database. The
-		* handler will eventually be called by the result dispatcher at most
-		* once. It will be called if there is no unexpected internal error.
-		* The handler is expected to accept exactly one argument whose type
-		* depends on the result of the database method.
-		* @param handler is expected to be a functor taking exactly one
-		* argument. The argument type is {@link wowpp::RequestStatus} if the
-		* result type of the method is void. The argument type is
-		* {@link boost::optional} of the result type for every result type
-		* other than void. The handler is called at most once and its result
-		* is ignored. The behavior is undefined when the handler throws.
-		* @param b0 is the first argument to the database method.
-		*/
-		template <class ResultHandler, class Result, class A0, class B0_>
-		void asyncRequest(ResultHandler &&handler,
-			Result(IDatabase::*method)(A0),
-			B0_ &&b0)
-		{
-			auto request = std::bind(method, &m_database, std::forward<B0_>(b0));
-			auto processor = [this, request, handler]() -> void
-			{
-				detail::RequestProcessor<Result> proc;
-				return proc(m_resultDispatcher, request, handler);
-			};
-			m_asyncWorker(processor);
-		}
-
+		
 		template <class Result, class ResultHandler, class RequestFunction>
 		void asyncRequest(ResultHandler &&handler,
 			RequestFunction &&request)

@@ -50,7 +50,7 @@ namespace wowpp
 		const auto p = std::find_if(
 		                   m_players.begin(),
 		                   m_players.end(),
-		                   [&player](const std::unique_ptr<Player> &p)
+		                   [&player](const PlayerPtr &p)
 		{
 			return (&player == p.get());
 		});
@@ -63,10 +63,10 @@ namespace wowpp
 		return m_players.size() >= m_playerCapacity;
 	}
 
-	void PlayerManager::addPlayer(std::unique_ptr<Player> added)
+	void PlayerManager::addPlayer(PlayerPtr added)
 	{
 		ASSERT(added);
-		m_players.push_back(std::move(added));
+		m_players.push_back(added);
 
 		// Send SMSG_AUTH_CHALLENGE to client
 		m_players.back()->sendAuthChallenge();
@@ -77,7 +77,7 @@ namespace wowpp
 		const auto p = std::find_if(
 			m_players.begin(),
 			m_players.end(),
-			[&accountName](const std::unique_ptr<Player> &p)
+			[&accountName](const PlayerPtr &p)
 		{
 			return (accountName == p->getAccountName());
 		});
@@ -102,7 +102,7 @@ namespace wowpp
 		const auto p = std::find_if(
 			m_players.begin(),
 			m_players.end(),
-			[&id](const std::unique_ptr<Player> &p)
+			[&id](const PlayerPtr &p)
 		{
 			return (id == p->getCharacterId());
 		});
@@ -127,7 +127,7 @@ namespace wowpp
 		const auto p = std::find_if(
 			m_players.begin(),
 			m_players.end(),
-			[&id](const std::unique_ptr<Player> &p)
+			[&id](const PlayerPtr &p)
 		{
 			return (id == p->getWorldObjectId());
 		});
@@ -151,7 +151,7 @@ namespace wowpp
 		const auto p = std::find_if(
 			m_players.begin(),
 			m_players.end(),
-			[&name](const std::unique_ptr<Player> &p)
+			[&name](const PlayerPtr &p)
 		{
 			auto *character = p->getGameCharacter();
 			if (character)
