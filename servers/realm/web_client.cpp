@@ -393,7 +393,7 @@ namespace wowpp
 					auto &database = static_cast<WebService &>(this->getService()).getDatabase();
 
 					// Check character limit
-					if (database.getCharacterCount(accountId) > 11)
+					if (database.getCharacterCount(accountId).get_value_or(0) > 11)
 					{
 						sendXmlAnswer(response, "<status>CHARACTER_REALM_LIMIT</status>");
 						break;

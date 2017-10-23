@@ -47,13 +47,13 @@ namespace wowpp
 		/// @copydoc wowpp::IDatabase::renameCharacter
 		game::ResponseCode renameCharacter(DatabaseId id, const String &newName) override;
 		/// @copydoc wowpp::IDatabase::getCharacterCount
-		UInt32 getCharacterCount(UInt32 accountId) override;
+		boost::optional<UInt32> getCharacterCount(UInt32 accountId) override;
 		/// @copydoc wowpp::IDatabase::createCharacter
 		game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<ItemData> &items, game::CharEntry &character) override;
 		/// @copydoc wowpp::IDatabase::createCharacterById
-		bool getCharacterById(DatabaseId id, game::CharEntry &out_character) override;
+		boost::optional<game::CharEntry> getCharacterById(DatabaseId id) override;
 		/// @copydoc wowpp::IDatabase::createCharacterByName
-		bool getCharacterByName(const String &name, game::CharEntry &out_character) override;
+		boost::optional<game::CharEntry> getCharacterByName(const String &name) override;
 		/// @copydoc wowpp::IDatabase::getCharacters
 		bool getCharacters(UInt32 accountId, game::CharEntries &out_characters) override;
 		/// @copydoc wowpp::IDatabase::deleteCharacter

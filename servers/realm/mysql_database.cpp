@@ -95,35 +95,33 @@ namespace wowpp
 		return game::response_code::CharNameFailure;
 	}
 
-	wowpp::UInt32 MySQLDatabase::getCharacterCount(UInt32 accountId)
+	boost::optional<UInt32> MySQLDatabase::getCharacterCount(UInt32 accountId)
 	{
 		UInt32 retCount = 0;
 
 		wowpp::MySQL::Select select(m_connection,
 			fmt::format("SELECT COUNT(id) FROM `character` WHERE `account`={0}"
 			, accountId));
-
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);
 			if (row)
 			{
 				row.getField(0, retCount);
+				return retCount;
 			}
 			else
 			{
-				// No row found: Account does not exist
-				return retCount;
+				return 0;
 			}
 		}
 		else
 		{
 			// There was an error
 			printDatabaseError();
-			return retCount;
 		}
 
-		return retCount;
+		return {};
 	}
 
 	game::ResponseCode MySQLDatabase::createCharacter(
@@ -1023,7 +1021,7 @@ namespace wowpp
 		ASSERT(false);
 	}
 
-	bool MySQLDatabase::getCharacterById(DatabaseId id, game::CharEntry &out_character)
+	boost::optional<game::CharEntry> MySQLDatabase::getCharacterById(DatabaseId id)
 	{
 		UInt32 lowerPart = guidLowerPart(id);
 		wowpp::MySQL::Select select(m_connection,
@@ -1039,58 +1037,57 @@ namespace wowpp
 			{
 				UInt32 bytes = 0, bytes2 = 0;
 
+				// Create temporary character entry for the results
+				game::CharEntry entry;
+
 				// Basic stuff
-				row.getField(0, out_character.id);
-				row.getField(1, out_character.name);
+				row.getField(0, entry.id);
+				row.getField(1, entry.name);
 
 				// Display
 				UInt32 tmp = 0;
 				row.getField(2, tmp);
-				out_character.race = static_cast<game::Race>(tmp);
+				entry.race = static_cast<game::Race>(tmp);
 				row.getField(3, tmp);
-				out_character.class_ = static_cast<game::CharClass>(tmp);
+				entry.class_ = static_cast<game::CharClass>(tmp);
 				row.getField(4, tmp);
-				out_character.gender = static_cast<game::Gender>(tmp);
+				entry.gender = static_cast<game::Gender>(tmp);
 				row.getField(5, bytes);
 				row.getField(6, bytes2);
 				row.getField(7, tmp);
-				out_character.level = static_cast<UInt8>(tmp);
+				entry.level = static_cast<UInt8>(tmp);
 
 				// Placement
-				row.getField(8, out_character.mapId);
-				row.getField(9, out_character.zoneId);
-				row.getField(10, out_character.location.x);
-				row.getField(11, out_character.location.y);
-				row.getField(12, out_character.location.z);
-				row.getField(13, out_character.o);
+				row.getField(8, entry.mapId);
+				row.getField(9, entry.zoneId);
+				row.getField(10, entry.location.x);
+				row.getField(11, entry.location.y);
+				row.getField(12, entry.location.z);
+				row.getField(13, entry.o);
 
 				Int32 cinematic = 0;
 				row.getField(14, cinematic);
-				out_character.cinematic = (cinematic != 0);
+				entry.cinematic = (cinematic != 0);
 
 				// Reinterpret bytes
-				out_character.skin = static_cast<UInt8>(bytes);
-				out_character.face = static_cast<UInt8>(bytes >> 8);
-				out_character.hairStyle = static_cast<UInt8>(bytes >> 16);
-				out_character.hairColor = static_cast<UInt8>(bytes >> 24);
-				out_character.facialHair = static_cast<UInt8>(bytes2 & 0xff);
-			}
-			else
-			{
-				return false;
+				entry.skin = static_cast<UInt8>(bytes);
+				entry.face = static_cast<UInt8>(bytes >> 8);
+				entry.hairStyle = static_cast<UInt8>(bytes >> 16);
+				entry.hairColor = static_cast<UInt8>(bytes >> 24);
+				entry.facialHair = static_cast<UInt8>(bytes2 & 0xff);
+				return entry;
 			}
 		}
 		else
 		{
 			// There was an error
 			printDatabaseError();
-			return false;
 		}
 
-		return true;
+		return {};
 	}
 
-	bool MySQLDatabase::getCharacterByName(const String &name, game::CharEntry &out_character)
+	boost::optional<game::CharEntry> MySQLDatabase::getCharacterByName(const String &name)
 	{
 		wowpp::MySQL::Select select(m_connection,
 			//      0     1       2       3        4        5       6        7       8    
@@ -1105,55 +1102,54 @@ namespace wowpp
 			{
 				UInt32 bytes = 0, bytes2 = 0;
 
+				// Create temporary character entry for the results
+				game::CharEntry entry;
+
 				// Basic stuff
-				row.getField(0, out_character.id);
-				row.getField(1, out_character.name);
+				row.getField(0, entry.id);
+				row.getField(1, entry.name);
 
 				// Display
 				UInt32 tmp = 0;
 				row.getField(2, tmp);
-				out_character.race = static_cast<game::Race>(tmp);
+				entry.race = static_cast<game::Race>(tmp);
 				row.getField(3, tmp);
-				out_character.class_ = static_cast<game::CharClass>(tmp);
+				entry.class_ = static_cast<game::CharClass>(tmp);
 				row.getField(4, tmp);
-				out_character.gender = static_cast<game::Gender>(tmp);
+				entry.gender = static_cast<game::Gender>(tmp);
 				row.getField(5, bytes);
 				row.getField(6, bytes2);
 				row.getField(7, tmp);
-				out_character.level = static_cast<UInt8>(tmp);
+				entry.level = static_cast<UInt8>(tmp);
 
 				// Placement
-				row.getField(8, out_character.mapId);
-				row.getField(9, out_character.zoneId);
-				row.getField(10, out_character.location.x);
-				row.getField(11, out_character.location.y);
-				row.getField(12, out_character.location.z);
-				row.getField(13, out_character.o);
+				row.getField(8, entry.mapId);
+				row.getField(9, entry.zoneId);
+				row.getField(10, entry.location.x);
+				row.getField(11, entry.location.y);
+				row.getField(12, entry.location.z);
+				row.getField(13, entry.o);
 
 				Int32 cinematic = 0;
 				row.getField(14, cinematic);
-				out_character.cinematic = (cinematic != 0);
+				entry.cinematic = (cinematic != 0);
 
 				// Reinterpret bytes
-				out_character.skin = static_cast<UInt8>(bytes);
-				out_character.face = static_cast<UInt8>(bytes >> 8);
-				out_character.hairStyle = static_cast<UInt8>(bytes >> 16);
-				out_character.hairColor = static_cast<UInt8>(bytes >> 24);
-				out_character.facialHair = static_cast<UInt8>(bytes2 & 0xff);
-			}
-			else
-			{
-				return false;
+				entry.skin = static_cast<UInt8>(bytes);
+				entry.face = static_cast<UInt8>(bytes >> 8);
+				entry.hairStyle = static_cast<UInt8>(bytes >> 16);
+				entry.hairColor = static_cast<UInt8>(bytes >> 24);
+				entry.facialHair = static_cast<UInt8>(bytes2 & 0xff);
+				return entry;
 			}
 		}
 		else
 		{
 			// There was an error
 			printDatabaseError();
-			return false;
 		}
 
-		return true;
+		return {};
 	}
 
 	bool MySQLDatabase::getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social)

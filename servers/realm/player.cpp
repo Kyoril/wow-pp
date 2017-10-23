@@ -444,8 +444,16 @@ namespace wowpp
 
 		// Get number of characters on this account
 		const UInt32 maxCharacters = 11;
-		UInt32 numCharacters = m_database.getCharacterCount(m_accountId);
-		if (numCharacters >= maxCharacters)
+		auto numCharacters = m_database.getCharacterCount(m_accountId);
+		if (!numCharacters)
+		{
+			sendPacket(
+				std::bind(game::server_write::charCreate, std::placeholders::_1, game::response_code::CharCreateError));
+			return;
+		}
+
+		// Check that the account doesn't exceed the limit
+		if (numCharacters.get() >= maxCharacters)
 		{
 			// No more free slots
 			sendPacket(
@@ -1178,8 +1186,8 @@ namespace wowpp
 			UInt32 databaseID = guidLowerPart(objectGuid);
 
 			// Look for the specified player
-			game::CharEntry entry;
-			if (!m_database.getCharacterById(databaseID, entry))
+			auto entry = m_database.getCharacterById(databaseID);
+			if (!entry)
 			{
 				WLOG("Could not resolve name for player guid " << databaseID);
 				return;
@@ -1190,7 +1198,7 @@ namespace wowpp
 
 			// Send answer
 			sendPacket(
-				std::bind(game::server_write::nameQueryResponse, std::placeholders::_1, objectGuid, std::cref(entry.name), std::cref(realmName), entry.race, entry.gender, entry.class_));
+				std::bind(game::server_write::nameQueryResponse, std::placeholders::_1, objectGuid, std::cref(entry->name), std::cref(realmName), entry->race, entry->gender, entry->class_));
 		}
 	}
 
@@ -1264,8 +1272,8 @@ namespace wowpp
 				}
 
 				// Get player guid by name
-				game::CharEntry entry;
-				if (!m_database.getCharacterByName(receiver, entry))
+				auto entry = m_database.getCharacterByName(receiver);
+				if (!entry)
 				{
 					sendPacket(
 						std::bind(game::server_write::chatPlayerNotFound, std::placeholders::_1, std::cref(receiver)));
@@ -1274,7 +1282,7 @@ namespace wowpp
 
 				// Check faction
 				const bool isAllianceA = ((game::race::Alliance & (1 << (m_gameCharacter->getRace() - 1))) == (1 << (m_gameCharacter->getRace() - 1)));
-				const bool isAllianceB = ((game::race::Alliance & (1 << (entry.race - 1))) == (1 << (entry.race - 1)));
+				const bool isAllianceB = ((game::race::Alliance & (1 << (entry->race - 1))) == (1 << (entry->race - 1)));
 				if (isAllianceA != isAllianceB)
 				{
 					sendPacket(
@@ -1283,7 +1291,7 @@ namespace wowpp
 				}
 
 				// Make realm GUID
-				UInt64 guid = createRealmGUID(entry.id, m_loginConnector.getRealmID(), guid_type::Player);
+				UInt64 guid = createRealmGUID(entry->id, m_loginConnector.getRealmID(), guid_type::Player);
 
 				// Check if that player is online right now
 				Player *other = m_manager.getPlayerByCharacterGuid(guid);
@@ -1426,27 +1434,27 @@ namespace wowpp
 			capitalize(name);
 
 		// Find the character details
-		game::CharEntry friendChar;
-		if (!m_database.getCharacterByName(name, friendChar))
+		auto friendChar = m_database.getCharacterByName(name);
+		if (!friendChar)
 		{
 			WLOG("Could not find that character");
 			return;
 		}
 
 		// Create the characters guid value
-		UInt64 characterGUID = createRealmGUID(friendChar.id, m_loginConnector.getRealmID(), guid_type::Player);
+		UInt64 characterGUID = createRealmGUID(friendChar->id, m_loginConnector.getRealmID(), guid_type::Player);
 		
 		// Fill friend info
 		game::SocialInfo info;
 		info.flags = game::social_flag::Friend;
-		info.area = friendChar.zoneId;
-		info.level = friendChar.level;
-		info.class_ = friendChar.class_;
+		info.area = friendChar->zoneId;
+		info.level = friendChar->level;
+		info.class_ = friendChar->class_;
 		info.note = std::move(note);
 
 		// Check faction
 		const bool isAllianceA = ((game::race::Alliance & (1 << (m_gameCharacter->getRace() - 1))) == (1 << (m_gameCharacter->getRace() - 1)));
-		const bool isAllianceB = ((game::race::Alliance & (1 << (friendChar.race - 1))) == (1 << (friendChar.race - 1)));
+		const bool isAllianceB = ((game::race::Alliance & (1 << (friendChar->race - 1))) == (1 << (friendChar->race - 1)));
 		
 		// Result code
 		game::FriendResult result = game::friend_result::AddedOffline;
@@ -1552,22 +1560,22 @@ namespace wowpp
 			capitalize(name);
 
         // Find the character details
-        game::CharEntry ignoredChar;
-        if (!m_database.getCharacterByName(name, ignoredChar))
+		auto ignoredChar = m_database.getCharacterByName(name);
+        if (!ignoredChar)
         {
             WLOG("Could not find that character");
             return;
         }
 
         // Create the characters guid value
-        UInt64 characterGUID = createRealmGUID(ignoredChar.id, m_loginConnector.getRealmID(), guid_type::Player);
+        UInt64 characterGUID = createRealmGUID(ignoredChar->id, m_loginConnector.getRealmID(), guid_type::Player);
 
         // Fill ignored info
         game::SocialInfo info;
         info.flags = game::social_flag::Ignored;
-        info.area = ignoredChar.zoneId;
-        info.level = ignoredChar.level;
-        info.class_ = ignoredChar.class_;
+        info.area = ignoredChar->zoneId;
+        info.level = ignoredChar->level;
+        info.class_ = ignoredChar->class_;
 
         //result
         game::FriendResult result = m_social->addToSocialList(characterGUID, true);
