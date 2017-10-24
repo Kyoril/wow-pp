@@ -33,6 +33,7 @@ namespace wowpp
 		{
 		public:
 
+			typedef std::shared_ptr<WebClient> WebClientPtr;
 			typedef net::http::Client Client;
 
 			explicit WebService(
@@ -44,11 +45,11 @@ namespace wowpp
 			void clientDisconnected(WebClient &client);
 			boost::asio::io_service &getIOService() const;
 
-			virtual std::unique_ptr<WebClient> createClient(std::shared_ptr<Client> connection) = 0;
+			virtual WebClientPtr createClient(std::shared_ptr<Client> connection) = 0;
 
 		private:
 
-			typedef std::vector<std::unique_ptr<WebClient>> Clients;
+			typedef std::vector<WebClientPtr> Clients;
 
 
 			boost::asio::io_service &m_ioService;

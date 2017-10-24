@@ -198,19 +198,20 @@ namespace wowpp
 	{
 		auto &project = static_cast<WebService &>(this->getService()).getProject();
 
+		/// Prepare default arguments
 		UInt32 mapId = 0xffffffff;
 		float x = 0.0f, y = 0.0f, z = 0.0f, o = 0.0f;
 		UInt32 accountId = 0, charRace = 0, charClass = 0, charLvl = 0;
+		Int32 gender = -1;
 		LinearSet<UInt32> spellsToAdd;
 		std::vector<const proto::SpellEntry*> spells;
 		std::vector<ItemData> items;
 		UInt32 itemIndex = 0, spellIndex = 0;
-
 		UInt8 bagSlot = player_inventory_pack_slots::Start;
-
 		UInt32 ringCount = 0, trinketCount = 0, bagCount = 0;
 		LinearSet<UInt32> usedEquipmentSlots;
 
+		// Parse for arguments
 		for (auto &arg : arguments)
 		{
 			auto delimiterPos = arg.find('=');
@@ -243,6 +244,10 @@ namespace wowpp
 			else if (argName == "map")
 			{
 				mapId = atoi(argValue.c_str());
+			}
+			else if (argName == "gender")
+			{
+				gender = atoi(argValue.c_str());
 			}
 			else if (argName == "x")
 			{
@@ -435,12 +440,14 @@ namespace wowpp
 			}
 		}
 
+		// Check whether required arguments were set
 		if (accountId == 0 || charRace == 0 || charClass == 0 || charLvl == 0)
 		{
 			sendXmlAnswer(response, "<status>MISSING_DATA</status>");
 			return;
 		}
 
+		// Get database object for later use
 		auto &database = static_cast<WebService &>(this->getService()).getDatabase();
 
 		// Check character limit
@@ -450,7 +457,7 @@ namespace wowpp
 			return;
 		}
 
-		// Get race entry
+		// Check if race exists
 		auto *race = project.races.getById(charRace);
 		if (!race)
 		{
@@ -458,7 +465,7 @@ namespace wowpp
 			return;
 		}
 
-		// Get class entry
+		// Check if class exists
 		auto *class_ = project.classes.getById(charClass);
 		if (!class_)
 		{
@@ -466,7 +473,7 @@ namespace wowpp
 			return;
 		}
 
-		// Add initial spells
+		// Get initial spells for that race/class combination and thus check if this combination is allowed
 		const auto &initialSpellsEntry = race->initialspells().find(charClass);
 		if (initialSpellsEntry == race->initialspells().end())
 		{
@@ -474,6 +481,7 @@ namespace wowpp
 			return;
 		}
 
+		// Check all initial spells to see if they are valid
 		for (int i = 0; i < initialSpellsEntry->second.spells_size(); ++i)
 		{
 			const auto &spellid = initialSpellsEntry->second.spells(i);
@@ -485,7 +493,7 @@ namespace wowpp
 			}
 		}
 
-		// Filter by ranks
+		// Filter spells by ranks (don't need to learn lower rank spells if higher rank spells are available)
 		for (const auto &spellId : spellsToAdd)
 		{
 			// Check if spell exists
@@ -518,11 +526,24 @@ namespace wowpp
 			spells.push_back(spell);
 		}
 
-		std::uniform_int_distribution<> genderDist(0, 1);
-		auto gender = genderDist(randomGenerator);
+		// Verify gender
+		if (gender > 1)
+		{
+			sendXmlAnswer(response, "<status>INVALID_GENDER</status>");
+			return;
+		}
 
+		// Eventually randomize gender if no gender was provided
+		if (gender < 0 || gender > 1)
+		{
+			std::uniform_int_distribution<int> genderDist(0, 1);
+			gender = genderDist(randomGenerator);
+		}
+
+		// Random generator for some character outfits
 		std::uniform_int_distribution<> outfitDist(0, 3);
 
+		// Setup CharEntry structure which we submit to the database
 		game::CharEntry characterData;
 		characterData.race = static_cast<game::Race>(charRace);
 		characterData.class_ = static_cast<game::CharClass>(charClass);
@@ -534,8 +555,8 @@ namespace wowpp
 		characterData.skin = outfitDist(randomGenerator);
 		characterData.gender = static_cast<game::Gender>(gender);
 		characterData.id = 0;
-		characterData.name = randomText(12);
-		characterData.atLogin = game::atlogin_flags::Rename;
+		characterData.name = randomText(12);					// Generate an (most likely invalid) random name
+		characterData.atLogin = game::atlogin_flags::Rename;	// Force the player to rename his character on first login
 		characterData.outfitId = 0;
 		characterData.level = charLvl;
 		characterData.mapId = (mapId == 0xffffffff ? race->startmap() : mapId);
@@ -599,7 +620,7 @@ namespace wowpp
 		if (itemGuid == 0 || characterName.empty())
 		{
 			sendXmlAnswer(response, "<status>MISSING_DATA</status>");
-			break;
+			return;
 		}
 
 		auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
@@ -608,7 +629,7 @@ namespace wowpp
 		{
 			// TODO: Add item when offline
 			sendXmlAnswer(response, "<status>PLAYER_NOT_ONLINE</status>");
-			break;
+			return;
 		}
 
 		// Send a create item request
@@ -656,7 +677,7 @@ namespace wowpp
 		if (spellId == 0 || characterName.empty())
 		{
 			sendXmlAnswer(response, "<status>MISSING_DATA</status>");
-			break;
+			return;
 		}
 
 		auto &project = static_cast<WebService &>(this->getService()).getProject();
@@ -664,7 +685,7 @@ namespace wowpp
 		if (!spellInst)
 		{
 			sendXmlAnswer(response, "<status>INVALID_SPELL</status>");
-			break;
+			return;
 		}
 
 		auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
@@ -674,22 +695,27 @@ namespace wowpp
 			auto &db = static_cast<WebService &>(this->getService()).getDatabase();
 
 			// Does the character exist?
-			game::CharEntry entry;
-			if (!db.getCharacterByName(characterName, entry))
+			auto entry = db.getCharacterByName(characterName);
+			if (!entry)
 			{
 				sendXmlAnswer(response, "<status>CHARACTER_NOT_FOUND</status>");
-				break;
+				return;
 			}
 
 			// Character exists - teleport him
-			if (!db.learnSpell(entry.id, spellId))
+			try
 			{
+				db.learnSpell(entry->id, spellId);
+			}
+			catch (const std::exception &ex)
+			{
+				ELOG("Database error: " << ex.what());
 				sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
-				break;
+				return;
 			}
 
 			sendXmlAnswer(response, "<status>SUCCESS</status>");
-			break;
+			return;
 		}
 		else
 		{
@@ -752,7 +778,7 @@ namespace wowpp
 		if (mapId == 0xffffffff || characterName.empty())
 		{
 			sendXmlAnswer(response, "<status>MISSING_DATA</status>");
-			break;
+			return;
 		}
 
 		auto &project = static_cast<WebService &>(this->getService()).getProject();
@@ -760,7 +786,7 @@ namespace wowpp
 		if (!mapInst)
 		{
 			sendXmlAnswer(response, "<status>INVALID_MAP</status>");
-			break;
+			return;
 		}
 
 		auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
@@ -771,33 +797,36 @@ namespace wowpp
 			auto &db = static_cast<WebService &>(this->getService()).getDatabase();
 
 			// Does the character exist?
-			game::CharEntry entry;
-			if (!db.getCharacterByName(characterName, entry))
+			auto entry = db.getCharacterByName(characterName);
+			if (!entry)
 			{
 				sendXmlAnswer(response, "<status>CHARACTER_NOT_FOUND</status>");
-				break;
+				return;
 			}
 
 			// Character exists - teleport him
-			if (!db.teleportCharacter(entry.id, mapId, x, y, z, o))
+			try
 			{
-				sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
-				break;
+				db.teleportCharacter(entry->id, mapId, x, y, z, o);
 			}
-
+			catch (const std::exception &ex)
+			{
+				ELOG("Database error: " << ex.what());
+				sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+				return;
+			}
+			
 			sendXmlAnswer(response, "<status>SUCCESS</status>");
-			break;
 		}
 		else
 		{
 			if (!player->initializeTransfer(mapId, math::Vector3(x, y, z), o, true))
 			{
 				sendXmlAnswer(response, "<status>PLAYER_NOT_IN_WORLD</status>");
-				break;
+				return;
 			}
 
 			sendXmlAnswer(response, "<status>SUCCESS</status>");
-			break;
 		}
 	}
 #endif

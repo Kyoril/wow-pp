@@ -53,10 +53,8 @@ namespace wowpp
 		return m_password;
 	}
 
-	std::unique_ptr<web::WebClient> WebService::createClient(std::shared_ptr<Client> connection)
+	web::WebService::WebClientPtr WebService::createClient(std::shared_ptr<Client> connection)
 	{
-		return std::unique_ptr<web::WebClient>(new WebClient(*this, connection));
+		return std::make_shared<WebClient>(*this, connection);
 	}
-
-
 }

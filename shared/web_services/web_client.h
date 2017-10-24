@@ -32,7 +32,8 @@ namespace wowpp
 
 		typedef net::http::OutgoingAnswer WebResponse;
 
-		class WebClient : public net::http::IClientListener
+		class WebClient 
+			: public net::http::IClientListener
 		{
 		public:
 

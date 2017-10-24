@@ -27,7 +27,9 @@ namespace wowpp
 {
 	class WebService;
 
-	class WebClient : public web::WebClient
+	class WebClient 
+		: public web::WebClient
+		, public std::enable_shared_from_this<WebClient>
 	{
 	public:
 
@@ -35,8 +37,9 @@ namespace wowpp
 		    WebService &webService,
 		    std::shared_ptr<Client> connection);
 
-		virtual void handleRequest(const net::http::IncomingRequest &request,
-		                           web::WebResponse &response) override;
+	public:
+
+		virtual void handleRequest(const net::http::IncomingRequest &request, web::WebResponse &response) override;
 
 	private:
 
