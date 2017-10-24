@@ -40,18 +40,23 @@ namespace wowpp
 	/// Social entry to be used by the PlayerSocial class.
 	struct PlayerSocialEntry
 	{
+		/// Guid of the other character.
 		UInt64 guid;
+		/// Social flags (Friend, Ignored, Muted)
 		game::SocialFlag flags;
+		/// Custom note.
 		std::string note;
 	};
 
 	/// Vector of PlayerSocialEntry objects for syntactic sugar
 	typedef std::vector<PlayerSocialEntry> PlayerSocialEntries;
 
-
+	/// Represents data of a player group.
 	struct GroupData
 	{
+		/// Guid of the group leader.
 		UInt64 leaderGuid;
+		/// Vector of guids of all group members, including the leader.
 		std::vector<UInt64> memberGuids;
 	};
 
@@ -66,164 +71,174 @@ namespace wowpp
 		/// Gets the number of characters a specific account has on this realm.
 		/// 
 		/// @param accountId Account identifier.
-		/// @returns Number of characters of the account or uninitialized in case of an error.
+		/// @return Number of characters of the account or uninitialized in case of an error.
 		virtual boost::optional<UInt32> getCharacterCount(UInt32 accountId) = 0;
 		/// Creates a new character.
 		/// 
 		/// @param accountId Account identifier.
 		/// @param character Data of the character to create.
-		/// @returns false if the creation process failed.
+		/// @return false if the creation process failed.
 		virtual game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<ItemData> &items, game::CharEntry &character) = 0;
+		/// Changes the name of the given player character. The database won't perform
+		/// name checks, so check for valid character names before you call this function!
 		/// 
-		/// @param id
-		/// @param newName
-		/// @returns 
+		/// @param id The database id of the character which should be renamed.
+		/// @param newName The new character name.
+		/// @return 
 		virtual game::ResponseCode renameCharacter(DatabaseId id, const String &newName) = 0;
 		/// Retrieves character information based on a character id.
 		/// @param id Characters database id.
-		/// @returns Filled CharEntry struct or nullptr on failure or non-existance.
+		/// @return Filled CharEntry struct or nullptr on failure or non-existance.
 		virtual boost::optional<game::CharEntry> getCharacterById(DatabaseId id) = 0;
 		/// Retrieves character information based on a characters name.
 		/// 
 		/// @param id Characters name.
-		/// @returns Filled CharEntry struct or nullptr on failure or non-existance.
+		/// @return Filled CharEntry struct or nullptr on failure or non-existance.
 		virtual boost::optional<game::CharEntry> getCharacterByName(const String &name) = 0;
+		/// Retrieves informations about all characters of a specific account.
 		/// 
-		/// 
-		/// @param accountId
-		/// @returns 
+		/// @param accountId The account id.
+		/// @returns An optional std::vector of CharEntry structs.
 		virtual boost::optional<game::CharEntries> getCharacters(UInt32 accountId) = 0;
+		/// Deletes a specific character from the database. Deleting a character won't really
+		/// delete it but just deactivate it so that it won't appear in the character list anymore.
+		/// This will also set the current timestamp so that you can manually cleanup the db later,
+		/// for example delete every character which was "deleted" 30+ days before.
 		/// 
+		/// @param accountId The account id.
+		/// @param characterGuid Database id of the character to delete.
+		virtual void deleteCharacter(UInt32 accountId, UInt64 characterGuid) = 0;
+		/// Loads all game-relevant data of a specific character from the database. This query
+		/// is quite expensive!
 		/// 
-		/// @param accountId
-		/// @param characterGuid
-		/// @returns 
-		virtual game::ResponseCode deleteCharacter(UInt32 accountId, UInt64 characterGuid) = 0;
-		/// 
-		/// 
-		/// @param characterId
-		/// @param out_character
-		/// @returns 
+		/// @param characterId The database id of the character.
+		/// @param out_character Reference to a valid GameCharacter whose properties will be set.
+		/// @return true on success, false if an error occurred.
 		virtual bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character) = 0;
+		/// Saves all character-relevant data of a specific character from the database. This query
+		/// is quite expensive!
 		/// 
-		/// 
-		/// @param character 
-		/// @param items
-		/// @returns 
+		/// @param character The character object which will be saved.
+		/// @param items Items of the specific character.
+		/// @return true on success, false if an error occurred.
 		virtual bool saveGameCharacter(const GameCharacter &character, const std::vector<ItemData> &items) = 0;
+		/// Loads a characters social list entries from the database.
 		/// 
-		/// 
-		/// @param characterId 
-		/// @returns 
+		/// @param characterId The database id of the character.
+		/// @return An optional std::vector of PlayerSocialEntry structs.
 		virtual boost::optional<PlayerSocialEntries> getCharacterSocialList(DatabaseId characterId) = 0;
+		/// Adds a new social contact to a characters social list.
 		/// 
-		/// 
-		/// @param characterId
-		/// @param socialGuid
-		/// @param flags
-		/// @param note
-		/// @returns 
+		/// @param characterId Guid of the character whose social list will be updated.
+		/// @param socialGuid Guid of the other character.
+		/// @param flags Social flags.
+		/// @param note Custom note.
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) = 0;
+		/// Updates a social contact of a specific characters social list.
 		/// 
-		/// 
-		/// @param characterId
-		/// @param socialGuid
-		/// @param flags
-		/// @returns 
+		/// @param characterId Guid of the character whose social list will be updated.
+		/// @param socialGuid Guid of the other character.
+		/// @param flags Social flags.
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags) = 0;
+		/// Updates a social contact of a specific characters social list.
 		/// 
-		/// 
-		/// @param characterId
-		/// @param socialGuid
-		/// @param flags
-		/// @param note 
-		/// @returns 
+		/// @param characterId Guid of the character whose social list will be updated.
+		/// @param socialGuid Guid of the other character.
+		/// @param flags Social flags.
+		/// @param note Custom note.
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) = 0;
+		/// Removes a contact from a specific characters social list.
 		/// 
-		/// 
-		/// @param characterId
-		/// @param socialGuid
-		/// @returns 
+		/// @param characterId Guid of the character whose social list will be updated.
+		/// @param socialGuid Guid of the other character.
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid) = 0;
+		/// Loads the action button bindings of a specific character.
 		/// 
-		/// 
-		/// @param characterId
-		/// @param out_buttons
-		/// @returns 
+		/// @param characterId Guid of the character whose action button bindings will be loaded.
+		/// @param out_buttons Reference to an ActionButtons struct which will be updated.
+		/// @return true if successful, false if an error occurred.
 		virtual bool getCharacterActionButtons(DatabaseId characterId, ActionButtons &out_buttons) = 0;
+		/// Updates a characters action button bindings.
 		/// 
-		/// 
-		/// @param characterId
-		/// @param buttons
-		/// @returns 
+		/// @param characterId The database id of the character.
+		/// @param buttons Action binding map.
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons) = 0;
+		/// Updates the cinematic state of a specific character. The cinematic state
+		/// is true, if the intro cinematic has been watched by the player, so that it
+		/// will no longer be triggered on login.
 		/// 
-		/// 
-		/// @param characterId
-		/// @param state
-		/// @returns 
+		/// @param characterId The database id of the specific character.
+		/// @param state The new cinematic state (true indicates that the intro cinematic has been watched).
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void setCinematicState(DatabaseId characterId, bool state) = 0;
+		/// Updates the state of a quest for a specific character.
 		/// 
-		/// 
-		/// @param characterId
-		/// @param questId
-		/// @param data 
-		/// @returns 
+		/// @param characterId The character id.
+		/// @param questId The quest id.
+		/// @param data The quest data.
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) = 0;
+		/// Changes the current location of the given character in the database and can also change the
+		/// characters home location.
 		/// 
-		/// 
-		/// @param characterId
-		/// @param mapId
-		/// @param x 
-		/// @param y 
-		/// @param z 
-		/// @param o 
-		/// @param changeHome 
-		/// @returns 
+		/// @param characterId Database id of the character whose location will be changed.
+		/// @param mapId The destination map id.
+		/// @param x The new x coordinate.
+		/// @param y The new y coordinate.
+		/// @param z The new z coordinate.
+		/// @param o The new rotation in radians.
+		/// @param changeHome If you pass true here, the home location of the character will be changed as well.
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome = false) = 0;
+		/// Adds a spell to the list of known spells for a specific character. You have
+		/// to make sure that this is a valid spell id before calling this method!
 		/// 
-		/// 
-		/// @param characterId
-		/// @param spellId
-		/// @returns 
+		/// @param characterId The database id of the character.
+		/// @param spellId The spell id.
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void learnSpell(DatabaseId characterId, UInt32 spellId) = 0;
+		/// Creates a new group. You have to make sure that the group has a unique id.
 		/// 
-		/// 
-		/// @param groupId
-		/// @param leader
-		/// @returns 
+		/// @param groupId The group id.
+		/// @param leader Guid of the group leader.
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void createGroup(UInt64 groupId, UInt64 leader) = 0;
+		/// Disbands a group (removes it from the database as well).
 		/// 
-		/// 
-		/// @param groupId
-		/// @returns 
+		/// @param groupId Id of the group to disband.
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void disbandGroup(UInt64 groupId) = 0;
+		/// Adds a group member to an existing group.
 		/// 
-		/// 
-		/// @param groupId
-		/// @param member 
-		/// @returns 
+		/// @param groupId Id of the group the member will be added.
+		/// @param member Guid of the character to add.
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void addGroupMember(UInt64 groupId, UInt64 member) = 0;
+		/// Changes the leader of a specific existing group.
 		/// 
-		/// 
-		/// @param groupId
-		/// @param leaderGuid 
-		/// @returns 
+		/// @param groupId Id of the group whose leader will be changed.
+		/// @param leaderGuid Guid of the new group leader.
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void setGroupLeader(UInt64 groupId, UInt64 leaderGuid) = 0;
+		/// Removes a member from an existing group.
 		/// 
-		/// 
-		/// @param groupId
-		/// @param member 
-		/// @returns 
+		/// @param groupId Id of the group.
+		/// @param member Guid of the group member to remove.
+		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
 		virtual void removeGroupMember(UInt64 groupId, UInt64 member) = 0;
+		/// Loads a list of all group guids that are stored in the database.
 		/// 
-		/// 
-		/// @returns 
+		/// @return optional std::vector of group guids.
 		virtual boost::optional<std::vector<UInt64>> listGroups() = 0;
+		/// Loads group data of a specific group from.
 		/// 
-		/// 
-		/// @param groupId
-		/// @returns 
+		/// @param groupId Id of the group to load.
+		/// @return optional GroupData struct.
 		virtual boost::optional<GroupData> loadGroup(UInt64 groupId) = 0;
 	};
 

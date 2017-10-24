@@ -713,7 +713,15 @@ namespace wowpp
 		m_characters.erase(c);
 
 		// Delete from database
-		game::ResponseCode result = m_database.deleteCharacter(m_accountId, characterId);
+		game::ResponseCode result = game::response_code::CharDeleteSuccess;
+		try
+		{
+			m_database.deleteCharacter(m_accountId, characterId);
+		}
+		catch (const std::exception& ex)
+		{
+			result = game::response_code::CharDeleteFailed;
+		}
 
 		// Send disabled message for now
 		sendPacket(

@@ -454,7 +454,7 @@ namespace wowpp
 		return {};
 	}
 
-	game::ResponseCode MySQLDatabase::deleteCharacter(UInt32 accountId, UInt64 characterGuid)
+	void MySQLDatabase::deleteCharacter(UInt32 accountId, UInt64 characterGuid)
 	{
 		const UInt32 lowerPart = guidLowerPart(characterGuid);
 
@@ -466,23 +466,17 @@ namespace wowpp
 				, lowerPart
 				, accountId)))
 			{
-				// There was an error
-				printDatabaseError();
-				return game::response_code::CharDeleteFailed;
+				throw MySQL::Exception(m_connection.getErrorMessage());
 			}
 
 			if (!m_connection.execute(fmt::format(
 				"DELETE FROM `character_social` WHERE `guid_1`={0} OR `guid_2`={0}"
 				, characterGuid)))
 			{
-				// There was an error
-				printDatabaseError();
-				return game::response_code::CharDeleteFailed;
+				throw MySQL::Exception(m_connection.getErrorMessage());
 			}
 		}
 		transation.commit();
-
-		return game::response_code::CharDeleteSuccess;
 	}
 
 	bool MySQLDatabase::getGameCharacter(DatabaseId characterId, GameCharacter &out_character)
