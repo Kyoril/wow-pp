@@ -253,7 +253,7 @@ namespace wowpp
 			ELOG("Could not restore group ids!");
 		}
 
-		auto const createPlayer = [&PlayerManager, &loginConnector, &WorldManager, &database, &project, &config, &groupIdGenerator](std::shared_ptr<wowpp::Player::Client> connection)
+		auto const createPlayer = [&PlayerManager, &loginConnector, &WorldManager, &database, &asyncDatabase, &project, &config, &groupIdGenerator](std::shared_ptr<wowpp::Player::Client> connection)
 		{
 			connection->startReceiving();
 			boost::asio::ip::address address;
@@ -269,7 +269,7 @@ namespace wowpp
 				return;
 			}
 
-			auto player = std::make_shared<Player>(config, groupIdGenerator, *PlayerManager, *loginConnector, *WorldManager, database, project, std::move(connection), address.to_string());
+			auto player = std::make_shared<Player>(config, groupIdGenerator, *PlayerManager, *loginConnector, *WorldManager, database, asyncDatabase, project, std::move(connection), address.to_string());
 
 			DLOG("Incoming player connection from " << address);
 			PlayerManager->addPlayer(player);

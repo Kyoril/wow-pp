@@ -55,7 +55,7 @@ namespace wowpp
 		/// @copydoc wowpp::IDatabase::createCharacterByName
 		boost::optional<game::CharEntry> getCharacterByName(const String &name) override;
 		/// @copydoc wowpp::IDatabase::getCharacters
-		boost::optional<game::CharEntries> getCharacters(UInt32 accountId) override;
+		game::CharEntries getCharacters(UInt32 accountId) override;
 		/// @copydoc wowpp::IDatabase::deleteCharacter
 		void deleteCharacter(UInt32 accountId, UInt64 characterGuid) override;
 		/// @copydoc wowpp::IDatabase::getGameCharacter

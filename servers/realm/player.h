@@ -38,6 +38,7 @@ namespace wowpp
 	class LoginConnector;
 	class WorldManager;
 	struct IDatabase;
+	class AsyncDatabase;
 	class World;
 	struct Configuration;
 	class PlayerSocial;
@@ -112,6 +113,7 @@ namespace wowpp
 						LoginConnector &loginConnector,
 						WorldManager &worldManager,
 						IDatabase &database,
+						AsyncDatabase &asyncDatabase,
 						proto::Project &project,
 		                std::shared_ptr<Client> connection,
 						const String &address);
@@ -227,6 +229,7 @@ namespace wowpp
 		LoginConnector &m_loginConnector;
 		WorldManager &m_worldManager;
 		IDatabase &m_database;
+		AsyncDatabase &m_asyncDatabase;
 		proto::Project &m_project;
 		std::shared_ptr<Client> m_connection;
 		String m_address;								// IP address in string format
@@ -266,6 +269,11 @@ namespace wowpp
 		game::CharEntry *getCharacterById(DatabaseId databaseId);
 		/// Called if the world node where the character is logged in with disconnected.
 		void worldNodeDisconnected();
+
+	private:
+
+		/// Async database callback for the character list.
+		void handleCharacterList(const boost::optional<game::CharEntries> &result);
 
 	private:
 

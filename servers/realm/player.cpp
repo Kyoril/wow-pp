@@ -39,19 +39,30 @@
 #include "game/game_item.h"
 #include "player_group.h"
 #include "game/constants.h"
+#include "common/weak_ptr_function.h"
 
 using namespace std;
 using namespace wowpp::game;
 
 namespace wowpp
 {
-	Player::Player(Configuration &config, IdGenerator<UInt64> &groupIdGenerator, PlayerManager &manager, LoginConnector &loginConnector, WorldManager &worldManager, IDatabase &database, proto::Project &project, std::shared_ptr<Client> connection, const String &address)
+	Player::Player(Configuration &config, 
+		           IdGenerator<UInt64> &groupIdGenerator, 
+		           PlayerManager &manager, 
+		           LoginConnector &loginConnector, 
+		           WorldManager &worldManager, 
+		           IDatabase &database,
+		           AsyncDatabase &asyncDatabase,
+		           proto::Project &project, 
+		           std::shared_ptr<Client> connection,
+		           const String &address)
 		: m_config(config)
 		, m_groupIdGenerator(groupIdGenerator)
 		, m_manager(manager)
 		, m_loginConnector(loginConnector)
 		, m_worldManager(worldManager)
 		, m_database(database)
+		, m_asyncDatabase(asyncDatabase)
 		, m_project(project)
 		, m_connection(std::move(connection))
 		, m_address(address)
@@ -171,6 +182,26 @@ namespace wowpp
 	{
 		// Disconnect the player client
 		destroy();
+	}
+
+	void Player::handleCharacterList(const boost::optional<game::CharEntries>& result)
+	{
+		if (!result)
+		{
+			destroy();
+			return;
+		}
+
+		// Copy character list
+		m_characters = result.get();
+		for (auto &c : m_characters)
+		{
+			c.id = createRealmGUID(guidLowerPart(c.id), m_loginConnector.getRealmID(), guid_type::Player);
+		}
+
+		// Send character list
+		sendPacket(
+			std::bind(game::server_write::charEnum, std::placeholders::_1, std::cref(m_characters)));
 	}
 
 	void Player::destroy()
@@ -736,24 +767,16 @@ namespace wowpp
 		// Load characters
 		m_characters.clear();
 
-		auto characters = m_database.getCharacters(m_accountId);
-		if (!characters)
-		{
-			// Disconnect
-			destroy();
-			return;
-		}
+		// Callback handler
+		auto handler = 
+			std::bind<void>(
+				bind_weak_ptr_1<Player>(
+					shared_from_this(),
+					std::bind(&Player::handleCharacterList, std::placeholders::_1, std::placeholders::_2)),		// Player Instance, Result
+				std::placeholders::_1);	// Player instance
 
-		// Copy character list
-		m_characters = characters.get();
-		for (auto &c : m_characters)
-		{
-			c.id = createRealmGUID(guidLowerPart(c.id), m_loginConnector.getRealmID(), guid_type::Player);
-		}
-
-		// Send character list
-		sendPacket(
-			std::bind(game::server_write::charEnum, std::placeholders::_1, std::cref(m_characters)));
+		// Start request
+		m_asyncDatabase.asyncRequest(std::move(handler), &IDatabase::getCharacters, m_accountId);
 	}
 
 	void Player::spawnedNotification()

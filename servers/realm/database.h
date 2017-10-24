@@ -99,7 +99,7 @@ namespace wowpp
 		/// 
 		/// @param accountId The account id.
 		/// @returns An optional std::vector of CharEntry structs.
-		virtual boost::optional<game::CharEntries> getCharacters(UInt32 accountId) = 0;
+		virtual game::CharEntries getCharacters(UInt32 accountId) = 0;
 		/// Deletes a specific character from the database. Deleting a character won't really
 		/// delete it but just deactivate it so that it won't appear in the character list anymore.
 		/// This will also set the current timestamp so that you can manually cleanup the db later,
@@ -318,6 +318,23 @@ namespace wowpp
 			ActionDispatcher resultDispatcher);
 		
 	public:
+		/// Performs an async database request and allows passing exactly one argument to the database request.
+		/// 
+		/// @param handler A handler callback which will be executed after the request was successful.
+		/// @param method A request callback which will be executed on the database thread without blocking the caller.
+		/// @param b0 Argument which will be forwarded to the handler.
+		template <class ResultHandler, class Result, class A0, class B0_>
+		void asyncRequest(ResultHandler &&handler, Result(IDatabase::*method)(A0), B0_ &&b0)
+		{
+			auto request = std::bind(method, &m_database, std::forward<B0_>(b0));
+			auto processor = [this, request, handler]() -> void
+			{
+				detail::RequestProcessor<Result> proc;
+				return proc(m_resultDispatcher, request, handler);
+			};
+			m_asyncWorker(processor);
+		}
+
 		/// Performs an async database request.
 		/// 
 		/// @param request A request callback which will be executed on the database thread without blocking the caller.

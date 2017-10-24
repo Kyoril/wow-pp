@@ -346,8 +346,10 @@ namespace wowpp
 		}
 	}
 
-	boost::optional<game::CharEntries> MySQLDatabase::getCharacters(UInt32 accountId)
+	game::CharEntries MySQLDatabase::getCharacters(UInt32 accountId)
 	{
+		game::CharEntries Result;
+
 		wowpp::MySQL::Select select(m_connection,
 							//      0     1       2       3        4        5       6        7       8    
 			fmt::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
@@ -356,8 +358,6 @@ namespace wowpp
 			, accountId));
 		if (select.success())
 		{
-			game::CharEntries Result;
-
 			wowpp::MySQL::Row row(select);
 			while (row)
 			{
@@ -441,17 +441,18 @@ namespace wowpp
 						row = row.next(select);
 					}
 				}
+				else
+				{
+					throw MySQL::Exception(m_connection.getErrorMessage());
+				}
 			}
-
-			return Result;
 		}
 		else
 		{
-			// There was an error
-			printDatabaseError();
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 
-		return {};
+		return Result;
 	}
 
 	void MySQLDatabase::deleteCharacter(UInt32 accountId, UInt64 characterGuid)
