@@ -44,7 +44,7 @@ namespace wowpp
 		}
 
 		// Build flags
-		UInt32 flag = (ignore ? game::social_flag::Ignored : game::social_flag::Friend);
+		UInt32 flag = (ignore ? game::Ignored : game::Friend);
 
 		// Check if this contact is already in the social list
 		auto it = m_contacts.find(guid);
@@ -82,7 +82,7 @@ namespace wowpp
 		}
 
 		// Remove the contact from our social list
-		UInt32 flag = (ignore ? game::social_flag::Ignored : game::social_flag::Friend);
+		UInt32 flag = (ignore ? game::Ignored : game::Friend);
 		it->second.flags &= ~flag;
 		if (it->second.flags == 0)
 		{
@@ -102,7 +102,7 @@ namespace wowpp
 			return;
 		}
 
-		if (it->second.flags & game::social_flag::Friend)
+		if (it->second.flags & game::Friend)
 		{
 			it->second.note = std::move(note);
 		}
@@ -114,7 +114,7 @@ namespace wowpp
 		for (auto &it : m_contacts)
 		{
 			// If it is a friend...
-			if (it.second.flags & game::social_flag::Friend)
+			if (it.second.flags & game::Friend)
 			{
 				// Check if the friend is online and update the friend info
 				Player *player = m_manager.getPlayerByCharacterGuid(it.first);
@@ -158,7 +158,7 @@ namespace wowpp
 		}
 
 		// Check the flags
-		return (it->second.flags & game::social_flag::Friend) != 0;
+		return (it->second.flags & game::Friend) != 0;
 	}
 
 	bool PlayerSocial::isIgnored(UInt64 guid) const
@@ -171,7 +171,7 @@ namespace wowpp
 		}
 
 		// Check the flags
-		return (it->second.flags & game::social_flag::Ignored) != 0;
+		return (it->second.flags & game::Ignored) != 0;
 	}
 
 	bool PlayerSocial::getIgnoreList(std::vector<UInt64> &out_list)
@@ -180,7 +180,7 @@ namespace wowpp
 		for (auto &contact : m_contacts)
 		{
 			// Check if this contact is ignored
-			if ((contact.second.flags & game::social_flag::Ignored) != 0)
+			if ((contact.second.flags & game::Ignored) != 0)
 			{
 				// Add the contacts GUID to the output list
 				out_list.push_back(contact.first);

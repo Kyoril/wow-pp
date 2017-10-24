@@ -192,7 +192,7 @@ namespace wowpp
 
 			// Send notification to friends
 			game::SocialInfo info;
-			info.flags = game::social_flag::Friend;
+			info.flags = game::Friend;
 			info.status = game::friend_status::Offline;
 			m_social->sendToFriends(
 				std::bind(game::server_write::friendStatus, std::placeholders::_1, m_gameCharacter->getGuid(), game::friend_result::Offline, std::cref(info)));
@@ -809,7 +809,20 @@ namespace wowpp
 
 		// Load the social list
 		m_social.reset(new PlayerSocial(m_manager, *this));
-		m_database.getCharacterSocialList(m_characterId, *m_social);
+		auto socialEntries = m_database.getCharacterSocialList(m_characterId);
+		if (socialEntries)
+		{
+			for (auto &entry : *socialEntries)
+			{
+				const bool isFriend = (entry.flags & game::Friend);
+				m_social->addToSocialList(entry.guid, !isFriend);
+
+				if (isFriend)
+				{
+					m_social->setFriendNote(entry.guid, std::move(entry.note));
+				}
+			}
+		}
 
 		// Load action buttons
 		m_actionButtons.clear();
@@ -962,7 +975,7 @@ namespace wowpp
 
 			// Send notification to friends
 			game::SocialInfo info;
-			info.flags = game::social_flag::Friend;
+			info.flags = game::Friend;
 			info.area = charEntry->zoneId;
 			info.level = charEntry->level;
 			info.class_ = charEntry->class_;
@@ -1000,7 +1013,7 @@ namespace wowpp
 
 				// Send notification to friends
 				game::SocialInfo info;
-				info.flags = game::social_flag::Friend;
+				info.flags = game::Friend;
 				info.status = game::friend_status::Offline;
 				m_social->sendToFriends(
 					std::bind(game::server_write::friendStatus, std::placeholders::_1, m_gameCharacter->getGuid(), game::friend_result::Offline, std::cref(info)));
@@ -1446,7 +1459,7 @@ namespace wowpp
 		
 		// Fill friend info
 		game::SocialInfo info;
-		info.flags = game::social_flag::Friend;
+		info.flags = game::Friend;
 		info.area = friendChar->zoneId;
 		info.level = friendChar->level;
 		info.class_ = friendChar->class_;
@@ -1474,19 +1487,21 @@ namespace wowpp
 			{
 				// Add to database
 				const bool shouldUpdate = m_social->isIgnored(characterGUID);
-				if (!shouldUpdate)
+				try
 				{
-					if (!m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), info.note))
+					if (!shouldUpdate)
 					{
-						result = game::friend_result::DatabaseError;
+						m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), info.note);
+					}
+					else
+					{
+						m_database.updateCharacterSocialContact(m_characterId, characterGUID, static_cast<SocialFlag>(game::Friend | game::Ignored));
 					}
 				}
-				else
+				catch (const std::exception& ex)
 				{
-					if (!m_database.updateCharacterSocialContact(m_characterId, characterGUID, static_cast<SocialFlag>(game::social_flag::Friend | game::social_flag::Ignored)))
-					{
-						result = game::friend_result::DatabaseError;
-					}
+					ELOG("Datbase exception: " << ex.what());
+					result = game::friend_result::DatabaseError;
 				}
 			}
 		}
@@ -1517,21 +1532,23 @@ namespace wowpp
 		auto result = m_social->removeFromSocialList(guid, false);
 		if (result == game::friend_result::Removed)
 		{
-			if (m_social->isIgnored(guid))
+			try
 			{
-				// Old friend is still ignored - update flags
-				if (!m_database.updateCharacterSocialContact(m_characterId, guid, game::social_flag::Ignored, ""))
+				if (m_social->isIgnored(guid))
 				{
-					result = game::friend_result::DatabaseError;
+					// Old friend is still ignored - update flags
+					m_database.updateCharacterSocialContact(m_characterId, guid, game::Ignored, "");
+				}
+				else
+				{
+					// Completely remove contact, as he is neither ignored nor a friend
+					m_database.removeCharacterSocialContact(m_characterId, guid);
 				}
 			}
-			else
+			catch (const std::exception& ex)
 			{
-				// Completely remove contact, as he is neither ignored nor a friend
-				if (!m_database.removeCharacterSocialContact(m_characterId, guid))
-				{
-					result = game::friend_result::DatabaseError;
-				}
+				ELOG("Datbase exception: " << ex.what());
+				result = game::friend_result::DatabaseError;
 			}
 		}
 
@@ -1572,7 +1589,7 @@ namespace wowpp
 
         // Fill ignored info
         game::SocialInfo info;
-        info.flags = game::social_flag::Ignored;
+        info.flags = game::Ignored;
         info.area = ignoredChar->zoneId;
         info.level = ignoredChar->level;
         info.class_ = ignoredChar->class_;
@@ -1582,21 +1599,23 @@ namespace wowpp
 		if (result == game::friend_result::IgnoreAdded)
 		{
 			const bool shouldUpdate = m_social->isFriend(characterGUID);
-			if (!shouldUpdate)
+			try
 			{
-				if (!m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), ""))
+				if (!shouldUpdate)
 				{
-					result = game::friend_result::DatabaseError;
+					m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), "");
+				}
+				else
+				{
+					m_database.updateCharacterSocialContact(m_characterId, characterGUID, static_cast<SocialFlag>(game::Friend | game::Ignored));
 				}
 			}
-			else
+			catch (const std::exception& e)
 			{
-				if (!m_database.updateCharacterSocialContact(m_characterId, characterGUID, static_cast<SocialFlag>(game::social_flag::Friend | game::social_flag::Ignored)))
-				{
-					result = game::friend_result::DatabaseError;
-				}
+				ELOG("Database exception: " << e.what());
+				result = game::friend_result::DatabaseError;
 			}
-
+			
 			m_worldNode->characterAddIgnore(m_characterId, characterGUID);
 		}
 
@@ -1623,19 +1642,20 @@ namespace wowpp
 		auto result = m_social->removeFromSocialList(guid, true);
 		if (result == game::friend_result::IgnoreRemoved)
 		{
-			if (m_social->isFriend(guid))
+			try
 			{
-				if (!m_database.updateCharacterSocialContact(m_characterId, guid, game::social_flag::Friend))
+				if (m_social->isFriend(guid))
 				{
-					result = game::friend_result::DatabaseError;
+					m_database.updateCharacterSocialContact(m_characterId, guid, game::Friend);
+				}
+				else
+				{
+					m_database.removeCharacterSocialContact(m_characterId, guid);
 				}
 			}
-			else
+			catch (const std::exception& ex)
 			{
-				if (!m_database.removeCharacterSocialContact(m_characterId, guid))
-				{
-					result = game::friend_result::DatabaseError;
-				}
+				result = game::friend_result::DatabaseError;
 			}
 
 			m_worldNode->characterRemoveIgnore(m_characterId, guid);
@@ -2152,13 +2172,17 @@ namespace wowpp
 	{
 		// Load characters
 		m_characters.clear();
-		if (!m_database.getCharacters(m_accountId, m_characters))
+
+		auto characters = m_database.getCharacters(m_accountId);
+		if (!characters)
 		{
 			// Disconnect
 			destroy();
 			return;
 		}
 
+		// Copy character list
+		m_characters = characters.get();
 		for (auto &c : m_characters)
 		{
 			c.id = createRealmGUID(guidLowerPart(c.id), m_loginConnector.getRealmID(), guid_type::Player);

@@ -50,9 +50,8 @@ namespace wowpp
 		if (m_leaderGUID != 0)
 			return true;
 
-		UInt64 leader = 0;
-		std::vector<UInt64> memberGuids;
-		if (!m_database.loadGroup(m_id, leader, memberGuids))
+		auto groupData = m_database.loadGroup(m_id);
+		if (!groupData)
 		{
 			// The group will automatically be deleted and not stored when not saved in GroupsById
 			ELOG("Could not load group from database");
@@ -60,13 +59,13 @@ namespace wowpp
 		}
 
 		// Convert leader id into cross realm compatible guid
-		m_playerManager.getCrossRealmGUID(leader);
+		m_playerManager.getCrossRealmGUID(groupData->leaderGuid);
 
 		// Save leader information
-		m_leaderGUID = leader;
+		m_leaderGUID = groupData->leaderGuid;
 
 		// Add the leader first
-		if (!addOfflineMember(leader))
+		if (!addOfflineMember(groupData->leaderGuid))
 		{
 			// Leader no longer exists?
 			ELOG("Could not add group leader");
@@ -74,7 +73,7 @@ namespace wowpp
 		}
 
 		// Same for members
-		for (auto &memberGuid : memberGuids)
+		for (auto &memberGuid : groupData->memberGuids)
 		{
 			m_playerManager.getCrossRealmGUID(memberGuid);
 			addOfflineMember(memberGuid);

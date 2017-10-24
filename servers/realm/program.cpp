@@ -232,10 +232,10 @@ namespace wowpp
 		Configuration &config = m_configuration;
 
 		// Restore groups
-		std::vector<UInt64> groupIds;
-		if (database.listGroups(groupIds))
+		auto groupIds = database.listGroups();
+		if (groupIds)
 		{
-			for (auto &groupId : groupIds)
+			for (auto &groupId : *groupIds)
 			{
 				// Create a new group
 				auto group = std::make_shared<PlayerGroup>(groupId, *PlayerManager, database);
@@ -250,7 +250,7 @@ namespace wowpp
 		}
 		else
 		{
-			ELOG("Could not restore groups!");
+			ELOG("Could not restore group ids!");
 		}
 
 		auto const createPlayer = [&PlayerManager, &loginConnector, &WorldManager, &database, &project, &config, &groupIdGenerator](std::shared_ptr<wowpp::Player::Client> connection)

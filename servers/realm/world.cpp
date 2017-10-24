@@ -501,10 +501,13 @@ namespace wowpp
 			return;
 		}
 
-		// Update quest data
-		if (!m_database.setQuestData(characterId, questId, data))
+		try
 		{
-			ELOG("Could not set character quest data!");
+			m_database.setQuestData(characterId, questId, data);
+		}
+		catch(const std::exception &ex)
+		{
+			ELOG("Could not set character quest data: " << ex.what());
 		}
 	}
 

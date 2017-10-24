@@ -117,7 +117,6 @@ namespace wowpp
 		}
 		else
 		{
-			// There was an error
 			printDatabaseError();
 		}
 
@@ -347,7 +346,7 @@ namespace wowpp
 		}
 	}
 
-	bool MySQLDatabase::getCharacters(UInt32 accountId, game::CharEntries &out_characters)
+	boost::optional<game::CharEntries> MySQLDatabase::getCharacters(UInt32 accountId)
 	{
 		wowpp::MySQL::Select select(m_connection,
 							//      0     1       2       3        4        5       6        7       8    
@@ -357,6 +356,8 @@ namespace wowpp
 			, accountId));
 		if (select.success())
 		{
+			game::CharEntries Result;
+
 			wowpp::MySQL::Row row(select);
 			while (row)
 			{
@@ -407,48 +408,50 @@ namespace wowpp
 				entry.flags = static_cast<game::CharacterFlags>(tmp);
 
 				// Add to vector
-				out_characters.push_back(entry);
+				Result.push_back(entry);
 
 				// Next row
 				row = row.next(select);
 			}
+
+			// Load all character item entries that could be potentially visible to be used for a preview
+			for (auto &entry : Result)
+			{
+				std::ostringstream strm;
+				strm << "SELECT `entry`, `slot` FROM `character_items` WHERE (`slot` BETWEEN 65280 AND 65299) AND (`owner` = " << entry.id << ") LIMIT 19;";
+
+				wowpp::MySQL::Select select(m_connection, strm.str());
+				if (select.success())
+				{
+					wowpp::MySQL::Row row(select);
+					while (row)
+					{
+						UInt8 slot = 0;
+						row.getField<UInt8, UInt16>(1, slot);
+
+						UInt32 itemEntry = 0;
+						row.getField(0, itemEntry);
+
+						const auto *item = m_project.items.getById(itemEntry);
+						if (item)
+						{
+							entry.equipment[slot & 0xFF] = item;
+						}
+
+						row = row.next(select);
+					}
+				}
+			}
+
+			return Result;
 		}
 		else
 		{
 			// There was an error
 			printDatabaseError();
-			return false;
 		}
 
-		for (auto &entry : out_characters)
-		{
-			std::ostringstream strm;
-			strm << "SELECT `entry`, `slot` FROM `character_items` WHERE (`slot` BETWEEN 65280 AND 65299) AND (`owner` = " << entry.id << ") LIMIT 19;";
-
-			wowpp::MySQL::Select select(m_connection, strm.str());
-			if (select.success())
-			{
-				wowpp::MySQL::Row row(select);
-				while (row)
-				{
-					UInt8 slot = 0;
-					row.getField<UInt8, UInt16>(1, slot);
-
-					UInt32 itemEntry = 0;
-					row.getField(0, itemEntry);
-
-					const auto *item = m_project.items.getById(itemEntry);
-					if (item)
-					{
-						entry.equipment[slot & 0xFF] = item;
-					}
-					
-					row = row.next(select);
-				}
-			}
-		}
-
-		return true;
+		return {};
 	}
 
 	game::ResponseCode MySQLDatabase::deleteCharacter(UInt32 accountId, UInt64 characterGuid)
@@ -1152,7 +1155,7 @@ namespace wowpp
 		return {};
 	}
 
-	bool MySQLDatabase::getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social)
+	boost::optional<PlayerSocialEntries> MySQLDatabase::getCharacterSocialList(DatabaseId characterId)
 	{
 		wowpp::MySQL::Select select(m_connection,
 			//                         0		1       2          
@@ -1160,109 +1163,77 @@ namespace wowpp
 				, characterId));
 		if (select.success())
 		{
+			PlayerSocialEntries result;
+
 			wowpp::MySQL::Row row(select);
 			while (row)
 			{
-				UInt64 socialGuid = 0;
-				UInt32 flags = 0;
-				String note;
-
-				row.getField(0, socialGuid);
-				row.getField(1, flags);
-				row.getField(2, note);
-
-				const bool isFriend = flags & game::social_flag::Friend;
-				out_social.addToSocialList(socialGuid, !isFriend);
-				
-				if (isFriend)
-				{
-					out_social.setFriendNote(socialGuid, std::move(note));
-				}
+				PlayerSocialEntry entry;
+				row.getField(0, entry.guid);
+				row.getField(1, reinterpret_cast<UInt32&>(entry.flags));
+				row.getField(2, entry.note);
+				result.emplace_back(entry);
 
 				// Next row
 				row = row.next(select);
 			}
+
+			return result;
 		}
 		else
 		{
-			// There was an error
 			printDatabaseError();
-			return false;
 		}
 
-		return true;
+		return {};
 	}
 
-	bool MySQLDatabase::addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note)
+	void MySQLDatabase::addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note)
 	{
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"INSERT INTO `character_social` (`guid_1`, `guid_2`, `flags`, `note`) VALUES ({0}, {1}, {2}, '{3}')"
 			, characterId
 			, socialGuid
 			, flags
 			, m_connection.escapeString(note))))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
 
-	bool MySQLDatabase::updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags)
+	void MySQLDatabase::updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags)
 	{
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"UPDATE `character_social` SET `flags`={0} WHERE `guid_1`={1} AND `guid_2`={2}"
 			, flags				// 0
 			, characterId		// 1
 			, socialGuid)))		// 2
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
 
-	bool MySQLDatabase::updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note)
+	void MySQLDatabase::updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note)
 	{
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"UPDATE `character_social` SET `flags`={0}, `note`='{1}' WHERE `guid_1`={2} AND `guid_2`={3}"
 			, flags								// 0
 			, m_connection.escapeString(note)	// 1
 			, characterId						// 2
 			, socialGuid)))						// 3
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
 
-	bool MySQLDatabase::removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid)
+	void MySQLDatabase::removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid)
 	{
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"DELETE FROM `character_social` WHERE `guid_1`={0} AND `guid_2`={1}"
 			, characterId
 			, socialGuid)))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
 
@@ -1302,7 +1273,7 @@ namespace wowpp
 		return true;
 	}
 
-	bool MySQLDatabase::setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons)
+	void MySQLDatabase::setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons)
 	{
 		const UInt32 lowerPart = guidLowerPart(characterId);
 
@@ -1313,9 +1284,7 @@ namespace wowpp
 				"DELETE FROM `character_actions` WHERE `guid`={0}"
 				, lowerPart)))
 			{
-				// There was an error
-				printDatabaseError();
-				return false;
+				throw MySQL::Exception(m_connection.getErrorMessage());
 			}
 
 			if (!buttons.empty())
@@ -1345,41 +1314,32 @@ namespace wowpp
 				// Now, set all actions
 				if (!m_connection.execute(fmtStrm.str()))
 				{
-					// Could not learn initial spells
-					printDatabaseError();
-					return false;
+					throw MySQL::Exception(m_connection.getErrorMessage());
 				}
 			}
 			
 		}
 		transation.commit();
-		return true;
 	}
 
-	bool MySQLDatabase::setCinematicState(DatabaseId characterId, bool state)
+	void MySQLDatabase::setCinematicState(DatabaseId characterId, bool state)
 	{
 		const UInt32 lowerPart = guidLowerPart(characterId);
 
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"UPDATE `character` SET `cinematic` = {0} WHERE `id`={1}"
 			, (state ? 1 : 0)
 			, lowerPart)))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
 
-	bool MySQLDatabase::setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData & data)
+	void MySQLDatabase::setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData & data)
 	{
 		const UInt32 lowerPart = guidLowerPart(characterId);
 
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"INSERT INTO `character_quests` (`guid`, `quest`, `status`, `explored`, `timer`, `unitcount1`, `unitcount2`, `unitcount3`, `unitcount4`, `objectcount1`, `objectcount2`, `objectcount3`, `objectcount4`, `itemcount1`, `itemcount2`, `itemcount3`, `itemcount4`) VALUES "
 			"({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}) "
 			"ON DUPLICATE KEY UPDATE `status`={2}, `explored`={3}, `timer`={4}, `unitcount1`={5}, `unitcount2`={6}, `unitcount3`={7}, `unitcount4`={8}, `objectcount1`={9}, `objectcount2`={10}, `objectcount3`={11}, `objectcount4`={12}, `itemcount1`={13}, `itemcount2`={14}, `itemcount3`={15}, `itemcount4`={16}"
@@ -1402,23 +1362,15 @@ namespace wowpp
 			, data.items[3]
 			)))
 		{
-			return true;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
-		}
-
-		return false;
 	}
 
-	bool MySQLDatabase::teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome)
+	void MySQLDatabase::teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome)
 	{
 		const UInt32 lowerPart = guidLowerPart(characterId);
 
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"UPDATE `character` SET `map`={0}, `position_x`={1}, `position_y`={2}, `position_z`={3}, `orientation`={4} WHERE `id`={5}"
 			, mapId
 			, x
@@ -1428,213 +1380,169 @@ namespace wowpp
 			, lowerPart
 			)))
 		{
-			return true;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
-		}
-
-		return false;
 	}
 
-	bool MySQLDatabase::learnSpell(DatabaseId characterId, UInt32 spellId)
+	void MySQLDatabase::learnSpell(DatabaseId characterId, UInt32 spellId)
 	{
 		const UInt32 lowerPart = guidLowerPart(characterId);
 
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"INSERT IGNORE INTO `character_spells` VALUES ({0}, {1}, 1, 0);"
 			, lowerPart
 			, spellId
 			)))
 		{
-			return true;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
-		}
-
-		return false;
 	}
-	bool MySQLDatabase::createGroup(UInt64 groupId, UInt64 leader)
+
+	void MySQLDatabase::createGroup(UInt64 groupId, UInt64 leader)
 	{
 		const UInt32 lowerPart = guidLowerPart(leader);
 
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"INSERT INTO `group` (`id`, `leader`) VALUES ({0}, {1});"
 			, groupId
 			, lowerPart
 			)))
 		{
-			return addGroupMember(groupId, leader);
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
-	bool MySQLDatabase::disbandGroup(UInt64 groupId)
+
+	void MySQLDatabase::disbandGroup(UInt64 groupId)
 	{
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"DELETE FROM `group` WHERE `id` = {0};"
 			, groupId
 			)))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
-	bool MySQLDatabase::addGroupMember(UInt64 groupId, UInt64 member)
+
+	void MySQLDatabase::addGroupMember(UInt64 groupId, UInt64 member)
 	{
 		const UInt32 lowerPart = guidLowerPart(member);
 
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"INSERT IGNORE INTO `group_members` (`group`, `guid`) VALUES ({0}, {1});"
 			, groupId
 			, lowerPart
 			)))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
-	bool MySQLDatabase::setGroupLeader(UInt64 groupId, UInt64 leaderGuid)
+
+	void MySQLDatabase::setGroupLeader(UInt64 groupId, UInt64 leaderGuid)
 	{
 		const UInt32 lowerPart = guidLowerPart(leaderGuid);
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"UPDATE `group` SET `leader` = {0} WHERE `id` = {1};"
 			, lowerPart
 			, groupId
 			)))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
-	bool MySQLDatabase::removeGroupMember(UInt64 groupId, UInt64 member)
+
+	void MySQLDatabase::removeGroupMember(UInt64 groupId, UInt64 member)
 	{
 		const UInt32 lowerPart = guidLowerPart(member);
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"DELETE FROM `group_members` WHERE `group` = {0} `guid` = {1};"
 			, groupId
 			, lowerPart
 			)))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
-	bool MySQLDatabase::listGroups(std::vector<UInt64>& out_groupIds)
+
+	boost::optional<std::vector<UInt64>> MySQLDatabase::listGroups()
 	{
 		wowpp::MySQL::Select select(m_connection, "SELECT `id` FROM `group`;");
 		if (select.success())
 		{
+			std::vector<UInt64> groupIds;
+
 			wowpp::MySQL::Row row(select);
 			while (row)
 			{
 				UInt64 groupId = 0;
 				row.getField(0, groupId);
-				out_groupIds.push_back(groupId);
+				groupIds.push_back(groupId);
 
 				// Next row
 				row = row.next(select);
 			}
+
+			return groupIds;
 		}
 		else
 		{
-			// There was an error
 			printDatabaseError();
-			return false;
 		}
 
-		return true;
+		return {};
 	}
-	bool MySQLDatabase::loadGroup(UInt64 groupId, UInt64 & out_leader, std::vector<UInt64>& out_member)
+
+	boost::optional<GroupData> MySQLDatabase::loadGroup(UInt64 groupId)
 	{
 		// Load group data
+		wowpp::MySQL::Select select(m_connection, fmt::format(
+			"SELECT `leader` FROM `group` WHERE `id` = {0} LIMIT 1;"
+			, groupId
+			));
+		if (select.success())
 		{
-			wowpp::MySQL::Select select(m_connection, fmt::format(
-				"SELECT `leader` FROM `group` WHERE `id` = {0} LIMIT 1;"
-				, groupId
-				));
-			if (select.success())
+			wowpp::MySQL::Row row(select);
+			if (row)
 			{
-				wowpp::MySQL::Row row(select);
-				if (row)
+				// Prepare group data which will be returned
+				GroupData group;
+					
+				// Load leader guid
+				row.getField(0, group.leaderGuid);
+
+				// Load members
+				wowpp::MySQL::Select memberSelect(m_connection, fmt::format(
+					"SELECT `guid` FROM `group_members` WHERE `group` = {0} AND `guid` != {1} LIMIT 40;"
+					, groupId
+					, group.leaderGuid
+					));
+				if (memberSelect.success())
 				{
-					// Load leader guid
-					row.getField(0, out_leader);
+					wowpp::MySQL::Row memberRow(memberSelect);
+					while (memberRow)
+					{
+						// Load leader guid
+						UInt64 memberGuid = 0;
+						memberRow.getField(0, memberGuid);
+						group.memberGuids.push_back(memberGuid);
+
+						// Process next member row
+						memberRow = memberRow.next(memberSelect);
+					}
+
+					// All members loaded
+					return group;
 				}
 				else
 				{
-					// Could not find requested group
-					WLOG("Could not find requested group " << groupId);
-					return false;
+					printDatabaseError();
 				}
 			}
-			else
-			{
-				// There was an error
-				printDatabaseError();
-				return false;
-			}
 		}
-		
-		// Load members
+		else
 		{
-			wowpp::MySQL::Select select(m_connection, fmt::format(
-				"SELECT `guid` FROM `group_members` WHERE `group` = {0} AND `guid` != {1} LIMIT 40;"
-				, groupId
-				, out_leader
-				));
-			if (select.success())
-			{
-				wowpp::MySQL::Row row(select);
-				while (row)
-				{
-					// Load leader guid
-					UInt64 memberGuid = 0;
-					row.getField(0, memberGuid);
-					out_member.push_back(memberGuid);
-
-					row = row.next(select);
-				}
-			}
-			else
-			{
-				// There was an error
-				printDatabaseError();
-				return false;
-			}
+			printDatabaseError();
 		}
 
-		return true;
+		return {};
 	}
 }

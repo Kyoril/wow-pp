@@ -36,6 +36,26 @@ namespace wowpp
 		class SpellEntry;
 	}
 
+
+	/// Social entry to be used by the PlayerSocial class.
+	struct PlayerSocialEntry
+	{
+		UInt64 guid;
+		game::SocialFlag flags;
+		std::string note;
+	};
+
+	/// Vector of PlayerSocialEntry objects for syntactic sugar
+	typedef std::vector<PlayerSocialEntry> PlayerSocialEntries;
+
+
+	struct GroupData
+	{
+		UInt64 leaderGuid;
+		std::vector<UInt64> memberGuids;
+	};
+
+
 	/// Basic interface for a database system used by the realm server.
 	struct IDatabase
 	{
@@ -71,9 +91,8 @@ namespace wowpp
 		/// 
 		/// 
 		/// @param accountId
-		/// @param out_characters
 		/// @returns 
-		virtual bool getCharacters(UInt32 accountId, game::CharEntries &out_characters) = 0;
+		virtual boost::optional<game::CharEntries> getCharacters(UInt32 accountId) = 0;
 		/// 
 		/// 
 		/// @param accountId
@@ -95,9 +114,8 @@ namespace wowpp
 		/// 
 		/// 
 		/// @param characterId 
-		/// @param out_social
 		/// @returns 
-		virtual bool getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social) = 0;
+		virtual boost::optional<PlayerSocialEntries> getCharacterSocialList(DatabaseId characterId) = 0;
 		/// 
 		/// 
 		/// @param characterId
@@ -105,14 +123,14 @@ namespace wowpp
 		/// @param flags
 		/// @param note
 		/// @returns 
-		virtual bool addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) = 0;
+		virtual void addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) = 0;
 		/// 
 		/// 
 		/// @param characterId
 		/// @param socialGuid
 		/// @param flags
 		/// @returns 
-		virtual bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags) = 0;
+		virtual void updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags) = 0;
 		/// 
 		/// 
 		/// @param characterId
@@ -120,13 +138,13 @@ namespace wowpp
 		/// @param flags
 		/// @param note 
 		/// @returns 
-		virtual bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) = 0;
+		virtual void updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) = 0;
 		/// 
 		/// 
 		/// @param characterId
 		/// @param socialGuid
 		/// @returns 
-		virtual bool removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid) = 0;
+		virtual void removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid) = 0;
 		/// 
 		/// 
 		/// @param characterId
@@ -138,20 +156,20 @@ namespace wowpp
 		/// @param characterId
 		/// @param buttons
 		/// @returns 
-		virtual bool setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons) = 0;
+		virtual void setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons) = 0;
 		/// 
 		/// 
 		/// @param characterId
 		/// @param state
 		/// @returns 
-		virtual bool setCinematicState(DatabaseId characterId, bool state) = 0;
+		virtual void setCinematicState(DatabaseId characterId, bool state) = 0;
 		/// 
 		/// 
 		/// @param characterId
 		/// @param questId
 		/// @param data 
 		/// @returns 
-		virtual bool setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) = 0;
+		virtual void setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) = 0;
 		/// 
 		/// 
 		/// @param characterId
@@ -162,54 +180,51 @@ namespace wowpp
 		/// @param o 
 		/// @param changeHome 
 		/// @returns 
-		virtual bool teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome = false) = 0;
+		virtual void teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome = false) = 0;
 		/// 
 		/// 
 		/// @param characterId
 		/// @param spellId
 		/// @returns 
-		virtual bool learnSpell(DatabaseId characterId, UInt32 spellId) = 0;
+		virtual void learnSpell(DatabaseId characterId, UInt32 spellId) = 0;
 		/// 
 		/// 
 		/// @param groupId
 		/// @param leader
 		/// @returns 
-		virtual bool createGroup(UInt64 groupId, UInt64 leader) = 0;
+		virtual void createGroup(UInt64 groupId, UInt64 leader) = 0;
 		/// 
 		/// 
 		/// @param groupId
 		/// @returns 
-		virtual bool disbandGroup(UInt64 groupId) = 0;
+		virtual void disbandGroup(UInt64 groupId) = 0;
 		/// 
 		/// 
 		/// @param groupId
 		/// @param member 
 		/// @returns 
-		virtual bool addGroupMember(UInt64 groupId, UInt64 member) = 0;
+		virtual void addGroupMember(UInt64 groupId, UInt64 member) = 0;
 		/// 
 		/// 
 		/// @param groupId
 		/// @param leaderGuid 
 		/// @returns 
-		virtual bool setGroupLeader(UInt64 groupId, UInt64 leaderGuid) = 0;
+		virtual void setGroupLeader(UInt64 groupId, UInt64 leaderGuid) = 0;
 		/// 
 		/// 
 		/// @param groupId
 		/// @param member 
 		/// @returns 
-		virtual bool removeGroupMember(UInt64 groupId, UInt64 member) = 0;
+		virtual void removeGroupMember(UInt64 groupId, UInt64 member) = 0;
 		/// 
 		/// 
-		/// @param out_groupIds  
 		/// @returns 
-		virtual bool listGroups(std::vector<UInt64> &out_groupIds) = 0;
+		virtual boost::optional<std::vector<UInt64>> listGroups() = 0;
 		/// 
 		/// 
 		/// @param groupId
-		/// @param out_leader 
-		/// @param out_member
 		/// @returns 
-		virtual bool loadGroup(UInt64 groupId, UInt64 &out_leader, std::vector<UInt64> &out_member) = 0;
+		virtual boost::optional<GroupData> loadGroup(UInt64 groupId) = 0;
 	};
 
 	/// Enumerates possible request status results for async database requests with void return types.
