@@ -720,6 +720,7 @@ namespace wowpp
 		}
 		catch (const std::exception& ex)
 		{
+			ELOG("Database error: " << ex.what());
 			result = game::response_code::CharDeleteFailed;
 		}
 
@@ -1663,6 +1664,7 @@ namespace wowpp
 			}
 			catch (const std::exception& ex)
 			{
+				ELOG("Database error: " << ex.what());
 				result = game::friend_result::DatabaseError;
 			}
 

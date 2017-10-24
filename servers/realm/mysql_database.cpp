@@ -462,7 +462,7 @@ namespace wowpp
 		MySQL::Transaction transation(m_connection);
 		{
 			if (!m_connection.execute(fmt::format(
-				"DELETE FROM `character` WHERE `id`={0} AND `account`={1}"
+				"UPDATE `character` SET `account`=0, `deleted_account`={1}, `deleted_timestamp`=NULL WHERE `id`={0} AND `account`={1} AND `deleted_account` IS NULL LIMIT 1"
 				, lowerPart
 				, accountId)))
 			{
@@ -470,7 +470,7 @@ namespace wowpp
 			}
 
 			if (!m_connection.execute(fmt::format(
-				"DELETE FROM `character_social` WHERE `guid_1`={0} OR `guid_2`={0}"
+				"DELETE FROM `character_social` WHERE `guid_2`={0}"
 				, characterGuid)))
 			{
 				throw MySQL::Exception(m_connection.getErrorMessage());
