@@ -212,8 +212,16 @@ namespace wowpp
 		// Entered the combat state
 		m_entered = true;
 
-		// Choose next action
-		chooseNextAction();
+		// Save weakptr reference
+		std::weak_ptr<CreatureAICombatState> weakThis = std::static_pointer_cast<CreatureAICombatState>(shared_from_this());
+
+		// Delay first action on the next world tick
+		controlled.getWorldInstance()->getUniverse().post([weakThis]() {
+			if (auto strongThis = weakThis.lock())
+			{
+				strongThis->chooseNextAction();
+			}
+		});
 	}
 
 	void CreatureAICombatState::onLeave()
