@@ -39,6 +39,50 @@ namespace wowpp
 		                           web::WebResponse &response) override;
 
 	private:
+		// GET handlers
 
+		/// Handles the /uptime GET request.
+		/// 
+		/// @param response Can be used to send a response to the web client.
+		void handleGetUptime(web::WebResponse &response);
+		/// Handles the /players GET request.
+		/// 
+		/// @param response Can be used to send a response to the web client.
+		void handleGetPlayers(web::WebResponse &response);
+		/// Handles the /nodes GET request.
+		/// 
+		/// @param response Can be used to send a response to the web client.
+		void handleGetNodes(web::WebResponse &response);
+
+	private:
+		// POST handlers
+
+		/// Handles the /shutdown POST request.
+		/// 
+		/// @param response Can be used to send a response to the web client.
+		/// @param arguments List of arguments which have been parsed from the POST data.
+		void handlePostShutdown(web::WebResponse &response, const std::vector<std::string> arguments);
+		/// Handles the /copy-premade POST request.
+		/// 
+		/// @param response Can be used to send a response to the web client.
+		/// @param arguments List of arguments which have been parsed from the POST data.
+		void handlePostCopyPremade(web::WebResponse &response, const std::vector<std::string> arguments);
+#ifdef WOWPP_WITH_DEV_COMMANDS
+		/// Handles the /additem POST request.
+		/// 
+		/// @param response Can be used to send a response to the web client.
+		/// @param arguments List of arguments which have been parsed from the POST data.
+		void handlePostAddItem(web::WebResponse &response, const std::vector<std::string> arguments);
+		/// Handles the /learnspell POST request.
+		/// 
+		/// @param response Can be used to send a response to the web client.
+		/// @param arguments List of arguments which have been parsed from the POST data.
+		void handlePostLearnSpell(web::WebResponse &response, const std::vector<std::string> arguments);
+		/// Handles the /teleport POST request.
+		/// 
+		/// @param response Can be used to send a response to the web client.
+		/// @param arguments List of arguments which have been parsed from the POST data.
+		void handlePostTeleport(web::WebResponse &response, const std::vector<std::string> arguments);
+#endif
 	};
 }
