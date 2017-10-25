@@ -36,6 +36,14 @@ namespace wowpp
 		class SpellEntry;
 	}
 
+	/// Argument structure for deleting a character.
+	struct DeleteCharacterArgs
+	{
+		/// The respective account id as 
+		UInt32 accountId;
+		/// The character id.
+		DatabaseId characterId;
+	};
 
 	/// Social entry to be used by the PlayerSocial class.
 	struct PlayerSocialEntry
@@ -105,9 +113,9 @@ namespace wowpp
 		/// This will also set the current timestamp so that you can manually cleanup the db later,
 		/// for example delete every character which was "deleted" 30+ days before.
 		/// 
-		/// @param accountId The account id.
-		/// @param characterGuid Database id of the character to delete.
-		virtual void deleteCharacter(UInt32 accountId, UInt64 characterGuid) = 0;
+		/// @param arguments Function arguments.
+		/// @throw std::exception If a database error occurred.
+		virtual void deleteCharacter(DeleteCharacterArgs arguments) = 0;
 		/// Loads all game-relevant data of a specific character from the database. This query
 		/// is quite expensive!
 		/// 
@@ -320,6 +328,27 @@ namespace wowpp
 	public:
 		/// Performs an async database request and allows passing exactly one argument to the database request.
 		/// 
+		/// @param method A request callback which will be executed on the database thread without blocking the caller.
+		/// @param b0 Argument which will be forwarded to the handler.
+		template <class A0, class B0_>
+		void asyncRequest(void(IDatabase::*method)(A0), B0_ &&b0)
+		{
+			auto request = std::bind(method, &m_database, std::forward<B0_>(b0));
+			auto processor = [request]() -> void {
+				try
+				{
+					request();
+				}
+				catch (const std::exception& ex)
+				{
+					defaultLogException(ex);
+				}
+			}
+			m_asyncWorker(processor);
+		}
+
+		/// Performs an async database request and allows passing exactly one argument to the database request.
+		/// 
 		/// @param handler A handler callback which will be executed after the request was successful.
 		/// @param method A request callback which will be executed on the database thread without blocking the caller.
 		/// @param b0 Argument which will be forwarded to the handler.
@@ -330,7 +359,7 @@ namespace wowpp
 			auto processor = [this, request, handler]() -> void
 			{
 				detail::RequestProcessor<Result> proc;
-				return proc(m_resultDispatcher, request, handler);
+				proc(m_resultDispatcher, request, handler);
 			};
 			m_asyncWorker(processor);
 		}
@@ -346,7 +375,7 @@ namespace wowpp
 			{
 				detail::RequestProcessor<Result> proc;
 				auto boundRequest = std::bind(request, &m_database);
-				return proc(m_resultDispatcher, boundRequest, handler);
+				proc(m_resultDispatcher, boundRequest, handler);
 			};
 			m_asyncWorker(std::move(processor));
 		}

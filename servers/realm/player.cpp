@@ -23,7 +23,6 @@
 #include "player.h"
 #include "player_manager.h"
 #include "configuration.h"
-#include "database.h"
 #include "common/sha1.h"
 #include "log/default_log_levels.h"
 #include "common/clock.h"
@@ -202,6 +201,17 @@ namespace wowpp
 		// Send character list
 		sendPacket(
 			std::bind(game::server_write::charEnum, std::placeholders::_1, std::cref(m_characters)));
+	}
+
+	void Player::handleDeleteCharacter(RequestStatus result)
+	{
+		// Determine response code to send
+		const game::ResponseCode response = 
+			(result == RequestFail) ? game::response_code::CharCreateFailed : game::response_code::CharDeleteSuccess;
+
+		// Send disabled message for now
+		sendPacket(
+			std::bind(game::server_write::charDelete, std::placeholders::_1, response));
 	}
 
 	void Player::destroy()
@@ -767,15 +777,8 @@ namespace wowpp
 		// Load characters
 		m_characters.clear();
 
-		// Callback handler
-		auto handler = 
-			std::bind<void>(
-				bind_weak_ptr_1<Player>(
-					shared_from_this(),
-					std::bind(&Player::handleCharacterList, std::placeholders::_1, std::placeholders::_2)),		// Player Instance, Result
-				std::placeholders::_1);	// Player instance
-
 		// Start request
+		auto handler = bind_weak_ptr(shared_from_this(), &Player::handleCharacterList);
 		m_asyncDatabase.asyncRequest(std::move(handler), &IDatabase::getCharacters, m_accountId);
 	}
 

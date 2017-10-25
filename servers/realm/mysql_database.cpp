@@ -455,9 +455,9 @@ namespace wowpp
 		return Result;
 	}
 
-	void MySQLDatabase::deleteCharacter(UInt32 accountId, UInt64 characterGuid)
+	void MySQLDatabase::deleteCharacter(DeleteCharacterArgs arguments)
 	{
-		const UInt32 lowerPart = guidLowerPart(characterGuid);
+		const UInt32 lowerPart = guidLowerPart(arguments.characterId);
 
 		// Start transaction
 		MySQL::Transaction transation(m_connection);
@@ -465,14 +465,14 @@ namespace wowpp
 			if (!m_connection.execute(fmt::format(
 				"UPDATE `character` SET `account`=0, `deleted_account`={1}, `deleted_timestamp`=NULL WHERE `id`={0} AND `account`={1} AND `deleted_account` IS NULL LIMIT 1"
 				, lowerPart
-				, accountId)))
+				, arguments.accountId)))
 			{
 				throw MySQL::Exception(m_connection.getErrorMessage());
 			}
 
 			if (!m_connection.execute(fmt::format(
 				"DELETE FROM `character_social` WHERE `guid_2`={0}"
-				, characterGuid)))
+				, arguments.characterId)))
 			{
 				throw MySQL::Exception(m_connection.getErrorMessage());
 			}

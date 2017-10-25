@@ -97,8 +97,49 @@ namespace wowpp
 				}
 			}
 		};
+
+
+		template <class Class0, class Class1, class R, class... Args>
+		struct WeakPtrFunction
+		{
+			explicit WeakPtrFunction(std::shared_ptr<Class0> c, R(Class1::*method)(Args...))
+				: weak{ std::move(c) }
+				, method{ method }
+			{
+			}
+
+
+			template <class T = R, class... Args1>
+			std::enable_if_t<std::is_void<T>::value, void> operator () (Args1&&... args) const
+			{
+				if (auto strong = weak.lock()) {
+					(strong.get()->*method)(std::forward<Args1>(args)...);
+				}
+			}
+
+			template <class T = R, class... Args1>
+			std::enable_if_t<!std::is_void<T>::value, boost::optional<T>> operator () (Args1&&... args) const
+			{
+				if (auto strong = weak.lock()) {
+					return boost::optional<T>{
+						(strong.get()->*method)(std::forward<Args1>(args)...)
+					};
+				}
+				return boost::optional<T>{};
+			}
+
+		private:
+			std::weak_ptr<Class0> weak;
+			R(Class1::*method)(Args...) = nullptr;
+		};
 	}
 
+	template <class Class0, class Class1, class R, class... Args>
+	auto bind_weak_ptr(std::shared_ptr<Class0> c, R(Class1::*method)(Args...))
+		-> detail::WeakPtrFunction<Class0, Class1, R, Args...>
+	{
+		return detail::WeakPtrFunction<Class0, Class1, R, Args...>{ std::move(c), method };
+	}
 
 	template <class T, class F>
 	detail::WeakPtrFunction0<T, F> bind_weak_ptr_0(std::shared_ptr<T> ptr, F function)

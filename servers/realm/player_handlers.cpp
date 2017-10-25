@@ -23,7 +23,6 @@
 #include "player.h"
 #include "player_manager.h"
 #include "configuration.h"
-#include "database.h"
 #include "common/sha1.h"
 #include "log/default_log_levels.h"
 #include "common/clock.h"
@@ -389,21 +388,12 @@ namespace wowpp
 		// Remove character from cache
 		m_characters.erase(c);
 
-		// Delete from database
-		game::ResponseCode result = game::response_code::CharDeleteSuccess;
-		try
-		{
-			m_database.deleteCharacter(m_accountId, characterId);
-		}
-		catch (const std::exception& ex)
-		{
-			ELOG("Database error: " << ex.what());
-			result = game::response_code::CharDeleteFailed;
-		}
-
-		// Send disabled message for now
-		sendPacket(
-			std::bind(game::server_write::charDelete, std::placeholders::_1, result));
+		// Prepare async delete request
+		DeleteCharacterArgs arguments;
+		arguments.accountId = m_accountId;
+		arguments.characterId = characterId;
+		auto handler = bind_weak_ptr(shared_from_this(), &Player::handleDeleteCharacter);
+		m_asyncDatabase.asyncRequest(std::move(handler), &IDatabase::deleteCharacter, arguments);
 	}
 
 	void Player::handlePlayerLogin(game::IncomingPacket &packet)

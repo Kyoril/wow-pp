@@ -30,6 +30,7 @@
 #include "common/id_generator.h"
 #include "game/game_character.h"
 #include "log/default_log_levels.h"
+#include "database.h"
 
 namespace wowpp
 {
@@ -37,8 +38,6 @@ namespace wowpp
 	class PlayerManager;
 	class LoginConnector;
 	class WorldManager;
-	struct IDatabase;
-	class AsyncDatabase;
 	class World;
 	struct Configuration;
 	class PlayerSocial;
@@ -274,6 +273,8 @@ namespace wowpp
 
 		/// Async database callback for the character list.
 		void handleCharacterList(const boost::optional<game::CharEntries> &result);
+		/// Async database callback for character deletion.
+		void handleDeleteCharacter(RequestStatus result);
 
 	private:
 
