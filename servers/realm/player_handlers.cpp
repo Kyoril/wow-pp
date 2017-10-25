@@ -558,19 +558,8 @@ namespace wowpp
 			UInt32 databaseID = guidLowerPart(objectGuid);
 
 			// Look for the specified player
-			auto entry = m_database.getCharacterById(databaseID);
-			if (!entry)
-			{
-				WLOG("Could not resolve name for player guid " << databaseID);
-				return;
-			}
-
-			// Our realm name
-			const String realmName("");
-
-			// Send answer
-			sendPacket(
-				std::bind(game::server_write::nameQueryResponse, std::placeholders::_1, objectGuid, std::cref(entry->name), std::cref(realmName), entry->race, entry->gender, entry->class_));
+			auto handler = bind_weak_ptr(shared_from_this(), &Player::handleCharacterName);
+			m_asyncDatabase.asyncRequest(std::move(handler), &IDatabase::getCharacterById, databaseID);
 		}
 	}
 
@@ -644,58 +633,63 @@ namespace wowpp
 				}
 
 				// Get player guid by name
-				auto entry = m_database.getCharacterByName(receiver);
-				if (!entry)
+				std::weak_ptr<Player> weakThis = shared_from_this();
+				m_asyncDatabase.asyncRequest([weakThis, receiver, lang, channel, message](const boost::optional<game::CharEntry> &entry) 
 				{
-					sendPacket(
-						std::bind(game::server_write::chatPlayerNotFound, std::placeholders::_1, std::cref(receiver)));
-					break;
-				}
+					if (auto this_ = weakThis.lock())
+					{
+						if (!entry)
+						{
+							this_->sendPacket(
+								std::bind(game::server_write::chatPlayerNotFound, std::placeholders::_1, std::cref(receiver)));
+							return;
+						}
 
-				// Check faction
-				const bool isAllianceA = ((game::race::Alliance & (1 << (m_gameCharacter->getRace() - 1))) == (1 << (m_gameCharacter->getRace() - 1)));
-				const bool isAllianceB = ((game::race::Alliance & (1 << (entry->race - 1))) == (1 << (entry->race - 1)));
-				if (isAllianceA != isAllianceB)
-				{
-					sendPacket(
-						std::bind(game::server_write::chatWrongFaction, std::placeholders::_1));
-					break;
-				}
+						// Check faction
+						const bool isAllianceA = ((game::race::Alliance & (1 << (this_->m_gameCharacter->getRace() - 1))) == (1 << (this_->m_gameCharacter->getRace() - 1)));
+						const bool isAllianceB = ((game::race::Alliance & (1 << (entry->race - 1))) == (1 << (entry->race - 1)));
+						if (isAllianceA != isAllianceB)
+						{
+							this_->sendPacket(
+								std::bind(game::server_write::chatWrongFaction, std::placeholders::_1));
+							return;
+						}
 
-				// Make realm GUID
-				UInt64 guid = createRealmGUID(entry->id, m_loginConnector.getRealmID(), guid_type::Player);
+						// Make realm GUID
+						UInt64 guid = createRealmGUID(entry->id, this_->m_loginConnector.getRealmID(), guid_type::Player);
 
-				// Check if that player is online right now
-				Player *other = m_manager.getPlayerByCharacterGuid(guid);
-				if (!other)
-				{
-					sendPacket(
-						std::bind(game::server_write::chatPlayerNotFound, std::placeholders::_1, std::cref(receiver)));
-					break;
-				}
+						// Check if that player is online right now
+						Player *other = this_->m_manager.getPlayerByCharacterGuid(guid);
+						if (!other)
+						{
+							this_->sendPacket(
+								std::bind(game::server_write::chatPlayerNotFound, std::placeholders::_1, std::cref(receiver)));
+							return;
+						}
 
-				if (other->getSocial().isIgnored(m_gameCharacter->getGuid()))
-				{
-					DLOG("TODO: Other player ignores us - notify our client about this...");
-					break;
-				}
+						if (other->getSocial().isIgnored(this_->m_gameCharacter->getGuid()))
+						{
+							DLOG("TODO: Other player ignores us - notify our client about this...");
+							return;
+						}
 
-				// TODO: Check if that player is a GM and if he accepts whispers from us, eventually block
+						// TODO: Check if that player is a GM and if he accepts whispers from us, eventually block
 
-				// Change language if needed so that whispers are always readable
-				if (lang != game::language::Addon) lang = game::language::Universal;
+						// Change language if needed so that whispers are always readable
+						auto language = (lang != game::language::Addon) ? game::language::Universal : lang;
 
-				// Send whisper message
-				other->sendPacket(
-					std::bind(game::server_write::messageChat, std::placeholders::_1, game::chat_msg::Whisper, lang, std::cref(channel), m_characterId, std::cref(message), m_gameCharacter.get()));
+						// Send whisper message
+						other->sendPacket(
+							std::bind(game::server_write::messageChat, std::placeholders::_1, game::chat_msg::Whisper, language, std::cref(channel), this_->m_characterId, std::cref(message), this_->m_gameCharacter.get()));
 
-				// If not an addon message, send reply message
-				if (lang != game::language::Addon)
-				{
-					sendPacket(
-						std::bind(game::server_write::messageChat, std::placeholders::_1, game::chat_msg::Reply, lang, std::cref(channel), guid, std::cref(message), m_gameCharacter.get()));
-				}
-
+						// If not an addon message, send reply message
+						if (language != game::language::Addon)
+						{
+							this_->sendPacket(
+								std::bind(game::server_write::messageChat, std::placeholders::_1, game::chat_msg::Reply, language, std::cref(channel), guid, std::cref(message), this_->m_gameCharacter.get()));
+						}
+					}
+				}, &IDatabase::getCharacterByName, receiver);
 				break;
 			}
 			case game::chat_msg::Raid:
@@ -802,80 +796,11 @@ namespace wowpp
 		}
 
 		// Convert name
-		if (!name.empty())
-			capitalize(name);
+		capitalize(name);
 
-		// Find the character details
-		auto friendChar = m_database.getCharacterByName(name);
-		if (!friendChar)
-		{
-			WLOG("Could not find that character");
-			return;
-		}
-
-		// Create the characters guid value
-		UInt64 characterGUID = createRealmGUID(friendChar->id, m_loginConnector.getRealmID(), guid_type::Player);
-
-		// Fill friend info
-		game::SocialInfo info;
-		info.flags = game::Friend;
-		info.area = friendChar->zoneId;
-		info.level = friendChar->level;
-		info.class_ = friendChar->class_;
-		info.note = std::move(note);
-
-		// Check faction
-		const bool isAllianceA = ((game::race::Alliance & (1 << (m_gameCharacter->getRace() - 1))) == (1 << (m_gameCharacter->getRace() - 1)));
-		const bool isAllianceB = ((game::race::Alliance & (1 << (friendChar->race - 1))) == (1 << (friendChar->race - 1)));
-
-		// Result code
-		game::FriendResult result = game::friend_result::AddedOffline;
-		if (characterGUID == m_characterId)
-		{
-			result = game::friend_result::Self;
-		}
-		else if (isAllianceA != isAllianceB)
-		{
-			result = game::friend_result::Enemy;
-		}
-		else
-		{
-			// Add to social list
-			result = m_social->addToSocialList(characterGUID, false);
-			if (result == game::friend_result::AddedOffline)
-			{
-				// Add to database
-				const bool shouldUpdate = m_social->isIgnored(characterGUID);
-				try
-				{
-					if (!shouldUpdate)
-					{
-						m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), info.note);
-					}
-					else
-					{
-						m_database.updateCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(game::Friend | game::Ignored));
-					}
-				}
-				catch (const std::exception& ex)
-				{
-					ELOG("Datbase exception: " << ex.what());
-					result = game::friend_result::DatabaseError;
-				}
-			}
-		}
-
-		// Check if the player is online
-		Player *friendPlayer = m_manager.getPlayerByCharacterGuid(characterGUID);
-		info.status = friendPlayer ? game::friend_status::Online : game::friend_status::Offline;
-		if (result == game::friend_result::AddedOffline &&
-			friendPlayer != nullptr)
-		{
-			result = game::friend_result::AddedOnline;
-		}
-
-		sendPacket(
-			std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGUID, result, std::cref(info)));
+		// Build the handler
+		auto handler = std::bind<void>(bind_weak_ptr(shared_from_this(), &Player::handleAddFriendRequest), std::placeholders::_1, std::move(note));
+		m_asyncDatabase.asyncRequest(std::move(handler), &IDatabase::getCharacterByName, name);
 	}
 
 	void Player::handleDeleteFriend(game::IncomingPacket &packet)
@@ -932,54 +857,10 @@ namespace wowpp
 		}
 
 		// Convert name
-		if (!name.empty())
-			capitalize(name);
+		capitalize(name);
 
-		// Find the character details
-		auto ignoredChar = m_database.getCharacterByName(name);
-		if (!ignoredChar)
-		{
-			WLOG("Could not find that character");
-			return;
-		}
-
-		// Create the characters guid value
-		UInt64 characterGUID = createRealmGUID(ignoredChar->id, m_loginConnector.getRealmID(), guid_type::Player);
-
-		// Fill ignored info
-		game::SocialInfo info;
-		info.flags = game::Ignored;
-		info.area = ignoredChar->zoneId;
-		info.level = ignoredChar->level;
-		info.class_ = ignoredChar->class_;
-
-		//result
-		game::FriendResult result = m_social->addToSocialList(characterGUID, true);
-		if (result == game::friend_result::IgnoreAdded)
-		{
-			const bool shouldUpdate = m_social->isFriend(characterGUID);
-			try
-			{
-				if (!shouldUpdate)
-				{
-					m_database.addCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(info.flags), "");
-				}
-				else
-				{
-					m_database.updateCharacterSocialContact(m_characterId, characterGUID, static_cast<game::SocialFlag>(game::Friend | game::Ignored));
-				}
-			}
-			catch (const std::exception& e)
-			{
-				ELOG("Database exception: " << e.what());
-				result = game::friend_result::DatabaseError;
-			}
-
-			m_worldNode->characterAddIgnore(m_characterId, characterGUID);
-		}
-
-		sendPacket(
-			std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGUID, result, std::cref(info)));
+		auto handler = bind_weak_ptr(shared_from_this(), &Player::handleAddIgnoreRequest);
+		m_asyncDatabase.asyncRequest(std::move(handler), &IDatabase::getCharacterByName, name);
 	}
 
 	void Player::handleDeleteIgnore(game::IncomingPacket &packet)
@@ -1005,7 +886,11 @@ namespace wowpp
 			{
 				if (m_social->isFriend(guid))
 				{
-					m_database.updateCharacterSocialContact(m_characterId, guid, game::Friend);
+					UpdateSocialContactArg arg;
+					arg.characterId = m_characterId;
+					arg.socialGuid = guid;
+					arg.flags = game::Friend;
+					m_database.updateCharacterSocialContact(arg);
 				}
 				else
 				{

@@ -51,9 +51,9 @@ namespace wowpp
 		/// @copydoc wowpp::IDatabase::createCharacter
 		game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<ItemData> &items, game::CharEntry &character) override;
 		/// @copydoc wowpp::IDatabase::createCharacterById
-		boost::optional<game::CharEntry> getCharacterById(DatabaseId id) override;
+		game::CharEntry getCharacterById(DatabaseId id) override;
 		/// @copydoc wowpp::IDatabase::createCharacterByName
-		boost::optional<game::CharEntry> getCharacterByName(const String &name) override;
+		game::CharEntry getCharacterByName(const String &name) override;
 		/// @copydoc wowpp::IDatabase::getCharacters
 		game::CharEntries getCharacters(UInt32 accountId) override;
 		/// @copydoc wowpp::IDatabase::deleteCharacter
@@ -65,9 +65,9 @@ namespace wowpp
 		/// @copydoc wowpp::IDatabase::getCharacterSocialList
 		boost::optional<PlayerSocialEntries> getCharacterSocialList(DatabaseId characterId) override;
 		/// @copydoc wowpp::IDatabase::addCharacterSocialContact
-		void addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) override;
+		void addCharacterSocialContact(AddSocialContactArg arguments) override;
 		/// @copydoc wowpp::IDatabase::updateCharacterSocialContact
-		void updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags) override;
+		void updateCharacterSocialContact(UpdateSocialContactArg arguments) override;
 		/// @copydoc wowpp::IDatabase::updateCharacterSocialContact
 		void updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) override;
 		/// @copydoc wowpp::IDatabase::removeCharacterSocialContact

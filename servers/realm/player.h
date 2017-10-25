@@ -275,6 +275,12 @@ namespace wowpp
 		void handleCharacterList(const boost::optional<game::CharEntries> &result);
 		/// Async database callback for character deletion.
 		void handleDeleteCharacter(RequestStatus result);
+		/// Async database callback for character name request.
+		void handleCharacterName(const boost::optional<game::CharEntry> &result);
+
+		void handleAddFriendRequest(const boost::optional<game::CharEntry> &result, String note);
+		void handleAddIgnoreRequest(const boost::optional<game::CharEntry> &result);
+		void handleAddIgnoreResponse(RequestStatus status, UInt64 characterGuid, game::SocialInfo info);
 
 	private:
 

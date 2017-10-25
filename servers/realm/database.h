@@ -45,6 +45,21 @@ namespace wowpp
 		DatabaseId characterId;
 	};
 
+	struct AddSocialContactArg
+	{
+		DatabaseId characterId;
+		UInt64 socialGuid;
+		game::SocialFlag flags;
+		String note;
+	};
+
+	struct UpdateSocialContactArg
+	{
+		DatabaseId characterId;
+		UInt64 socialGuid;
+		game::SocialFlag flags;
+	};
+
 	/// Social entry to be used by the PlayerSocial class.
 	struct PlayerSocialEntry
 	{
@@ -96,13 +111,15 @@ namespace wowpp
 		virtual game::ResponseCode renameCharacter(DatabaseId id, const String &newName) = 0;
 		/// Retrieves character information based on a character id.
 		/// @param id Characters database id.
+		/// @throw std::exception If a database error occurred.
 		/// @return Filled CharEntry struct or nullptr on failure or non-existance.
-		virtual boost::optional<game::CharEntry> getCharacterById(DatabaseId id) = 0;
+		virtual game::CharEntry getCharacterById(DatabaseId id) = 0;
 		/// Retrieves character information based on a characters name.
 		/// 
 		/// @param id Characters name.
+		/// @throw std::exception If a database error occurred.
 		/// @return Filled CharEntry struct or nullptr on failure or non-existance.
-		virtual boost::optional<game::CharEntry> getCharacterByName(const String &name) = 0;
+		virtual game::CharEntry getCharacterByName(const String &name) = 0;
 		/// Retrieves informations about all characters of a specific account.
 		/// 
 		/// @param accountId The account id.
@@ -142,14 +159,14 @@ namespace wowpp
 		/// @param flags Social flags.
 		/// @param note Custom note.
 		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
-		virtual void addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) = 0;
+		virtual void addCharacterSocialContact(AddSocialContactArg arguments) = 0;
 		/// Updates a social contact of a specific characters social list.
 		/// 
 		/// @param characterId Guid of the character whose social list will be updated.
 		/// @param socialGuid Guid of the other character.
 		/// @param flags Social flags.
 		/// @throw std::exception In case of a database error (i.e. syntax error, access error etc.)
-		virtual void updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags) = 0;
+		virtual void updateCharacterSocialContact(UpdateSocialContactArg arguments) = 0;
 		/// Updates a social contact of a specific characters social list.
 		/// 
 		/// @param characterId Guid of the character whose social list will be updated.
@@ -352,10 +369,10 @@ namespace wowpp
 		/// @param handler A handler callback which will be executed after the request was successful.
 		/// @param method A request callback which will be executed on the database thread without blocking the caller.
 		/// @param b0 Argument which will be forwarded to the handler.
-		template <class ResultHandler, class Result, class A0, class B0_>
-		void asyncRequest(ResultHandler &&handler, Result(IDatabase::*method)(A0), B0_ &&b0)
+		template <class ResultHandler, class Result, class A0, class... Args>
+		void asyncRequest(ResultHandler &&handler, Result(IDatabase::*method)(A0), Args&&... b0)
 		{
-			auto request = std::bind(method, &m_database, std::forward<B0_>(b0));
+			auto request = std::bind(method, &m_database, std::forward<Args>(b0)...);
 			auto processor = [this, request, handler]() -> void
 			{
 				detail::RequestProcessor<Result> proc;

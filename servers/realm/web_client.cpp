@@ -695,22 +695,26 @@ namespace wowpp
 			auto &db = static_cast<WebService &>(this->getService()).getDatabase();
 
 			// Does the character exist?
-			auto entry = db.getCharacterByName(characterName);
-			if (!entry)
-			{
-				sendXmlAnswer(response, "<status>CHARACTER_NOT_FOUND</status>");
-				return;
-			}
-
-			// Character exists - teleport him
 			try
 			{
-				db.learnSpell(entry->id, spellId);
+				auto entry = db.getCharacterByName(characterName);
+
+				// Character known - learn spell
+				try
+				{
+					db.learnSpell(entry.id, spellId);
+				}
+				catch (const std::exception &ex)
+				{
+					ELOG("Database error: " << ex.what());
+					sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+					return;
+				}
 			}
-			catch (const std::exception &ex)
+			catch (const std::exception& ex)
 			{
-				ELOG("Database error: " << ex.what());
-				sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+				defaultLogException(ex);
+				sendXmlAnswer(response, "<status>CHARACTER_NOT_FOUND</status>");
 				return;
 			}
 
@@ -797,25 +801,29 @@ namespace wowpp
 			auto &db = static_cast<WebService &>(this->getService()).getDatabase();
 
 			// Does the character exist?
-			auto entry = db.getCharacterByName(characterName);
-			if (!entry)
+			try
 			{
+				auto entry = db.getCharacterByName(characterName);
+
+				// Character exists - teleport him
+				try
+				{
+					db.teleportCharacter(entry.id, mapId, x, y, z, o);
+				}
+				catch (const std::exception &ex)
+				{
+					ELOG("Database error: " << ex.what());
+					sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+					return;
+				}
+			}
+			catch (const std::exception &ex)
+			{
+				defaultLogException(ex);
 				sendXmlAnswer(response, "<status>CHARACTER_NOT_FOUND</status>");
 				return;
 			}
 
-			// Character exists - teleport him
-			try
-			{
-				db.teleportCharacter(entry->id, mapId, x, y, z, o);
-			}
-			catch (const std::exception &ex)
-			{
-				ELOG("Database error: " << ex.what());
-				sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
-				return;
-			}
-			
 			sendXmlAnswer(response, "<status>SUCCESS</status>");
 		}
 		else

@@ -1019,8 +1019,11 @@ namespace wowpp
 		ASSERT(false);
 	}
 
-	boost::optional<game::CharEntry> MySQLDatabase::getCharacterById(DatabaseId id)
+	game::CharEntry MySQLDatabase::getCharacterById(DatabaseId id)
 	{
+		// Create temporary character entry for the results
+		game::CharEntry entry;
+
 		UInt32 lowerPart = guidLowerPart(id);
 		wowpp::MySQL::Select select(m_connection,
 			//      0     1       2       3        4        5       6        7       8    
@@ -1035,9 +1038,6 @@ namespace wowpp
 			{
 				UInt32 bytes = 0, bytes2 = 0;
 
-				// Create temporary character entry for the results
-				game::CharEntry entry;
-
 				// Basic stuff
 				row.getField(0, entry.id);
 				row.getField(1, entry.name);
@@ -1073,20 +1073,25 @@ namespace wowpp
 				entry.hairStyle = static_cast<UInt8>(bytes >> 16);
 				entry.hairColor = static_cast<UInt8>(bytes >> 24);
 				entry.facialHair = static_cast<UInt8>(bytes2 & 0xff);
-				return entry;
+			}
+			else
+			{
+				throw std::exception("Character doesn't exist");
 			}
 		}
 		else
 		{
-			// There was an error
-			printDatabaseError();
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 
-		return {};
+		return entry;
 	}
 
-	boost::optional<game::CharEntry> MySQLDatabase::getCharacterByName(const String &name)
+	game::CharEntry MySQLDatabase::getCharacterByName(const String &name)
 	{
+		// Create temporary character entry for the results
+		game::CharEntry entry;
+
 		wowpp::MySQL::Select select(m_connection,
 			//      0     1       2       3        4        5       6        7       8    
 			fmt::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
@@ -1100,9 +1105,6 @@ namespace wowpp
 			{
 				UInt32 bytes = 0, bytes2 = 0;
 
-				// Create temporary character entry for the results
-				game::CharEntry entry;
-
 				// Basic stuff
 				row.getField(0, entry.id);
 				row.getField(1, entry.name);
@@ -1138,16 +1140,18 @@ namespace wowpp
 				entry.hairStyle = static_cast<UInt8>(bytes >> 16);
 				entry.hairColor = static_cast<UInt8>(bytes >> 24);
 				entry.facialHair = static_cast<UInt8>(bytes2 & 0xff);
-				return entry;
+			}
+			else
+			{
+				throw std::exception("Character doesn't exist");
 			}
 		}
 		else
 		{
-			// There was an error
-			printDatabaseError();
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 
-		return {};
+		return entry;
 	}
 
 	boost::optional<PlayerSocialEntries> MySQLDatabase::getCharacterSocialList(DatabaseId characterId)
@@ -1183,26 +1187,26 @@ namespace wowpp
 		return {};
 	}
 
-	void MySQLDatabase::addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note)
+	void MySQLDatabase::addCharacterSocialContact(AddSocialContactArg arguments)
 	{
 		if (!m_connection.execute(fmt::format(
 			"INSERT INTO `character_social` (`guid_1`, `guid_2`, `flags`, `note`) VALUES ({0}, {1}, {2}, '{3}')"
-			, characterId
-			, socialGuid
-			, flags
-			, m_connection.escapeString(note))))
+			, arguments.characterId
+			, arguments.socialGuid
+			, arguments.flags
+			, m_connection.escapeString(arguments.note))))
 		{
 			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
 
-	void MySQLDatabase::updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags)
+	void MySQLDatabase::updateCharacterSocialContact(UpdateSocialContactArg arguments)
 	{
 		if (!m_connection.execute(fmt::format(
 			"UPDATE `character_social` SET `flags`={0} WHERE `guid_1`={1} AND `guid_2`={2}"
-			, flags				// 0
-			, characterId		// 1
-			, socialGuid)))		// 2
+			, arguments.flags				// 0
+			, arguments.characterId		// 1
+			, arguments.socialGuid)))		// 2
 		{
 			throw MySQL::Exception(m_connection.getErrorMessage());
 		}

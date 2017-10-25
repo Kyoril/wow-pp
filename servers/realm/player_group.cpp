@@ -461,27 +461,28 @@ namespace wowpp
 
 	bool PlayerGroup::addOfflineMember(UInt64 guid)
 	{
-		// Search for the leading character (Note: We use the database to resolve the character name)
-		auto charEntry = m_database.getCharacterById(guid);
-		if (!charEntry)
+		try
 		{
-			// Could not find the group leader - abort
-			ELOG("Could not find character by guid " << guid);
-			return false;
+			game::CharEntry entry = m_database.getCharacterById(guid); 
+			
+			if (guid == m_leaderGUID)
+			{
+				m_leaderName = entry.name;
+			}
+
+			// Add group member
+			auto &newMember = m_members[guid];
+			newMember.name = entry.name;
+			newMember.group = 0;
+			newMember.assistant = false;
+			newMember.status = game::group_member_status::Offline;
+			return true;
+		}
+		catch(const std::exception& ex)
+		{
+			defaultLogException(ex);
 		}
 
-		if (guid == m_leaderGUID)
-		{
-			m_leaderName = charEntry->name;
-		}
-
-		// Add group member
-		auto &newMember = m_members[guid];
-		newMember.name = charEntry->name;
-		newMember.group = 0;
-		newMember.assistant = false;
-		newMember.status = game::group_member_status::Offline;
-		return true;
+		return false;
 	}
-
 }

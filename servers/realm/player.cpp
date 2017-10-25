@@ -214,6 +214,173 @@ namespace wowpp
 			std::bind(game::server_write::charDelete, std::placeholders::_1, response));
 	}
 
+	void Player::handleCharacterName(const boost::optional<game::CharEntry>& result)
+	{
+		if (!result)
+		{
+			return;
+		}
+
+		// Our realm name
+		const String realmName("");
+
+		// We need to reconstruct the player guid
+		// Since this realm only handles characters from this realm, we know
+		// how to build the guid
+		const UInt64 realmGuid = createRealmGUID(result->id, m_config.realmID, guid_type::Player);
+
+		// Send answer
+		sendPacket(
+			std::bind(game::server_write::nameQueryResponse, std::placeholders::_1, realmGuid, std::cref(result->name), std::cref(realmName), result->race, result->gender, result->class_));
+	}
+
+	void Player::handleAddFriendRequest(const boost::optional<game::CharEntry>& result, String note)
+	{
+		// Find the character details
+		if (!result)
+		{
+			WLOG("Could not find that character");
+			return;
+		}
+
+		// Create the characters guid value
+		UInt64 characterGUID = createRealmGUID(result->id, m_loginConnector.getRealmID(), guid_type::Player);
+
+		// Fill friend info
+		game::SocialInfo info;
+		info.flags = game::Friend;
+		info.area = result->zoneId;
+		info.level = result->level;
+		info.class_ = result->class_;
+		info.note = std::move(note);
+
+		// Check faction
+		const bool isAllianceA = ((game::race::Alliance & (1 << (m_gameCharacter->getRace() - 1))) == (1 << (m_gameCharacter->getRace() - 1)));
+		const bool isAllianceB = ((game::race::Alliance & (1 << (result->race - 1))) == (1 << (result->race - 1)));
+
+		// Result code
+		game::FriendResult addResult = game::friend_result::AddedOffline;
+		if (characterGUID == m_characterId)
+		{
+			addResult = game::friend_result::Self;
+		}
+		else if (isAllianceA != isAllianceB)
+		{
+			addResult = game::friend_result::Enemy;
+		}
+		else
+		{
+			// Add to social list
+			addResult = m_social->addToSocialList(characterGUID, false);
+			if (addResult == game::friend_result::AddedOffline)
+			{
+				// Add to database
+				const bool shouldUpdate = m_social->isIgnored(characterGUID);
+				try
+				{
+					if (!shouldUpdate)
+					{
+						AddSocialContactArg arg;
+						arg.characterId = m_characterId;
+						arg.socialGuid = characterGUID;
+						arg.flags = static_cast<game::SocialFlag>(info.flags);
+						arg.note = info.note;
+						m_database.addCharacterSocialContact(arg);
+					}
+					else
+					{
+						UpdateSocialContactArg arg;
+						arg.characterId = m_characterId;
+						arg.socialGuid = characterGUID;
+						arg.flags = static_cast<game::SocialFlag>(game::Friend | game::Ignored);
+						m_database.updateCharacterSocialContact(arg);
+					}
+				}
+				catch (const std::exception& ex)
+				{
+					ELOG("Datbase exception: " << ex.what());
+					addResult = game::friend_result::DatabaseError;
+				}
+			}
+		}
+
+		// Check if the player is online
+		Player *friendPlayer = m_manager.getPlayerByCharacterGuid(characterGUID);
+		info.status = friendPlayer ? game::friend_status::Online : game::friend_status::Offline;
+		if (addResult == game::friend_result::AddedOffline &&
+			friendPlayer != nullptr)
+		{
+			addResult = game::friend_result::AddedOnline;
+		}
+
+		sendPacket(
+			std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGUID, addResult, std::cref(info)));
+	}
+
+	void Player::handleAddIgnoreRequest(const boost::optional<game::CharEntry>& ignoredChar)
+	{
+		// Find the character details
+		if (!ignoredChar)
+		{
+			WLOG("Could not find that character");
+			return;
+		}
+
+		// Create the characters guid value
+		UInt64 characterGUID = createRealmGUID(ignoredChar->id, m_loginConnector.getRealmID(), guid_type::Player);
+
+		// Fill ignored info
+		game::SocialInfo info;
+		info.flags = game::Ignored;
+		info.area = ignoredChar->zoneId;
+		info.level = ignoredChar->level;
+		info.class_ = ignoredChar->class_;
+
+		// Update social list
+		game::FriendResult result = m_social->addToSocialList(characterGUID, true);
+		if (result == game::friend_result::IgnoreAdded)
+		{
+			const bool shouldUpdate = m_social->isFriend(characterGUID);
+			auto handler = std::bind<void>(bind_weak_ptr(shared_from_this(), &Player::handleAddIgnoreResponse), std::placeholders::_1, characterGUID, info);
+			if (!shouldUpdate)
+			{
+				AddSocialContactArg arg;
+				arg.characterId = m_characterId;
+				arg.socialGuid = characterGUID;
+				arg.flags = static_cast<game::SocialFlag>(info.flags);
+				m_asyncDatabase.asyncRequest(std::move(handler), &IDatabase::addCharacterSocialContact, arg);
+			}
+			else
+			{
+				UpdateSocialContactArg arg;
+				arg.characterId = m_characterId;
+				arg.socialGuid = characterGUID;
+				arg.flags = static_cast<game::SocialFlag>(game::Friend | game::Ignored); 
+				m_asyncDatabase.asyncRequest(std::move(handler), &IDatabase::updateCharacterSocialContact, arg);
+			}
+		}
+		else
+		{
+			// Send answer packet to the player
+			sendPacket(
+				std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGUID, game::friend_result::IgnoreAdded, std::cref(info)));
+		}
+	}
+
+	void Player::handleAddIgnoreResponse(RequestStatus status, UInt64 characterGuid, game::SocialInfo info)
+	{
+		game::FriendResult result = game::friend_result::DatabaseError;
+		if (status == RequestSuccess)
+		{
+			// Notify the world node about a new ignored character
+			m_worldNode->characterAddIgnore(m_characterId, characterGuid);
+			result = game::friend_result::IgnoreAdded;
+		}
+
+		sendPacket(
+			std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGuid, result, std::cref(info)));
+	}
+
 	void Player::destroy()
 	{
 		m_connection->resetListener();
@@ -418,8 +585,6 @@ namespace wowpp
 		m_worldDisconnected = world.onConnectionLost.connect(
 			std::bind(&Player::worldNodeDisconnected, this));
 
-		ILOG("Player " << m_gameCharacter->getName() << " entered world instance 0x" << std::hex << std::uppercase << instanceId);
-
 		// If instance id is zero, this is the first time we enter a world since the login
 		const bool isLoginEnter = (m_instanceId == std::numeric_limits<UInt32>::max());
 
@@ -432,7 +597,6 @@ namespace wowpp
 		}
 
 		// Update character on the realm side with data received from the world server
-		//m_gameCharacter->setGuid(createGUID(worldObjectGuid, 0, high_guid::Player));
 		m_gameCharacter->relocate(location, o);
 		m_gameCharacter->setMapId(mapId);
 		
