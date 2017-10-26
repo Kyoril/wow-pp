@@ -46,7 +46,7 @@ namespace wowpp
 
 			virtual void connectionLost();
 			virtual void connectionMalformedPacket();
-			virtual void connectionPacketReceived(net::http::IncomingRequest &packet);
+			virtual PacketParseResult connectionPacketReceived(net::http::IncomingRequest &packet);
 
 			WebService &getService() const;
 			Client &getConnection() const;

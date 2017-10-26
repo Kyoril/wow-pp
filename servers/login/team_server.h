@@ -78,7 +78,7 @@ namespace wowpp
 		/// @copydoc wow::auth::IConnectionListener::connectionMalformedPacket()
 		void connectionMalformedPacket() override;
 		/// @copydoc wow::auth::IConnectionListener::connectionPacketReceived()
-		void connectionPacketReceived(pp::IncomingPacket &packet) override;
+		PacketParseResult connectionPacketReceived(pp::IncomingPacket &packet) override;
 
 	private:
 

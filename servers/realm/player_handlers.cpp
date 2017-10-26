@@ -44,20 +44,22 @@ using namespace std;
 namespace wowpp
 {
 
-	void Player::handlePing(game::IncomingPacket &packet)
+	PacketParseResult Player::handlePing(game::IncomingPacket &packet)
 	{
 		UInt32 ping, latency;
 		if (!game::client_read::ping(packet, ping, latency))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Send pong
 		sendPacket(
 			std::bind(game::server_write::pong, std::placeholders::_1, ping));
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleAuthSession(game::IncomingPacket &packet)
+	PacketParseResult Player::handleAuthSession(game::IncomingPacket &packet)
 	{
 		// Clear addon list
 		m_addons.clear();
@@ -65,7 +67,7 @@ namespace wowpp
 		UInt32 clientBuild;
 		if (!game::client_read::authSession(packet, clientBuild, m_accountName, m_clientSeed, m_clientHash, m_addons))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Check if the client version is valid (defined in CMake)
@@ -73,35 +75,38 @@ namespace wowpp
 		{
 			//TODO Send error result
 			WLOG("Client " << m_address << " tried to login with unsupported client build " << clientBuild);
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Ask the login server if this login is okay and also ask for session key etc.
 		if (!m_loginConnector.playerLoginRequest(m_accountName))
 		{
 			// Could not send player login request
-			return;
+			return PacketParseResult::Disconnect;
 		}
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleCharEnum(game::IncomingPacket &packet)
+	PacketParseResult Player::handleCharEnum(game::IncomingPacket &packet)
 	{
 		if (!(game::client_read::charEnum(packet)))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
-		// TODO: Flood protection
-
 		reloadCharacters();
+
+		// Block incoming packets until characters are reloaded
+		return PacketParseResult::Block;
 	}
 
-	void Player::handleCharCreate(game::IncomingPacket &packet)
+	PacketParseResult Player::handleCharCreate(game::IncomingPacket &packet)
 	{
 		game::CharEntry character;
 		if (!(game::client_read::charCreate(packet, character)))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Empty character name?
@@ -110,7 +115,7 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::charCreate, std::placeholders::_1, game::response_code::CharCreateError));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// TODO: Check for invalid characters (numbers, white spaces etc.)
@@ -125,7 +130,7 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::charCreate, std::placeholders::_1, game::response_code::CharCreateError));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Check that the account doesn't exceed the limit
@@ -134,27 +139,25 @@ namespace wowpp
 			// No more free slots
 			sendPacket(
 				std::bind(game::server_write::charCreate, std::placeholders::_1, game::response_code::CharCreateServerLimit));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Get the racial informations
 		const auto *race = m_project.races.getById(character.race);
 		if (!race)
 		{
-			ELOG("Unable to find informations of race " << character.race);
 			sendPacket(
 				std::bind(game::server_write::charCreate, std::placeholders::_1, game::response_code::CharCreateError));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Add initial spells
 		const auto &initialSpellsEntry = race->initialspells().find(character.class_);
 		if (initialSpellsEntry == race->initialspells().end())
 		{
-			ELOG("No initial spells set up for race " << race->name() << " and class " << character.class_);
 			sendPacket(
 				std::bind(game::server_write::charCreate, std::placeholders::_1, game::response_code::CharCreateError));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Item data
@@ -338,15 +341,17 @@ namespace wowpp
 		// Send disabled message for now
 		sendPacket(
 			std::bind(game::server_write::charCreate, std::placeholders::_1, result));
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleCharDelete(game::IncomingPacket &packet)
+	PacketParseResult Player::handleCharDelete(game::IncomingPacket &packet)
 	{
 		// Read packet
 		DatabaseId characterId;
 		if (!(game::client_read::charDelete(packet, characterId)))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Try to remove character from the cache
@@ -362,10 +367,9 @@ namespace wowpp
 		if (c == m_characters.end())
 		{
 			// We didn't find him
-			WLOG("Unable to delete character " << characterId << " of user " << m_accountName << ": Not found");
 			sendPacket(
 				std::bind(game::server_write::charDelete, std::placeholders::_1, game::response_code::CharDeleteFailed));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		std::vector<char> buffer;
@@ -394,15 +398,18 @@ namespace wowpp
 		arguments.characterId = characterId;
 		auto handler = bind_weak_ptr(shared_from_this(), &Player::handleDeleteCharacter);
 		m_asyncDatabase.asyncRequest(std::move(handler), &IDatabase::deleteCharacter, arguments);
+
+		// Wait for delete to be completed
+		return PacketParseResult::Block;
 	}
 
-	void Player::handlePlayerLogin(game::IncomingPacket &packet)
+	PacketParseResult Player::handlePlayerLogin(game::IncomingPacket &packet)
 	{
 		// Get the character id with which the player wants to enter the world
 		DatabaseId characterId;
 		if (!(game::client_read::playerLogin(packet, characterId)))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Check if the requested character belongs to our account
@@ -413,13 +420,13 @@ namespace wowpp
 			WLOG("Requested character id " << characterId << " does not belong to account " << m_accountId << " or does not exist");
 			sendPacket(
 				std::bind(game::server_write::charLoginFailed, std::placeholders::_1, game::response_code::CharLoginNoCharacter));
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Make sure that a character, who is flagged for rename, is renamed first!
 		if (charEntry->atLogin & game::atlogin_flags::Rename)
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Write something to the log just for informations
@@ -435,7 +442,7 @@ namespace wowpp
 			WLOG("Player login failed: Could not load character " << characterId);
 			sendPacket(
 				std::bind(game::server_write::charLoginFailed, std::placeholders::_1, game::response_code::CharLoginNoCharacter));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Restore character group if possible
@@ -467,7 +474,7 @@ namespace wowpp
 			WLOG("Player login failed: Could not find world server for map " << charEntry->mapId);
 			sendPacket(
 				std::bind(game::server_write::charLoginFailed, std::placeholders::_1, game::response_code::CharLoginNoWorld));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Store character id
@@ -519,16 +526,17 @@ namespace wowpp
 
 		// There should be an instance
 		worldNode->enterWorldInstance(charEntry->id, groupInstanceId, *m_gameCharacter);
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleNameQuery(game::IncomingPacket &packet)
+	PacketParseResult Player::handleNameQuery(game::IncomingPacket &packet)
 	{
 		// Object guid
 		UInt64 objectGuid;
 		if (!game::client_read::nameQuery(packet, objectGuid))
 		{
 			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Get the realm ID out of this GUID and check if this is a player
@@ -545,7 +553,6 @@ namespace wowpp
 				// Buffer
 				const std::vector<char> packetBuffer(memorySource->getBegin(), memorySource->getEnd());
 				world->sendProxyPacket(m_characterId, game::client_packet::NameQuery, packetBuffer.size(), packetBuffer);
-				return;
 			}
 			else
 			{
@@ -561,9 +568,12 @@ namespace wowpp
 			auto handler = bind_weak_ptr(shared_from_this(), &Player::handleCharacterName);
 			m_asyncDatabase.asyncRequest(std::move(handler), &IDatabase::getCharacterById, databaseID);
 		}
+
+		// We won't block name requests
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleMessageChat(game::IncomingPacket &packet)
+	PacketParseResult Player::handleMessageChat(game::IncomingPacket &packet)
 	{
 		game::ChatMsg type;
 		game::Language lang;
@@ -571,7 +581,7 @@ namespace wowpp
 		if (!game::client_read::messageChat(packet, type, lang, receiver, channel, message))
 		{
 			// Error reading packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (!receiver.empty())
@@ -623,7 +633,7 @@ namespace wowpp
 							receiver,
 							channel,
 							message);
-						return;
+						return PacketParseResult::Pass;
 					}
 					else
 					{
@@ -700,8 +710,7 @@ namespace wowpp
 				// Get the players group
 				if (!m_group)
 				{
-					WLOG("Player is not in group");
-					return;
+					return PacketParseResult::Disconnect;
 				}
 
 				auto groupType = m_group->getType();
@@ -725,7 +734,7 @@ namespace wowpp
 						!isAssistant)
 					{
 						WLOG("Raid warning can only be done by raid leader or assistants");
-						return;
+						return PacketParseResult::Disconnect;
 					}
 				}
 				else
@@ -733,7 +742,7 @@ namespace wowpp
 					if (type == game::chat_msg::Raid)
 					{
 						DLOG("Not a raid group!");
-						return;
+						return PacketParseResult::Disconnect;
 					}
 				}
 
@@ -741,7 +750,7 @@ namespace wowpp
 				if (!m_group->isMember(m_gameCharacter->getGuid()))
 				{
 					WLOG("Player is not a member of the group, but was just invited.");
-					return;
+					return PacketParseResult::Disconnect;
 				}
 
 				// Broadcast chat packet
@@ -763,14 +772,16 @@ namespace wowpp
 				break;
 			}
 		}
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleContactList(game::IncomingPacket &packet)
+	PacketParseResult Player::handleContactList(game::IncomingPacket &packet)
 	{
 		if (!game::client_read::contactList(packet))
 		{
 			// Error reading packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// TODO: Only update the friend list after a specific time interval to prevent 
@@ -778,21 +789,21 @@ namespace wowpp
 
 		// Send the social list
 		m_social->sendSocialList();
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleAddFriend(game::IncomingPacket &packet)
+	PacketParseResult Player::handleAddFriend(game::IncomingPacket &packet)
 	{
 		String name, note;
 		if (!game::client_read::addFriend(packet, name, note))
 		{
 			// Error reading packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (name.empty())
 		{
-			WLOG("Received empty name in CMSG_ADD_FRIEND packet!");
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Convert name
@@ -801,15 +812,16 @@ namespace wowpp
 		// Build the handler
 		auto handler = std::bind<void>(bind_weak_ptr(shared_from_this(), &Player::handleAddFriendRequest), std::placeholders::_1, std::move(note));
 		m_asyncDatabase.asyncRequest(std::move(handler), &IDatabase::getCharacterByName, name);
+		return PacketParseResult::Block;
 	}
 
-	void Player::handleDeleteFriend(game::IncomingPacket &packet)
+	PacketParseResult Player::handleDeleteFriend(game::IncomingPacket &packet)
 	{
 		UInt64 guid;
 		if (!game::client_read::deleteFriend(packet, guid))
 		{
 			// Error reading packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Remove that friend from our social list
@@ -839,21 +851,16 @@ namespace wowpp
 		game::SocialInfo info;
 		sendPacket(
 			std::bind(game::server_write::friendStatus, std::placeholders::_1, guid, result, std::cref(info)));
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleAddIgnore(game::IncomingPacket &packet)
+	PacketParseResult Player::handleAddIgnore(game::IncomingPacket &packet)
 	{
 		String name;
-		if (!game::client_read::addIgnore(packet, name))
+		if (!game::client_read::addIgnore(packet, name) || name.empty())
 		{
 			// Error reading packet
-			return;
-		}
-
-		if (name.empty())
-		{
-			WLOG("Received empty name in CMSG_ADD_IGNORE packet!");
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Convert name
@@ -861,15 +868,15 @@ namespace wowpp
 
 		auto handler = bind_weak_ptr(shared_from_this(), &Player::handleAddIgnoreRequest);
 		m_asyncDatabase.asyncRequest(std::move(handler), &IDatabase::getCharacterByName, name);
+		return PacketParseResult::Block;
 	}
 
-	void Player::handleDeleteIgnore(game::IncomingPacket &packet)
+	PacketParseResult Player::handleDeleteIgnore(game::IncomingPacket &packet)
 	{
 		UInt64 guid;
 		if (!game::client_read::deleteIgnore(packet, guid))
 		{
-			// Error reading packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Find the character details
@@ -912,16 +919,17 @@ namespace wowpp
 
 		sendPacket(
 			std::bind(game::server_write::friendStatus, std::placeholders::_1, guid, result, std::cref(info)));
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleItemQuerySingle(game::IncomingPacket &packet)
+	PacketParseResult Player::handleItemQuerySingle(game::IncomingPacket &packet)
 	{
 		// Object guid
 		UInt32 itemID;
 		if (!game::client_read::itemQuerySingle(packet, itemID))
 		{
 			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Find item
@@ -934,9 +942,11 @@ namespace wowpp
 			sendPacket(
 				std::bind(game::server_write::itemQuerySingleResponse, std::placeholders::_1, m_locale, std::cref(*item)));
 		}
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleCreatureQuery(game::IncomingPacket &packet)
+	PacketParseResult Player::handleCreatureQuery(game::IncomingPacket &packet)
 	{
 		// Read the client packet
 		UInt32 creatureEntry;
@@ -944,8 +954,7 @@ namespace wowpp
 		if (!game::client_read::creatureQuery(packet, creatureEntry, objectGuid))
 		{
 			// Could not read packet
-			WLOG("Could not read packet data");
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		//TODO: Find creature object and check if it exists
@@ -963,42 +972,48 @@ namespace wowpp
 			//TODO: Send resulting packet SMSG_CREATURE_QUERY_RESPONSE with only one uin32 value
 			//which is creatureEntry | 0x80000000
 		}
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleMailQueryNextTime(game::IncomingPacket & packet)
+	PacketParseResult Player::handleMailQueryNextTime(game::IncomingPacket & packet)
 	{
 		if (!game::client_read::mailQueryNextTime(packet))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		sendPacket(
 			std::bind(game::server_write::mailQueryNextTime, std::placeholders::_1, m_unreadMails, getMails()));
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleMailGetBody(game::IncomingPacket & packet)
+	PacketParseResult Player::handleMailGetBody(game::IncomingPacket & packet)
 	{
 		UInt32 mailTextId, mailId;
 
 		if (!game::client_read::mailGetBody(packet, mailTextId, mailId))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		String body = getMail(mailId)->getBody();
 
 		sendPacket(
 			std::bind(game::server_write::mailSendBody, std::placeholders::_1, /*TODO: change to mailTextId*/mailId, body));
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleMailTakeMoney(game::IncomingPacket & packet)
+	PacketParseResult Player::handleMailTakeMoney(game::IncomingPacket & packet)
 	{
 		ObjectGuid mailboxGuid;
 		UInt32 mailId;
 
 		if (!game::client_read::mailTakeMoney(packet, mailboxGuid, mailId))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// TODO check distance to mailbox, etc
@@ -1010,7 +1025,7 @@ namespace wowpp
 			sendPacket(
 				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
 					MailResult(mailId, mail::response_type::MoneyTaken, mail::response_result::Internal)));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		sendPacket(
@@ -1020,16 +1035,18 @@ namespace wowpp
 		m_worldNode->changeMoney(m_characterId, mail->getMoney(), false);
 		mail->setMoney(0);
 		// TODO change mail state
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleMailDelete(game::IncomingPacket & packet)
+	PacketParseResult Player::handleMailDelete(game::IncomingPacket & packet)
 	{
 		ObjectGuid mailboxGuid;
 		UInt32 mailId;
 
 		if (!game::client_read::mailDelete(packet, mailboxGuid, mailId))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// TODO check distance to mailbox, etc
@@ -1049,20 +1066,23 @@ namespace wowpp
 				std::bind(game::server_write::mailSendResult, std::placeholders::_1,
 					MailResult(mailId, mail::response_type::Deleted, mail::response_result::Internal)));
 		}
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleGetChannelMemberCount(game::IncomingPacket & packet)
+	PacketParseResult Player::handleGetChannelMemberCount(game::IncomingPacket & packet)
 	{
 		// TODO
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleGroupInvite(game::IncomingPacket &packet)
+	PacketParseResult Player::handleGroupInvite(game::IncomingPacket &packet)
 	{
 		String playerName;
 		if (!game::client_read::groupInvite(packet, playerName))
 		{
 			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Capitalize player name
@@ -1074,7 +1094,7 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Invite, std::cref(playerName), game::party_result::CantFindTarget));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Check that players character faction
@@ -1083,7 +1103,7 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Invite, std::cref(playerName), game::party_result::CantFindTarget));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Check team (no cross-faction groups)
@@ -1093,7 +1113,7 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Invite, std::cref(playerName), game::party_result::TargetUnfriendly));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Check if target is already member of a group
@@ -1101,14 +1121,14 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Invite, std::cref(playerName), game::party_result::AlreadyInGroup));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		if (player->getSocial().isIgnored(m_gameCharacter->getGuid()))
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Invite, std::cref(playerName), game::party_result::TargetIgnoreYou));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Get players group or create a new one
@@ -1130,7 +1150,7 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Invite, "", game::party_result::YouNotLeader));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Invite player to the group
@@ -1139,7 +1159,7 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Invite, "", result));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		player->setGroup(m_group);
@@ -1150,53 +1170,53 @@ namespace wowpp
 		sendPacket(
 			std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Invite, std::cref(playerName), game::party_result::Ok));
 		m_group->sendUpdate();
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleGroupAccept(game::IncomingPacket &packet)
+	PacketParseResult Player::handleGroupAccept(game::IncomingPacket &packet)
 	{
 		if (!game::client_read::groupAccept(packet))
 		{
-			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (!m_group)
 		{
 			WLOG("Player accepted group invitation, but is not in a group");
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		auto result = m_group->addMember(*m_gameCharacter);
 		if (result != game::party_result::Ok)
 		{
 			// TODO...
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		m_gameCharacter->setGroupId(m_group->getId());
 
 		// Send to world node
 		m_worldNode->characterGroupChanged(m_gameCharacter->getGuid(), m_group->getId());
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleGroupDecline(game::IncomingPacket &packet)
+	PacketParseResult Player::handleGroupDecline(game::IncomingPacket &packet)
 	{
 		if (!game::client_read::groupDecline(packet))
 		{
-			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		declineGroupInvite();
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleGroupUninvite(game::IncomingPacket &packet)
+	PacketParseResult Player::handleGroupUninvite(game::IncomingPacket &packet)
 	{
 		String memberName;
 		if (!game::client_read::groupUninvite(packet, memberName))
 		{
-			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Capitalize player name
@@ -1206,14 +1226,14 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotInGroup));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		UInt64 guid = m_group->getMemberGuid(memberName);
@@ -1221,7 +1241,7 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, std::cref(memberName), game::party_result::NotInYourParty));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Raid assistants may not kick the leader
@@ -1230,40 +1250,40 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		m_group->removeMember(guid);
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleGroupUninviteGUID(game::IncomingPacket &packet)
+	PacketParseResult Player::handleGroupUninviteGUID(game::IncomingPacket &packet)
 	{
 		UInt64 memberGUID;
 		if (!game::client_read::groupUninviteGUID(packet, memberGUID))
 		{
-			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (!m_group)
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotInGroup));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		if (!m_group->isMember(memberGUID))
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::NotInYourParty));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Raid assistants may not kick the leader
@@ -1272,98 +1292,96 @@ namespace wowpp
 		{
 			sendPacket(
 				std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Leave, "", game::party_result::YouNotLeader));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		m_group->removeMember(memberGUID);
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleGroupSetLeader(game::IncomingPacket &packet)
+	PacketParseResult Player::handleGroupSetLeader(game::IncomingPacket &packet)
 	{
 		UInt64 leaderGUID;
 		if (!game::client_read::groupSetLeader(packet, leaderGUID))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (!m_group)
 		{
 			WLOG("Player is not a member of a group!");
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (m_group->getLeader() == leaderGUID ||
 			m_group->getLeader() != m_gameCharacter->getGuid())
 		{
 			WLOG("Player is not the group leader or no leader change");
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		m_group->setLeader(leaderGUID);
 		m_group->sendUpdate();
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleLootMethod(game::IncomingPacket &packet)
+	PacketParseResult Player::handleLootMethod(game::IncomingPacket &packet)
 	{
 		UInt32 lootMethod, lootTreshold;
 		UInt64 lootMasterGUID;
 		if (!game::client_read::lootMethod(packet, lootMethod, lootMasterGUID, lootTreshold))
 		{
-			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (!m_group)
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
+
 		if (m_group->getLeader() != m_gameCharacter->getGuid())
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 		if (lootMethod > loot_method::NeedBeforeGreed)
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 		if (lootTreshold < 2 || lootTreshold > 6)
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 		if (lootMethod == loot_method::MasterLoot &&
 			!m_group->isMember(lootMasterGUID))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		m_group->setLootMethod(static_cast<LootMethod>(lootMethod), lootMasterGUID, lootTreshold);
 		m_group->sendUpdate();
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleGroupDisband(game::IncomingPacket &packet)
+	PacketParseResult Player::handleGroupDisband(game::IncomingPacket &packet)
 	{
-		if (!game::client_read::groupDisband(packet))
+		if (!game::client_read::groupDisband(packet) ||
+			!m_group)
 		{
-			// Could not read packet
-			return;
-		}
-
-		if (!m_group)
-		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Remove this group member
 		// Note: This will make m_group invalid
 		m_group->removeMember(m_gameCharacter->getGuid());
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleRequestPartyMemberStats(game::IncomingPacket &packet)
+	PacketParseResult Player::handleRequestPartyMemberStats(game::IncomingPacket &packet)
 	{
 		UInt64 guid = 0;
 		if (!game::client_read::requestPartyMemberStats(packet, guid))
 		{
-			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Try to find that player
@@ -1373,21 +1391,22 @@ namespace wowpp
 			DLOG("Could not find player with character guid - send offline packet");
 			sendPacket(
 				std::bind(game::server_write::partyMemberStatsFullOffline, std::placeholders::_1, guid));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Send result
 		sendPacket(
 			std::bind(game::server_write::partyMemberStatsFull, std::placeholders::_1, std::cref(*m_gameCharacter)));
+		return PacketParseResult::Pass;
 	}
 
 
-	void Player::handleMoveWorldPortAck(game::IncomingPacket &packet)
+	PacketParseResult Player::handleMoveWorldPortAck(game::IncomingPacket &packet)
 	{
 		if (m_transferMap == 0 && m_transfer.x == 0.0f && m_transfer.y == 0.0f && m_transfer.z == 0.0f && m_transferO == 0.0f)
 		{
 			WLOG("No transfer pending - commit will be ignored.");
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Update character location
@@ -1418,7 +1437,7 @@ namespace wowpp
 			WLOG("Player login failed: Could not find world server for map " << m_transferMap);
 			sendPacket(
 				std::bind(game::server_write::transferAborted, std::placeholders::_1, m_transferMap, game::transfer_abort_reason::NotFound));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		//TODO Map found - check if player is member of a group and if this instance
@@ -1432,23 +1451,23 @@ namespace wowpp
 		m_transferMap = 0;
 		m_transfer = math::Vector3(0.0f, 0.0f, 0.0f);
 		m_transferO = 0.0f;
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleSetActionButton(game::IncomingPacket &packet)
+	PacketParseResult Player::handleSetActionButton(game::IncomingPacket &packet)
 	{
 		ActionButton button;
 		UInt8 slot = 0;
 		if (!game::client_read::setActionButton(packet, slot, button.misc, button.type, button.action))
 		{
-			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Validate button
 		if (slot > constants::ActionButtonLimit)		// TODO: Maximum number of action buttons
 		{
 			WLOG("Client sent invalid action button number");
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Check if we want to remove that button or add a new one
@@ -1458,7 +1477,7 @@ namespace wowpp
 			if (it == m_actionButtons.end())
 			{
 				WLOG("Could not find action button to remove - button seems to be empty already!");
-				return;
+				return PacketParseResult::Disconnect;
 			}
 
 			// Clear button
@@ -1468,16 +1487,17 @@ namespace wowpp
 		{
 			m_actionButtons[slot] = button;
 		}
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleGameObjectQuery(game::IncomingPacket &packet)
+	PacketParseResult Player::handleGameObjectQuery(game::IncomingPacket &packet)
 	{
 		UInt32 entry = 0;
 		UInt64 guid = 0;
 		if (!game::client_read::gameObjectQuery(packet, entry, guid))
 		{
-			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		const auto *objectEntry = m_project.objects.getById(entry);
@@ -1486,28 +1506,27 @@ namespace wowpp
 			WLOG("Could not find game object by entry " << entry);
 			sendPacket(
 				std::bind(game::server_write::gameObjectQueryResponseEmpty, std::placeholders::_1, entry));
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Send response
 		sendPacket(
 			std::bind(game::server_write::gameObjectQueryResponse, std::placeholders::_1, m_locale, std::cref(*objectEntry)));
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleTutorialFlag(game::IncomingPacket &packet)
+	PacketParseResult Player::handleTutorialFlag(game::IncomingPacket &packet)
 	{
 		UInt32 flag = 0;
 		if (!game::client_read::tutorialFlag(packet, flag))
 		{
-			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		UInt32 wInt = (flag / 32);
 		if (wInt >= 8)
 		{
-			WLOG("Wrong tutorial flag sent");
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		UInt32 rInt = (flag % 32);
@@ -1516,59 +1535,60 @@ namespace wowpp
 		tutflag |= (1 << rInt);
 
 		m_loginConnector.sendTutorialData(m_accountId, m_tutorialData);
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleTutorialClear(game::IncomingPacket &packet)
+	PacketParseResult Player::handleTutorialClear(game::IncomingPacket &packet)
 	{
 		if (!game::client_read::tutorialClear(packet))
 		{
-			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		m_tutorialData.fill(0xFFFFFFFF);
 		m_loginConnector.sendTutorialData(m_accountId, m_tutorialData);
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleTutorialReset(game::IncomingPacket &packet)
+	PacketParseResult Player::handleTutorialReset(game::IncomingPacket &packet)
 	{
 		if (!game::client_read::tutorialReset(packet))
 		{
-			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		m_tutorialData.fill(0);
 		m_loginConnector.sendTutorialData(m_accountId, m_tutorialData);
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleCompleteCinematic(game::IncomingPacket &packet)
+	PacketParseResult Player::handleCompleteCinematic(game::IncomingPacket &packet)
 	{
 		if (!game::client_read::completeCinematic(packet))
 		{
-			// Could not read packet
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		m_database.setCinematicState(m_characterId, false);
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleRaidTargetUpdate(game::IncomingPacket &packet)
+	PacketParseResult Player::handleRaidTargetUpdate(game::IncomingPacket &packet)
 	{
 		UInt8 mode = 0;
 		UInt64 guid = 0;
 		if (!(game::client_read::raidTargetUpdate(packet, mode, guid)))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (!m_group)
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 		if (!m_group->isMember(m_gameCharacter->getGuid()))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (mode == 0xFF)
@@ -1580,79 +1600,83 @@ namespace wowpp
 			if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 			{
 				WLOG("Only the group leader is allowed to update raid target icons!");
-				return;
+				return PacketParseResult::Disconnect;
 			}
 
 			m_group->setTargetIcon(mode, guid);
 		}
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleGroupRaidConvert(game::IncomingPacket &packet)
+	PacketParseResult Player::handleGroupRaidConvert(game::IncomingPacket &packet)
 	{
 		if (!(game::client_read::groupRaidConvert(packet)))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		const bool isLeader = (m_group && (m_group->getLeader() == m_gameCharacter->getGuid()));
 		if (!isLeader)
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		sendPacket(
 			std::bind(game::server_write::partyCommandResult, std::placeholders::_1, game::party_operation::Invite, "", game::party_result::Ok));
 		m_group->convertToRaidGroup();
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleGroupAssistentLeader(game::IncomingPacket &packet)
+	PacketParseResult Player::handleGroupAssistentLeader(game::IncomingPacket &packet)
 	{
 		UInt64 guid;
 		UInt8 flags;
 		if (!(game::client_read::groupAssistentLeader(packet, guid, flags)))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (!m_group)
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 		if (m_group->getType() != group_type::Raid)
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		m_group->setAssistant(guid, flags);
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleRaidReadyCheck(game::IncomingPacket &packet)
+	PacketParseResult Player::handleRaidReadyCheck(game::IncomingPacket &packet)
 	{
 		bool hasState = false;
 		UInt8 state = 0;
 		if (!(game::client_read::raidReadyCheck(packet, hasState, state)))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (!m_group)
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 		if (!m_group->isMember(m_gameCharacter->getGuid()))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (!hasState)
 		{
 			if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 			{
-				return;
+				return PacketParseResult::Disconnect;
 			}
 
 			// Ready check request
@@ -1665,30 +1689,34 @@ namespace wowpp
 			m_group->broadcastPacket(
 				std::bind(game::server_write::raidReadyCheckConfirm, std::placeholders::_1, m_gameCharacter->getGuid(), state));
 		}
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleRaidReadyCheckFinished(game::IncomingPacket &packet)
+	PacketParseResult Player::handleRaidReadyCheckFinished(game::IncomingPacket &packet)
 	{
 		if (!m_group)
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 		if (!m_group->isLeaderOrAssistant(m_gameCharacter->getGuid()))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Ready check request
 		m_group->broadcastPacket(
 			std::bind(game::server_write::raidReadyCheckFinished, std::placeholders::_1));
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleRealmSplit(game::IncomingPacket & packet)
+	PacketParseResult Player::handleRealmSplit(game::IncomingPacket & packet)
 	{
 		UInt32 preferred = 0;
 		if (!(game::client_read::realmSplit(packet, preferred)))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (preferred == 0xFFFFFFFF)
@@ -1700,26 +1728,29 @@ namespace wowpp
 		{
 			DLOG("TODO...");
 		}
+
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleVoiceSessionEnable(game::IncomingPacket & packet)
+	PacketParseResult Player::handleVoiceSessionEnable(game::IncomingPacket & packet)
 	{
 		UInt16 unknown = 0;
 		if (!(game::client_read::voiceSessionEnable(packet, unknown)))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// TODO
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleCharRename(game::IncomingPacket & packet)
+	PacketParseResult Player::handleCharRename(game::IncomingPacket & packet)
 	{
 		UInt64 characterId = 0;
 		String newName;
 		if (!(game::client_read::charRename(packet, characterId, newName)))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Rename character
@@ -1746,35 +1777,37 @@ namespace wowpp
 		// Send response
 		sendPacket(
 			std::bind(game::server_write::charRename, std::placeholders::_1, response, characterId, std::cref(newName)));
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleQuestQuery(game::IncomingPacket & packet)
+	PacketParseResult Player::handleQuestQuery(game::IncomingPacket & packet)
 	{
 		UInt32 questId = 0;
 		if (!(game::client_read::questQuery(packet, questId)))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		const auto *quest = m_project.quests.getById(questId);
 		if (!quest)
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Send response
 		sendPacket(
 			std::bind(game::server_write::questQueryResponse, std::placeholders::_1, std::cref(*quest)));
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleWho(game::IncomingPacket & packet)
+	PacketParseResult Player::handleWho(game::IncomingPacket & packet)
 	{
 		// Timer protection
 		GameTime now = getCurrentTime();
 		if (now < m_nextWhoRequest)
 		{
 			// Don't do that yet
-			return;
+			return PacketParseResult::Pass;
 		}
 
 		// Allow one request every 6 seconds
@@ -1784,19 +1817,18 @@ namespace wowpp
 		game::WhoListRequest request;
 		if (!game::client_read::who(packet, request))
 		{
-			ILOG("Who Request does not match!");
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Check if the packet can be valid, as WoW allows a maximum of 10 zones and 4 strings
 		// per request.
 		if (request.zoneids.size() > 10 || request.strings.size() > 4)
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		if (!m_gameCharacter)
-			return;
+			return PacketParseResult::Disconnect;
 
 		// Used for response packet
 		game::WhoResponse response;
@@ -1935,22 +1967,21 @@ namespace wowpp
 		// Match Count is request count right now (TODO)
 		sendPacket(
 			std::bind(game::server_write::whoRequestResponse, std::placeholders::_1, response, response.entries.size()));
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleMinimapPing(game::IncomingPacket & packet)
+	PacketParseResult Player::handleMinimapPing(game::IncomingPacket & packet)
 	{
 		float x = 0.0f, y = 0.0f;
 		if (!(game::client_read::minimapPing(packet, x, y)))
 		{
-			WLOG("Could not read minimap ping packet");
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// Only accepted while in group
 		if (!m_group)
 		{
-			WLOG("Player is not in a group");
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		// TODO: Only send to group members in the same map instance?
@@ -1961,21 +1992,22 @@ namespace wowpp
 		// Broadcast packet to group
 		auto generator = std::bind(game::server_write::minimapPing, std::placeholders::_1, m_gameCharacter->getGuid(), x, y);
 		m_group->broadcastPacket(generator, &excludeGuids);
+		return PacketParseResult::Pass;
 	}
 
-	void Player::handleItemNameQuery(game::IncomingPacket & packet)
+	PacketParseResult Player::handleItemNameQuery(game::IncomingPacket & packet)
 	{
 		UInt32 itemEntry = 0;
 		UInt64 itemGuid = 0;
 		if (!(game::client_read::itemNameQuery(packet, itemEntry, itemGuid)))
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		const auto *entry = m_project.items.getById(itemEntry);
 		if (!entry)
 		{
-			return;
+			return PacketParseResult::Disconnect;
 		}
 
 		String name =
@@ -1986,5 +2018,6 @@ namespace wowpp
 		// Match Count is request count right now
 		sendPacket(
 			std::bind(game::server_write::itemNameQueryResponse, std::placeholders::_1, itemEntry, std::cref(name), entry->inventorytype()));
+		return PacketParseResult::Pass;
 	}
 }

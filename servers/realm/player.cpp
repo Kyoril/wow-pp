@@ -201,6 +201,9 @@ namespace wowpp
 		// Send character list
 		sendPacket(
 			std::bind(game::server_write::charEnum, std::placeholders::_1, std::cref(m_characters)));
+
+		// Continue packet processing
+		m_connection->resumeParsing();
 	}
 
 	void Player::handleDeleteCharacter(RequestStatus result)
@@ -212,6 +215,9 @@ namespace wowpp
 		// Send disabled message for now
 		sendPacket(
 			std::bind(game::server_write::charDelete, std::placeholders::_1, response));
+
+		// Continue packet processing
+		m_connection->resumeParsing();
 	}
 
 	void Player::handleCharacterName(const boost::optional<game::CharEntry>& result)
@@ -315,6 +321,9 @@ namespace wowpp
 
 		sendPacket(
 			std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGUID, addResult, std::cref(info)));
+
+		// Continue packet processing
+		m_connection->resumeParsing();
 	}
 
 	void Player::handleAddIgnoreRequest(const boost::optional<game::CharEntry>& ignoredChar)
@@ -364,6 +373,9 @@ namespace wowpp
 			// Send answer packet to the player
 			sendPacket(
 				std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGUID, game::friend_result::IgnoreAdded, std::cref(info)));
+
+			// Continue packet processing
+			m_connection->resumeParsing();
 		}
 	}
 
@@ -379,6 +391,9 @@ namespace wowpp
 
 		sendPacket(
 			std::bind(game::server_write::friendStatus, std::placeholders::_1, characterGuid, result, std::cref(info)));
+
+		// Continue packet processing
+		m_connection->resumeParsing();
 	}
 
 	void Player::destroy()
@@ -482,7 +497,7 @@ namespace wowpp
 		}
 	}
 
-	void Player::connectionPacketReceived(game::IncomingPacket &packet)
+	PacketParseResult Player::connectionPacketReceived(game::IncomingPacket &packet)
 	{
 		// Decrypt position
 		io::MemorySource *memorySource = static_cast<io::MemorySource*>(packet.getSource());
@@ -496,8 +511,7 @@ namespace wowpp
 			{ \
 				if (!isSessionStatusValid(#name, sessionStatus, true)) \
 					break; \
-				handle##name(packet); \
-				break; \
+				return handle##name(packet); \
 			}
 
 			WOWPP_HANDLE_PACKET(Ping, game::session_status::Always)
@@ -574,6 +588,8 @@ namespace wowpp
 				break;
 			}
 		}
+
+		return PacketParseResult::Pass;
 	}
 
 	void Player::worldInstanceEntered(World &world, UInt32 instanceId, UInt64 worldObjectGuid, UInt32 mapId, UInt32 zoneId, math::Vector3 location, float o)

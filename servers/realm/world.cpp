@@ -77,7 +77,7 @@ namespace wowpp
 		destroy();
 	}
 
-	void World::connectionPacketReceived(pp::IncomingPacket &packet)
+	PacketParseResult World::connectionPacketReceived(pp::IncomingPacket &packet)
 	{
 		using namespace wowpp::pp::world_realm;
 
@@ -131,6 +131,8 @@ namespace wowpp
 				break;
 			}
 		}
+
+		return PacketParseResult::Pass;
 	}
 
 	void World::handleLogin(pp::IncomingPacket &packet)

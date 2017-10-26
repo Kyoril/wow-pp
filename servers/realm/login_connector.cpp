@@ -70,38 +70,29 @@ namespace wowpp
 		m_connection.reset();
 	}
 
-	void LoginConnector::connectionPacketReceived(pp::Protocol::IncomingPacket &packet)
+	PacketParseResult LoginConnector::connectionPacketReceived(pp::Protocol::IncomingPacket &packet)
 	{
 		const auto &packetId = packet.getId();
 
 		switch (packetId)
 		{
 			case pp::realm_login::login_packet::LoginResult:
-			{
 				handleLoginResult(packet);
 				break;
-			}
-
 			case pp::realm_login::login_packet::PlayerLoginSuccess:
-			{
 				handlePlayerLoginSuccess(packet);
 				break;
-			}
-
 			case pp::realm_login::login_packet::PlayerLoginFailure:
-			{
 				handlePlayerLoginFailure(packet);
 				break;
-			}
-
 			default:
-			{
 				// Log about unknown or unhandled packet
 				WLOG("Received unknown packet " << static_cast<UInt32>(packetId)
 					<< " from login server at " << m_host << ":" << m_port);
 				break;
-			}
 		}
+
+		return PacketParseResult::Pass;
 	}
 
 	bool LoginConnector::connectionEstablished(bool success)

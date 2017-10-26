@@ -59,6 +59,7 @@ namespace wowpp
 				, m_isParsingIncomingData(false)
 				, m_isClosedOnParsing(false)
 				, m_decryptedUntil(0)
+				, m_isReceiving(false)
 			{
 			}
 
@@ -101,6 +102,11 @@ namespace wowpp
 				boost::asio::ip::tcp::no_delay Option(true);
 				m_socket->lowest_layer().set_option(Option);
 				beginReceive();
+			}
+
+			void resumeParsing() override
+			{
+				parsePackets();
 			}
 
 			void flush() override
@@ -174,6 +180,7 @@ namespace wowpp
 			bool m_isParsingIncomingData;
 			bool m_isClosedOnParsing;
 			size_t m_decryptedUntil;
+			bool m_isReceiving;
 
 			void beginSend()
 			{
@@ -199,6 +206,10 @@ namespace wowpp
 
 			void beginReceive()
 			{
+				if (m_isReceiving)
+					return;
+
+				m_isReceiving = true;
 				m_socket->async_read_some(
 				    boost::asio::buffer(m_receiving.data(), m_receiving.size()),
 				    std::bind(&CryptedConnection<P, Socket>::received, this->shared_from_this(), std::placeholders::_2));
@@ -206,8 +217,9 @@ namespace wowpp
 
 			void received(std::size_t size)
 			{
-				ASSERT(size <= m_receiving.size());
+				m_isReceiving = false;
 
+				ASSERT(size <= m_receiving.size());
 				if (size == 0)
 				{
 					disconnected();
@@ -218,9 +230,14 @@ namespace wowpp
 				    m_receiving.begin(),
 				    m_receiving.begin() + size);
 
+				parsePackets();
+			}
+			
+			void parsePackets()
+			{
 				m_isParsingIncomingData = true;
 				AssignOnExit<bool> isParsingIncomingDataResetter(
-				    m_isParsingIncomingData, false);
+					m_isParsingIncomingData, false);
 
 				bool nextPacket;
 				std::size_t parsedUntil = 0;
@@ -232,7 +249,7 @@ namespace wowpp
 
 					// Check if we have received a complete header
 					if (m_decryptedUntil <= parsedUntil &&
-					        availableSize >= game::Crypt::CryptedReceiveLength)
+						availableSize >= game::Crypt::CryptedReceiveLength)
 					{
 						m_crypt.decryptReceive(reinterpret_cast<UInt8 *>(&m_received[0] + parsedUntil), game::Crypt::CryptedReceiveLength);
 
@@ -252,32 +269,44 @@ namespace wowpp
 					switch (state)
 					{
 					case receive_state::Incomplete:
-						{
-							break;
-						}
+					{
+						break;
+					}
 
 					case receive_state::Complete:
+					{
+						if (m_listener)
 						{
-							if (m_listener)
+							auto result = m_listener->connectionPacketReceived(packet);
+							switch (result)
 							{
-								m_listener->connectionPacketReceived(packet);
+							case PacketParseResult::Pass:
+								nextPacket = true;
+								break;
+							case PacketParseResult::Block:
+								nextPacket = false;
+								break;
+							case PacketParseResult::Disconnect:
+								m_isClosedOnParsing = true;
+								nextPacket = false;
+								break;
 							}
-
-							nextPacket = true;
-							parsedUntil += static_cast<std::size_t>(source.getPosition() - source.getBegin());
-							break;
 						}
+
+						parsedUntil += static_cast<std::size_t>(source.getPosition() - source.getBegin());
+						break;
+					}
 
 					case receive_state::Malformed:
+					{
+						m_socket.reset();
+						if (m_listener)
 						{
-							m_socket.reset();
-							if (m_listener)
-							{
-								m_listener->connectionMalformedPacket();
-								m_listener = nullptr;
-							}
-							return;
+							m_listener->connectionMalformedPacket();
+							m_listener = nullptr;
 						}
+						return;
+					}
 					}
 
 					if (m_isClosedOnParsing)
@@ -286,16 +315,15 @@ namespace wowpp
 						m_socket.reset();
 						return;
 					}
-				}
-				while (nextPacket);
+				} while (nextPacket);
 
 				if (parsedUntil)
 				{
 					ASSERT(parsedUntil <= m_received.size());
 
 					m_received.erase(
-					    m_received.begin(),
-					    m_received.begin() + static_cast<std::ptrdiff_t>(parsedUntil));
+						m_received.begin(),
+						m_received.begin() + static_cast<std::ptrdiff_t>(parsedUntil));
 
 					// Reset
 					m_decryptedUntil = 0;

@@ -130,7 +130,7 @@ namespace wowpp
 		/// @copydoc wow::game::IConnectionListener::connectionMalformedPacket()
 		void connectionMalformedPacket() override;
 		/// @copydoc wow::game::IConnectionListener::connectionPacketReceived()
-		void connectionPacketReceived(pp::IncomingPacket &packet) override;
+		PacketParseResult connectionPacketReceived(pp::IncomingPacket &packet) override;
 
 		// Packet handlers
 		void handleLogin(pp::IncomingPacket &packet);

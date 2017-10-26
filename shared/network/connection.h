@@ -31,6 +31,17 @@
 
 namespace wowpp
 {
+	/// Enumerates possible packet parse results.
+	enum class PacketParseResult
+	{
+		/// Process next packets
+		Pass,
+		/// Stop packet processing for this connection.
+		Block,
+		/// Close the connection.
+		Disconnect
+	};
+
 	template<class P>
 	struct IConnectionListener
 	{
@@ -42,7 +53,7 @@ namespace wowpp
 
 		virtual void connectionLost() = 0;
 		virtual void connectionMalformedPacket() = 0;
-		virtual void connectionPacketReceived(typename Protocol::IncomingPacket &packet) = 0;
+		virtual PacketParseResult connectionPacketReceived(typename Protocol::IncomingPacket &packet) = 0;
 		virtual void connectionDataSent(size_t size) {};
 	};
 
@@ -66,6 +77,7 @@ namespace wowpp
 		virtual boost::asio::ip::address getRemoteAddress() const = 0;
 		virtual Buffer &getSendBuffer() = 0;
 		virtual void startReceiving() = 0;
+		virtual void resumeParsing() = 0;
 		virtual void flush() = 0;
 		virtual void close() = 0;
 
@@ -105,6 +117,7 @@ namespace wowpp
 			, m_isParsingIncomingData(false)
 			, m_isClosedOnParsing(false)
 			, m_isClosedOnSend(false)
+			, m_isReceiving(false)
 		{
 		}
 
@@ -142,6 +155,11 @@ namespace wowpp
 			boost::asio::ip::tcp::no_delay Option(true);
 			m_socket->lowest_layer().set_option(Option);
 			beginReceive();
+		}
+
+		void resumeParsing() override
+		{
+			parsePackets();
 		}
 
 		void flush() override
@@ -223,6 +241,7 @@ namespace wowpp
 		bool m_isParsingIncomingData;
 		bool m_isClosedOnParsing;
 		bool m_isClosedOnSend;
+		bool m_isReceiving;
 
 		void beginSend()
 		{
@@ -259,6 +278,11 @@ namespace wowpp
 
 		void beginReceive()
 		{
+			if (m_isReceiving)
+				return;
+
+			m_isReceiving = true;
+
 			m_socket->async_read_some(
 			    boost::asio::buffer(m_receiving.data(), m_receiving.size()),
 			    std::bind(&Connection<P, Socket>::received, this->shared_from_this(), std::placeholders::_2));
@@ -266,8 +290,9 @@ namespace wowpp
 
 		void received(std::size_t size)
 		{
-			ASSERT(size <= m_receiving.size());
+			m_isReceiving = false;
 
+			ASSERT(size <= m_receiving.size());
 			if (size == 0)
 			{
 				disconnected();
@@ -278,9 +303,14 @@ namespace wowpp
 			    m_receiving.begin(),
 			    m_receiving.begin() + size);
 
+			parsePackets();
+		}
+
+		void parsePackets()
+		{
 			m_isParsingIncomingData = true;
 			AssignOnExit<bool> isParsingIncomingDataResetter(
-			    m_isParsingIncomingData, false);
+				m_isParsingIncomingData, false);
 
 			bool nextPacket;
 			std::size_t parsedUntil = 0;
@@ -299,25 +329,30 @@ namespace wowpp
 
 				switch (state)
 				{
-				case receive_state::Incomplete:
-					{
+					case receive_state::Incomplete:
 						break;
-					}
-
-				case receive_state::Complete:
-					{
+					case receive_state::Complete:
 						if (m_listener)
 						{
-							m_listener->connectionPacketReceived(packet);
+							auto result = m_listener->connectionPacketReceived(packet);
+							switch (result)
+							{
+							case PacketParseResult::Pass:
+								nextPacket = true;
+								break;
+							case PacketParseResult::Block:
+								nextPacket = false;
+								break;
+							case PacketParseResult::Disconnect:
+								m_isClosedOnParsing = true;
+								nextPacket = false;
+								break;
+							}
 						}
 
-						nextPacket = true;
 						parsedUntil += static_cast<std::size_t>(source.getPosition() - source.getBegin());
 						break;
-					}
-
-				case receive_state::Malformed:
-					{
+					case receive_state::Malformed:
 						m_socket.reset();
 						if (m_listener)
 						{
@@ -325,7 +360,6 @@ namespace wowpp
 							m_listener = nullptr;
 						}
 						return;
-					}
 				}
 
 				if (m_isClosedOnParsing)
@@ -334,16 +368,15 @@ namespace wowpp
 					m_socket.reset();
 					return;
 				}
-			}
-			while (nextPacket);
+			} while (nextPacket);
 
 			if (parsedUntil)
 			{
 				ASSERT(parsedUntil <= m_received.size());
 
 				m_received.erase(
-				    m_received.begin(),
-				    m_received.begin() + static_cast<std::ptrdiff_t>(parsedUntil));
+					m_received.begin(),
+					m_received.begin() + static_cast<std::ptrdiff_t>(parsedUntil));
 			}
 
 			beginReceive();
