@@ -47,57 +47,57 @@ namespace wowpp
 		/// @copydoc wowpp::IDatabase::renameCharacter
 		game::ResponseCode renameCharacter(DatabaseId id, const String &newName) override;
 		/// @copydoc wowpp::IDatabase::getCharacterCount
-		UInt32 getCharacterCount(UInt32 accountId) override;
+		boost::optional<UInt32> getCharacterCount(UInt32 accountId) override;
 		/// @copydoc wowpp::IDatabase::createCharacter
 		game::ResponseCode createCharacter(UInt32 accountId, const std::vector<const proto::SpellEntry*> &spells, const std::vector<ItemData> &items, game::CharEntry &character) override;
 		/// @copydoc wowpp::IDatabase::createCharacterById
-		bool getCharacterById(DatabaseId id, game::CharEntry &out_character) override;
+		game::CharEntry getCharacterById(DatabaseId id) override;
 		/// @copydoc wowpp::IDatabase::createCharacterByName
-		bool getCharacterByName(const String &name, game::CharEntry &out_character) override;
+		game::CharEntry getCharacterByName(const String &name) override;
 		/// @copydoc wowpp::IDatabase::getCharacters
-		bool getCharacters(UInt32 accountId, game::CharEntries &out_characters) override;
+		game::CharEntries getCharacters(UInt32 accountId) override;
 		/// @copydoc wowpp::IDatabase::deleteCharacter
-		game::ResponseCode deleteCharacter(UInt32 accountId, UInt64 characterGuid) override;
+		void deleteCharacter(DeleteCharacterArgs arguments) override;
 		/// @copydoc wowpp::IDatabase::getGameCharacter
 		bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character) override;
 		/// @copydoc wowpp::IDatabase::saveGamecharacter
 		bool saveGameCharacter(const GameCharacter &character, const std::vector<ItemData> &items) override;
 		/// @copydoc wowpp::IDatabase::getCharacterSocialList
-		bool getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social) override;
+		boost::optional<PlayerSocialEntries> getCharacterSocialList(DatabaseId characterId) override;
 		/// @copydoc wowpp::IDatabase::addCharacterSocialContact
-		bool addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) override;
+		void addCharacterSocialContact(AddSocialContactArg arguments) override;
 		/// @copydoc wowpp::IDatabase::updateCharacterSocialContact
-		bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags) override;
+		void updateCharacterSocialContact(UpdateSocialContactArg arguments) override;
 		/// @copydoc wowpp::IDatabase::updateCharacterSocialContact
-		bool updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) override;
+		void updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note) override;
 		/// @copydoc wowpp::IDatabase::removeCharacterSocialContact
-		bool removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid) override;
+		void removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid) override;
 		/// @copydoc wowpp::IDatabase::removeCharacterSocialContact
 		bool getCharacterActionButtons(DatabaseId characterId, ActionButtons &out_buttons) override;
 		/// @copydoc wowpp::IDatabase::setCharacterActionButtons
-		bool setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons) override;
+		void setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons) override;
 		/// @copydoc wowpp::IDatabase::setCinematicState
-		bool setCinematicState(DatabaseId characterId, bool state) override;
+		void setCinematicState(DatabaseId characterId, bool state) override;
 		/// @copydoc wowpp::IDatabase::setQuestData
-		bool setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) override;
+		void setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData &data) override;
 		/// @copydoc wowpp::IDatabase::teleportCharacter
-		bool teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome = false) override;
+		void teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome = false) override;
 		/// @copydoc wowpp::IDatabase::learnSpell
-		bool learnSpell(DatabaseId characterId, UInt32 spellId) override;
+		void learnSpell(DatabaseId characterId, UInt32 spellId) override;
 		/// @copydoc wowpp::IDatabase::createGroup
-		bool createGroup(UInt64 groupId, UInt64 leader) override;
+		void createGroup(UInt64 groupId, UInt64 leader) override;
 		/// @copydoc wowpp::IDatabase::disbandGroup
-		bool disbandGroup(UInt64 groupId) override;
+		void disbandGroup(UInt64 groupId) override;
 		/// @copydoc wowpp::IDatabase::addGroupMember
-		bool addGroupMember(UInt64 groupId, UInt64 member) override;
+		void addGroupMember(UInt64 groupId, UInt64 member) override;
 		/// @copydoc wowpp::IDatabase::setGroupLeader
-		bool setGroupLeader(UInt64 groupId, UInt64 leaderGuid) override;
+		void setGroupLeader(UInt64 groupId, UInt64 leaderGuid) override;
 		/// @copydoc wowpp::IDatabase::removeGroupMember
-		bool removeGroupMember(UInt64 groupId, UInt64 member) override;
+		void removeGroupMember(UInt64 groupId, UInt64 member) override;
 		/// @copydoc wowpp::IDatabase::listGroups
-		bool listGroups(std::vector<UInt64> &out_groupIds) override;
+		boost::optional<std::vector<UInt64>> listGroups() override;
 		/// @copydoc wowpp::IDatabase::loadGroup
-		bool loadGroup(UInt64 groupId, UInt64 &out_leader, std::vector<UInt64> &out_member) override;
+		boost::optional<GroupData> loadGroup(UInt64 groupId) override;
 
 	private:
 

@@ -130,7 +130,7 @@ namespace wowpp
 		destroy();
 	}
 
-	void Editor::connectionPacketReceived(pp::IncomingPacket &packet)
+	PacketParseResult Editor::connectionPacketReceived(pp::IncomingPacket &packet)
 	{
 		const auto packetId = packet.getId();
 
@@ -161,6 +161,8 @@ namespace wowpp
 				break;
 			}
 		}
+
+		return PacketParseResult::Pass;
 	}
 
 	void Editor::handleLogin(pp::IncomingPacket &packet)

@@ -95,35 +95,32 @@ namespace wowpp
 		return game::response_code::CharNameFailure;
 	}
 
-	wowpp::UInt32 MySQLDatabase::getCharacterCount(UInt32 accountId)
+	boost::optional<UInt32> MySQLDatabase::getCharacterCount(UInt32 accountId)
 	{
 		UInt32 retCount = 0;
 
 		wowpp::MySQL::Select select(m_connection,
 			fmt::format("SELECT COUNT(id) FROM `character` WHERE `account`={0}"
 			, accountId));
-
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);
 			if (row)
 			{
 				row.getField(0, retCount);
+				return retCount;
 			}
 			else
 			{
-				// No row found: Account does not exist
-				return retCount;
+				return 0;
 			}
 		}
 		else
 		{
-			// There was an error
 			printDatabaseError();
-			return retCount;
 		}
 
-		return retCount;
+		return {};
 	}
 
 	game::ResponseCode MySQLDatabase::createCharacter(
@@ -349,8 +346,10 @@ namespace wowpp
 		}
 	}
 
-	bool MySQLDatabase::getCharacters(UInt32 accountId, game::CharEntries &out_characters)
+	game::CharEntries MySQLDatabase::getCharacters(UInt32 accountId)
 	{
+		game::CharEntries Result;
+
 		wowpp::MySQL::Select select(m_connection,
 							//      0     1       2       3        4        5       6        7       8    
 			fmt::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
@@ -409,79 +408,76 @@ namespace wowpp
 				entry.flags = static_cast<game::CharacterFlags>(tmp);
 
 				// Add to vector
-				out_characters.push_back(entry);
+				Result.push_back(entry);
 
 				// Next row
 				row = row.next(select);
 			}
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
-		}
 
-		for (auto &entry : out_characters)
-		{
-			std::ostringstream strm;
-			strm << "SELECT `entry`, `slot` FROM `character_items` WHERE (`slot` BETWEEN 65280 AND 65299) AND (`owner` = " << entry.id << ") LIMIT 19;";
-
-			wowpp::MySQL::Select select(m_connection, strm.str());
-			if (select.success())
+			// Load all character item entries that could be potentially visible to be used for a preview
+			for (auto &entry : Result)
 			{
-				wowpp::MySQL::Row row(select);
-				while (row)
+				std::ostringstream strm;
+				strm << "SELECT `entry`, `slot` FROM `character_items` WHERE (`slot` BETWEEN 65280 AND 65299) AND (`owner` = " << entry.id << ") LIMIT 19;";
+
+				wowpp::MySQL::Select select(m_connection, strm.str());
+				if (select.success())
 				{
-					UInt8 slot = 0;
-					row.getField<UInt8, UInt16>(1, slot);
-
-					UInt32 itemEntry = 0;
-					row.getField(0, itemEntry);
-
-					const auto *item = m_project.items.getById(itemEntry);
-					if (item)
+					wowpp::MySQL::Row row(select);
+					while (row)
 					{
-						entry.equipment[slot & 0xFF] = item;
+						UInt8 slot = 0;
+						row.getField<UInt8, UInt16>(1, slot);
+
+						UInt32 itemEntry = 0;
+						row.getField(0, itemEntry);
+
+						const auto *item = m_project.items.getById(itemEntry);
+						if (item)
+						{
+							entry.equipment[slot & 0xFF] = item;
+						}
+
+						row = row.next(select);
 					}
-					
-					row = row.next(select);
+				}
+				else
+				{
+					throw MySQL::Exception(m_connection.getErrorMessage());
 				}
 			}
 		}
+		else
+		{
+			throw MySQL::Exception(m_connection.getErrorMessage());
+		}
 
-		return true;
+		return Result;
 	}
 
-	game::ResponseCode MySQLDatabase::deleteCharacter(UInt32 accountId, UInt64 characterGuid)
+	void MySQLDatabase::deleteCharacter(DeleteCharacterArgs arguments)
 	{
-		const UInt32 lowerPart = guidLowerPart(characterGuid);
+		const UInt32 lowerPart = guidLowerPart(arguments.characterId);
 
 		// Start transaction
 		MySQL::Transaction transation(m_connection);
 		{
 			if (!m_connection.execute(fmt::format(
-				"DELETE FROM `character` WHERE `id`={0} AND `account`={1}"
+				"UPDATE `character` SET `account`=0, `deleted_account`={1}, `deleted_timestamp`=NULL WHERE `id`={0} AND `account`={1} AND `deleted_account` IS NULL LIMIT 1"
 				, lowerPart
-				, accountId)))
+				, arguments.accountId)))
 			{
-				// There was an error
-				printDatabaseError();
-				return game::response_code::CharDeleteFailed;
+				throw MySQL::Exception(m_connection.getErrorMessage());
 			}
 
 			if (!m_connection.execute(fmt::format(
-				"DELETE FROM `character_social` WHERE `guid_1`={0} OR `guid_2`={0}"
-				, characterGuid)))
+				"DELETE FROM `character_social` WHERE `guid_2`={0}"
+				, arguments.characterId)))
 			{
-				// There was an error
-				printDatabaseError();
-				return game::response_code::CharDeleteFailed;
+				throw MySQL::Exception(m_connection.getErrorMessage());
 			}
 		}
 		transation.commit();
-
-		return game::response_code::CharDeleteSuccess;
 	}
 
 	bool MySQLDatabase::getGameCharacter(DatabaseId characterId, GameCharacter &out_character)
@@ -1023,8 +1019,11 @@ namespace wowpp
 		ASSERT(false);
 	}
 
-	bool MySQLDatabase::getCharacterById(DatabaseId id, game::CharEntry &out_character)
+	game::CharEntry MySQLDatabase::getCharacterById(DatabaseId id)
 	{
+		// Create temporary character entry for the results
+		game::CharEntry entry;
+
 		UInt32 lowerPart = guidLowerPart(id);
 		wowpp::MySQL::Select select(m_connection,
 			//      0     1       2       3        4        5       6        7       8    
@@ -1040,58 +1039,59 @@ namespace wowpp
 				UInt32 bytes = 0, bytes2 = 0;
 
 				// Basic stuff
-				row.getField(0, out_character.id);
-				row.getField(1, out_character.name);
+				row.getField(0, entry.id);
+				row.getField(1, entry.name);
 
 				// Display
 				UInt32 tmp = 0;
 				row.getField(2, tmp);
-				out_character.race = static_cast<game::Race>(tmp);
+				entry.race = static_cast<game::Race>(tmp);
 				row.getField(3, tmp);
-				out_character.class_ = static_cast<game::CharClass>(tmp);
+				entry.class_ = static_cast<game::CharClass>(tmp);
 				row.getField(4, tmp);
-				out_character.gender = static_cast<game::Gender>(tmp);
+				entry.gender = static_cast<game::Gender>(tmp);
 				row.getField(5, bytes);
 				row.getField(6, bytes2);
 				row.getField(7, tmp);
-				out_character.level = static_cast<UInt8>(tmp);
+				entry.level = static_cast<UInt8>(tmp);
 
 				// Placement
-				row.getField(8, out_character.mapId);
-				row.getField(9, out_character.zoneId);
-				row.getField(10, out_character.location.x);
-				row.getField(11, out_character.location.y);
-				row.getField(12, out_character.location.z);
-				row.getField(13, out_character.o);
+				row.getField(8, entry.mapId);
+				row.getField(9, entry.zoneId);
+				row.getField(10, entry.location.x);
+				row.getField(11, entry.location.y);
+				row.getField(12, entry.location.z);
+				row.getField(13, entry.o);
 
 				Int32 cinematic = 0;
 				row.getField(14, cinematic);
-				out_character.cinematic = (cinematic != 0);
+				entry.cinematic = (cinematic != 0);
 
 				// Reinterpret bytes
-				out_character.skin = static_cast<UInt8>(bytes);
-				out_character.face = static_cast<UInt8>(bytes >> 8);
-				out_character.hairStyle = static_cast<UInt8>(bytes >> 16);
-				out_character.hairColor = static_cast<UInt8>(bytes >> 24);
-				out_character.facialHair = static_cast<UInt8>(bytes2 & 0xff);
+				entry.skin = static_cast<UInt8>(bytes);
+				entry.face = static_cast<UInt8>(bytes >> 8);
+				entry.hairStyle = static_cast<UInt8>(bytes >> 16);
+				entry.hairColor = static_cast<UInt8>(bytes >> 24);
+				entry.facialHair = static_cast<UInt8>(bytes2 & 0xff);
 			}
 			else
 			{
-				return false;
+				throw std::exception("Character doesn't exist");
 			}
 		}
 		else
 		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 
-		return true;
+		return entry;
 	}
 
-	bool MySQLDatabase::getCharacterByName(const String &name, game::CharEntry &out_character)
+	game::CharEntry MySQLDatabase::getCharacterByName(const String &name)
 	{
+		// Create temporary character entry for the results
+		game::CharEntry entry;
+
 		wowpp::MySQL::Select select(m_connection,
 			//      0     1       2       3        4        5       6        7       8    
 			fmt::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
@@ -1106,57 +1106,55 @@ namespace wowpp
 				UInt32 bytes = 0, bytes2 = 0;
 
 				// Basic stuff
-				row.getField(0, out_character.id);
-				row.getField(1, out_character.name);
+				row.getField(0, entry.id);
+				row.getField(1, entry.name);
 
 				// Display
 				UInt32 tmp = 0;
 				row.getField(2, tmp);
-				out_character.race = static_cast<game::Race>(tmp);
+				entry.race = static_cast<game::Race>(tmp);
 				row.getField(3, tmp);
-				out_character.class_ = static_cast<game::CharClass>(tmp);
+				entry.class_ = static_cast<game::CharClass>(tmp);
 				row.getField(4, tmp);
-				out_character.gender = static_cast<game::Gender>(tmp);
+				entry.gender = static_cast<game::Gender>(tmp);
 				row.getField(5, bytes);
 				row.getField(6, bytes2);
 				row.getField(7, tmp);
-				out_character.level = static_cast<UInt8>(tmp);
+				entry.level = static_cast<UInt8>(tmp);
 
 				// Placement
-				row.getField(8, out_character.mapId);
-				row.getField(9, out_character.zoneId);
-				row.getField(10, out_character.location.x);
-				row.getField(11, out_character.location.y);
-				row.getField(12, out_character.location.z);
-				row.getField(13, out_character.o);
+				row.getField(8, entry.mapId);
+				row.getField(9, entry.zoneId);
+				row.getField(10, entry.location.x);
+				row.getField(11, entry.location.y);
+				row.getField(12, entry.location.z);
+				row.getField(13, entry.o);
 
 				Int32 cinematic = 0;
 				row.getField(14, cinematic);
-				out_character.cinematic = (cinematic != 0);
+				entry.cinematic = (cinematic != 0);
 
 				// Reinterpret bytes
-				out_character.skin = static_cast<UInt8>(bytes);
-				out_character.face = static_cast<UInt8>(bytes >> 8);
-				out_character.hairStyle = static_cast<UInt8>(bytes >> 16);
-				out_character.hairColor = static_cast<UInt8>(bytes >> 24);
-				out_character.facialHair = static_cast<UInt8>(bytes2 & 0xff);
+				entry.skin = static_cast<UInt8>(bytes);
+				entry.face = static_cast<UInt8>(bytes >> 8);
+				entry.hairStyle = static_cast<UInt8>(bytes >> 16);
+				entry.hairColor = static_cast<UInt8>(bytes >> 24);
+				entry.facialHair = static_cast<UInt8>(bytes2 & 0xff);
 			}
 			else
 			{
-				return false;
+				throw std::exception("Character doesn't exist");
 			}
 		}
 		else
 		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 
-		return true;
+		return entry;
 	}
 
-	bool MySQLDatabase::getCharacterSocialList(DatabaseId characterId, PlayerSocial &out_social)
+	boost::optional<PlayerSocialEntries> MySQLDatabase::getCharacterSocialList(DatabaseId characterId)
 	{
 		wowpp::MySQL::Select select(m_connection,
 			//                         0		1       2          
@@ -1164,109 +1162,77 @@ namespace wowpp
 				, characterId));
 		if (select.success())
 		{
+			PlayerSocialEntries result;
+
 			wowpp::MySQL::Row row(select);
 			while (row)
 			{
-				UInt64 socialGuid = 0;
-				UInt32 flags = 0;
-				String note;
-
-				row.getField(0, socialGuid);
-				row.getField(1, flags);
-				row.getField(2, note);
-
-				const bool isFriend = flags & game::social_flag::Friend;
-				out_social.addToSocialList(socialGuid, !isFriend);
-				
-				if (isFriend)
-				{
-					out_social.setFriendNote(socialGuid, std::move(note));
-				}
+				PlayerSocialEntry entry;
+				row.getField(0, entry.guid);
+				row.getField(1, reinterpret_cast<UInt32&>(entry.flags));
+				row.getField(2, entry.note);
+				result.emplace_back(entry);
 
 				// Next row
 				row = row.next(select);
 			}
+
+			return result;
 		}
 		else
 		{
-			// There was an error
 			printDatabaseError();
-			return false;
 		}
 
-		return true;
+		return {};
 	}
 
-	bool MySQLDatabase::addCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note)
+	void MySQLDatabase::addCharacterSocialContact(AddSocialContactArg arguments)
 	{
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"INSERT INTO `character_social` (`guid_1`, `guid_2`, `flags`, `note`) VALUES ({0}, {1}, {2}, '{3}')"
-			, characterId
-			, socialGuid
-			, flags
-			, m_connection.escapeString(note))))
+			, arguments.characterId
+			, arguments.socialGuid
+			, arguments.flags
+			, m_connection.escapeString(arguments.note))))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
 
-	bool MySQLDatabase::updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags)
+	void MySQLDatabase::updateCharacterSocialContact(UpdateSocialContactArg arguments)
 	{
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"UPDATE `character_social` SET `flags`={0} WHERE `guid_1`={1} AND `guid_2`={2}"
-			, flags				// 0
-			, characterId		// 1
-			, socialGuid)))		// 2
+			, arguments.flags				// 0
+			, arguments.characterId		// 1
+			, arguments.socialGuid)))		// 2
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
 
-	bool MySQLDatabase::updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note)
+	void MySQLDatabase::updateCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid, game::SocialFlag flags, const String &note)
 	{
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"UPDATE `character_social` SET `flags`={0}, `note`='{1}' WHERE `guid_1`={2} AND `guid_2`={3}"
 			, flags								// 0
 			, m_connection.escapeString(note)	// 1
 			, characterId						// 2
 			, socialGuid)))						// 3
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
 
-	bool MySQLDatabase::removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid)
+	void MySQLDatabase::removeCharacterSocialContact(DatabaseId characterId, UInt64 socialGuid)
 	{
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"DELETE FROM `character_social` WHERE `guid_1`={0} AND `guid_2`={1}"
 			, characterId
 			, socialGuid)))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
 
@@ -1306,7 +1272,7 @@ namespace wowpp
 		return true;
 	}
 
-	bool MySQLDatabase::setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons)
+	void MySQLDatabase::setCharacterActionButtons(DatabaseId characterId, const ActionButtons &buttons)
 	{
 		const UInt32 lowerPart = guidLowerPart(characterId);
 
@@ -1317,9 +1283,7 @@ namespace wowpp
 				"DELETE FROM `character_actions` WHERE `guid`={0}"
 				, lowerPart)))
 			{
-				// There was an error
-				printDatabaseError();
-				return false;
+				throw MySQL::Exception(m_connection.getErrorMessage());
 			}
 
 			if (!buttons.empty())
@@ -1349,41 +1313,32 @@ namespace wowpp
 				// Now, set all actions
 				if (!m_connection.execute(fmtStrm.str()))
 				{
-					// Could not learn initial spells
-					printDatabaseError();
-					return false;
+					throw MySQL::Exception(m_connection.getErrorMessage());
 				}
 			}
 			
 		}
 		transation.commit();
-		return true;
 	}
 
-	bool MySQLDatabase::setCinematicState(DatabaseId characterId, bool state)
+	void MySQLDatabase::setCinematicState(DatabaseId characterId, bool state)
 	{
 		const UInt32 lowerPart = guidLowerPart(characterId);
 
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"UPDATE `character` SET `cinematic` = {0} WHERE `id`={1}"
 			, (state ? 1 : 0)
 			, lowerPart)))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
 
-	bool MySQLDatabase::setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData & data)
+	void MySQLDatabase::setQuestData(DatabaseId characterId, UInt32 questId, const QuestStatusData & data)
 	{
 		const UInt32 lowerPart = guidLowerPart(characterId);
 
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"INSERT INTO `character_quests` (`guid`, `quest`, `status`, `explored`, `timer`, `unitcount1`, `unitcount2`, `unitcount3`, `unitcount4`, `objectcount1`, `objectcount2`, `objectcount3`, `objectcount4`, `itemcount1`, `itemcount2`, `itemcount3`, `itemcount4`) VALUES "
 			"({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}) "
 			"ON DUPLICATE KEY UPDATE `status`={2}, `explored`={3}, `timer`={4}, `unitcount1`={5}, `unitcount2`={6}, `unitcount3`={7}, `unitcount4`={8}, `objectcount1`={9}, `objectcount2`={10}, `objectcount3`={11}, `objectcount4`={12}, `itemcount1`={13}, `itemcount2`={14}, `itemcount3`={15}, `itemcount4`={16}"
@@ -1406,23 +1361,15 @@ namespace wowpp
 			, data.items[3]
 			)))
 		{
-			return true;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
-		}
-
-		return false;
 	}
 
-	bool MySQLDatabase::teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome)
+	void MySQLDatabase::teleportCharacter(DatabaseId characterId, UInt32 mapId, float x, float y, float z, float o, bool changeHome)
 	{
 		const UInt32 lowerPart = guidLowerPart(characterId);
 
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"UPDATE `character` SET `map`={0}, `position_x`={1}, `position_y`={2}, `position_z`={3}, `orientation`={4} WHERE `id`={5}"
 			, mapId
 			, x
@@ -1432,213 +1379,169 @@ namespace wowpp
 			, lowerPart
 			)))
 		{
-			return true;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
-		}
-
-		return false;
 	}
 
-	bool MySQLDatabase::learnSpell(DatabaseId characterId, UInt32 spellId)
+	void MySQLDatabase::learnSpell(DatabaseId characterId, UInt32 spellId)
 	{
 		const UInt32 lowerPart = guidLowerPart(characterId);
 
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"INSERT IGNORE INTO `character_spells` VALUES ({0}, {1}, 1, 0);"
 			, lowerPart
 			, spellId
 			)))
 		{
-			return true;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
-		}
-
-		return false;
 	}
-	bool MySQLDatabase::createGroup(UInt64 groupId, UInt64 leader)
+
+	void MySQLDatabase::createGroup(UInt64 groupId, UInt64 leader)
 	{
 		const UInt32 lowerPart = guidLowerPart(leader);
 
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"INSERT INTO `group` (`id`, `leader`) VALUES ({0}, {1});"
 			, groupId
 			, lowerPart
 			)))
 		{
-			return addGroupMember(groupId, leader);
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
-	bool MySQLDatabase::disbandGroup(UInt64 groupId)
+
+	void MySQLDatabase::disbandGroup(UInt64 groupId)
 	{
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"DELETE FROM `group` WHERE `id` = {0};"
 			, groupId
 			)))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
-	bool MySQLDatabase::addGroupMember(UInt64 groupId, UInt64 member)
+
+	void MySQLDatabase::addGroupMember(UInt64 groupId, UInt64 member)
 	{
 		const UInt32 lowerPart = guidLowerPart(member);
 
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"INSERT IGNORE INTO `group_members` (`group`, `guid`) VALUES ({0}, {1});"
 			, groupId
 			, lowerPart
 			)))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
-	bool MySQLDatabase::setGroupLeader(UInt64 groupId, UInt64 leaderGuid)
+
+	void MySQLDatabase::setGroupLeader(UInt64 groupId, UInt64 leaderGuid)
 	{
 		const UInt32 lowerPart = guidLowerPart(leaderGuid);
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"UPDATE `group` SET `leader` = {0} WHERE `id` = {1};"
 			, lowerPart
 			, groupId
 			)))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
-	bool MySQLDatabase::removeGroupMember(UInt64 groupId, UInt64 member)
+
+	void MySQLDatabase::removeGroupMember(UInt64 groupId, UInt64 member)
 	{
 		const UInt32 lowerPart = guidLowerPart(member);
-		if (m_connection.execute(fmt::format(
+		if (!m_connection.execute(fmt::format(
 			"DELETE FROM `group_members` WHERE `group` = {0} `guid` = {1};"
 			, groupId
 			, lowerPart
 			)))
 		{
-			return true;
-		}
-		else
-		{
-			// There was an error
-			printDatabaseError();
-			return false;
+			throw MySQL::Exception(m_connection.getErrorMessage());
 		}
 	}
-	bool MySQLDatabase::listGroups(std::vector<UInt64>& out_groupIds)
+
+	boost::optional<std::vector<UInt64>> MySQLDatabase::listGroups()
 	{
 		wowpp::MySQL::Select select(m_connection, "SELECT `id` FROM `group`;");
 		if (select.success())
 		{
+			std::vector<UInt64> groupIds;
+
 			wowpp::MySQL::Row row(select);
 			while (row)
 			{
 				UInt64 groupId = 0;
 				row.getField(0, groupId);
-				out_groupIds.push_back(groupId);
+				groupIds.push_back(groupId);
 
 				// Next row
 				row = row.next(select);
 			}
+
+			return groupIds;
 		}
 		else
 		{
-			// There was an error
 			printDatabaseError();
-			return false;
 		}
 
-		return true;
+		return {};
 	}
-	bool MySQLDatabase::loadGroup(UInt64 groupId, UInt64 & out_leader, std::vector<UInt64>& out_member)
+
+	boost::optional<GroupData> MySQLDatabase::loadGroup(UInt64 groupId)
 	{
 		// Load group data
+		wowpp::MySQL::Select select(m_connection, fmt::format(
+			"SELECT `leader` FROM `group` WHERE `id` = {0} LIMIT 1;"
+			, groupId
+			));
+		if (select.success())
 		{
-			wowpp::MySQL::Select select(m_connection, fmt::format(
-				"SELECT `leader` FROM `group` WHERE `id` = {0} LIMIT 1;"
-				, groupId
-				));
-			if (select.success())
+			wowpp::MySQL::Row row(select);
+			if (row)
 			{
-				wowpp::MySQL::Row row(select);
-				if (row)
+				// Prepare group data which will be returned
+				GroupData group;
+					
+				// Load leader guid
+				row.getField(0, group.leaderGuid);
+
+				// Load members
+				wowpp::MySQL::Select memberSelect(m_connection, fmt::format(
+					"SELECT `guid` FROM `group_members` WHERE `group` = {0} AND `guid` != {1} LIMIT 40;"
+					, groupId
+					, group.leaderGuid
+					));
+				if (memberSelect.success())
 				{
-					// Load leader guid
-					row.getField(0, out_leader);
+					wowpp::MySQL::Row memberRow(memberSelect);
+					while (memberRow)
+					{
+						// Load leader guid
+						UInt64 memberGuid = 0;
+						memberRow.getField(0, memberGuid);
+						group.memberGuids.push_back(memberGuid);
+
+						// Process next member row
+						memberRow = memberRow.next(memberSelect);
+					}
+
+					// All members loaded
+					return group;
 				}
 				else
 				{
-					// Could not find requested group
-					WLOG("Could not find requested group " << groupId);
-					return false;
+					printDatabaseError();
 				}
 			}
-			else
-			{
-				// There was an error
-				printDatabaseError();
-				return false;
-			}
 		}
-		
-		// Load members
+		else
 		{
-			wowpp::MySQL::Select select(m_connection, fmt::format(
-				"SELECT `guid` FROM `group_members` WHERE `group` = {0} AND `guid` != {1} LIMIT 40;"
-				, groupId
-				, out_leader
-				));
-			if (select.success())
-			{
-				wowpp::MySQL::Row row(select);
-				while (row)
-				{
-					// Load leader guid
-					UInt64 memberGuid = 0;
-					row.getField(0, memberGuid);
-					out_member.push_back(memberGuid);
-
-					row = row.next(select);
-				}
-			}
-			else
-			{
-				// There was an error
-				printDatabaseError();
-				return false;
-			}
+			printDatabaseError();
 		}
 
-		return true;
+		return {};
 	}
 }

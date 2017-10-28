@@ -194,10 +194,10 @@ namespace wowpp
 				return;
 			}
 
-			std::unique_ptr<wowpp::World> world(new wowpp::World(*WorldManager, *PlayerManager, project, *m_database, std::move(connection), address.to_string(), realmName));
+			auto world = std::make_shared<World>(*WorldManager, *PlayerManager, project, *m_database, std::move(connection), address.to_string(), realmName);
 
 			DLOG("Incoming world connection from " << address);
-			WorldManager->addWorld(std::move(world));
+			WorldManager->addWorld(world);
 		};
 
 		const simple::scoped_connection worldConnected(worldServer->connected().connect(createWorld));
@@ -232,10 +232,10 @@ namespace wowpp
 		Configuration &config = m_configuration;
 
 		// Restore groups
-		std::vector<UInt64> groupIds;
-		if (database.listGroups(groupIds))
+		auto groupIds = database.listGroups();
+		if (groupIds)
 		{
-			for (auto &groupId : groupIds)
+			for (auto &groupId : *groupIds)
 			{
 				// Create a new group
 				auto group = std::make_shared<PlayerGroup>(groupId, *PlayerManager, database);
@@ -250,10 +250,10 @@ namespace wowpp
 		}
 		else
 		{
-			ELOG("Could not restore groups!");
+			ELOG("Could not restore group ids!");
 		}
 
-		auto const createPlayer = [&PlayerManager, &loginConnector, &WorldManager, &database, &project, &config, &groupIdGenerator](std::shared_ptr<wowpp::Player::Client> connection)
+		auto const createPlayer = [&PlayerManager, &loginConnector, &WorldManager, &database, &asyncDatabase, &project, &config, &groupIdGenerator](std::shared_ptr<wowpp::Player::Client> connection)
 		{
 			connection->startReceiving();
 			boost::asio::ip::address address;
@@ -269,17 +269,24 @@ namespace wowpp
 				return;
 			}
 
-			std::unique_ptr<wowpp::Player> player(new wowpp::Player(config, groupIdGenerator, *PlayerManager, *loginConnector, *WorldManager, database, project, std::move(connection), address.to_string()));
+			auto player = std::make_shared<Player>(config, groupIdGenerator, *PlayerManager, *loginConnector, *WorldManager, database, asyncDatabase, project, std::move(connection), address.to_string());
 
 			DLOG("Incoming player connection from " << address);
-			PlayerManager->addPlayer(std::move(player));
+			PlayerManager->addPlayer(player);
 		};
 
 		const simple::scoped_connection playerConnected(playerServer->connected().connect(createPlayer));
 		playerServer->startAccept();
 
+		// Create database worker thread
+		std::thread databaseWorkThread([&databaseWorkQueue] { databaseWorkQueue.run(); });
+
 		// Run IO service
 		m_ioService.run();
+
+		// Stop the database worker queue and wait for the thread to finish
+		databaseWorkQueue.stop();
+		databaseWorkThread.join();
 
 		// Do not restart but shutdown after this
 		return m_shouldRestart;

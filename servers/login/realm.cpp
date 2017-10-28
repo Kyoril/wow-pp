@@ -84,7 +84,7 @@ namespace wowpp
 		destroy();
 	}
 
-	void Realm::connectionPacketReceived(pp::IncomingPacket &packet)
+	PacketParseResult Realm::connectionPacketReceived(pp::IncomingPacket &packet)
 	{
 		const auto packetId = packet.getId();
 
@@ -122,6 +122,8 @@ namespace wowpp
 				break;
 			}
 		}
+
+		return PacketParseResult::Pass;
 	}
 
 	void Realm::handleLogin(pp::IncomingPacket &packet)

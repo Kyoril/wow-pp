@@ -80,7 +80,7 @@ namespace wowpp
 		/// @copydoc wowpp::pp::IConnectorListener::connectionMalformedPacket()
 		virtual void connectionMalformedPacket() override;
 		/// @copydoc wowpp::pp::IConnectorListener::connectionPacketReceived()
-		virtual void connectionPacketReceived(pp::Protocol::IncomingPacket &packet) override;
+		virtual PacketParseResult connectionPacketReceived(pp::Protocol::IncomingPacket &packet) override;
 		/// @copydoc wowpp::pp::IConnectorListener::connectionEstablished()
 		virtual bool connectionEstablished(bool success) override;
 

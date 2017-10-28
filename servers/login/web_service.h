@@ -28,7 +28,8 @@ namespace wowpp
 	class PlayerManager;
 	struct IDatabase;
 
-	class WebService : public web::WebService
+	class WebService 
+		: public web::WebService
 	{
 	public:
 
@@ -45,7 +46,7 @@ namespace wowpp
 		GameTime getStartTime() const;
 		const String &getPassword() const;
 
-		virtual std::unique_ptr<web::WebClient> createClient(std::shared_ptr<Client> connection) override;
+		virtual web::WebService::WebClientPtr createClient(std::shared_ptr<Client> connection) override;
 
 	private:
 

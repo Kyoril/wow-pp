@@ -63,7 +63,7 @@ namespace wowpp
 		m_connection.reset();
 	}
 
-	void LoginConnector::connectionPacketReceived(pp::Protocol::IncomingPacket &packet)
+	PacketParseResult LoginConnector::connectionPacketReceived(pp::Protocol::IncomingPacket &packet)
 	{
 		const auto &packetId = packet.getId();
 
@@ -89,6 +89,8 @@ namespace wowpp
 				break;
 			}
 		}
+
+		return PacketParseResult::Pass;
 	}
 
 	bool LoginConnector::connectionEstablished(bool success)

@@ -42,6 +42,7 @@ namespace wowpp
 	/// World connection class.
 	class World final
 			: public pp::IConnectionListener
+			, public std::enable_shared_from_this<World>
 	{
 	private:
 
@@ -129,7 +130,7 @@ namespace wowpp
 		/// @copydoc wow::game::IConnectionListener::connectionMalformedPacket()
 		void connectionMalformedPacket() override;
 		/// @copydoc wow::game::IConnectionListener::connectionPacketReceived()
-		void connectionPacketReceived(pp::IncomingPacket &packet) override;
+		PacketParseResult connectionPacketReceived(pp::IncomingPacket &packet) override;
 
 		// Packet handlers
 		void handleLogin(pp::IncomingPacket &packet);

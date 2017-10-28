@@ -55,6 +55,8 @@ CREATE TABLE `character` (
   `power3` int(10) unsigned DEFAULT '0',
   `power4` int(10) unsigned DEFAULT '0',
   `power5` int(10) unsigned DEFAULT '0',
+  `deleted_account` int(11) DEFAULT NULL,
+  `deleted_timestamp` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;
 

@@ -51,7 +51,7 @@ namespace wowpp
 			m_webService.clientDisconnected(*this);
 		}
 
-		void WebClient::connectionPacketReceived(net::http::IncomingRequest &packet)
+		PacketParseResult WebClient::connectionPacketReceived(net::http::IncomingRequest &packet)
 		{
 			io::StringSink sink(m_connection->getSendBuffer());
 			WebResponse response(sink);
@@ -65,6 +65,8 @@ namespace wowpp
 			response.addHeader("Connection", "close");
 			handleRequest(packet, response);
 			m_connection->flush();
+
+			return PacketParseResult::Pass;
 		}
 
 		WebService &WebClient::getService() const

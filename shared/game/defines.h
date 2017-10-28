@@ -1555,20 +1555,15 @@ namespace wowpp
 
 		typedef friend_status::Type FriendStatus;
 
-		namespace social_flag
+		enum SocialFlag
 		{
-			enum Type
-			{
-				/// Target is a friend.
-				Friend		= 0x01,
-				/// Chat messages and invites from this target are ignored.
-				Ignored		= 0x02,
-				/// This target is muted for us in voice chat sessions.
-				Muted		= 0x04
-			};
-		}
-
-		typedef social_flag::Type SocialFlag;
+			/// Target is a friend.
+			Friend	= 0x01,
+			/// Chat messages and invites from this target are ignored.
+			Ignored	= 0x02,
+			/// This target is muted for us in voice chat sessions.
+			Muted	= 0x04
+		};
 
 		// TODO: Move this?
 		struct SocialInfo final

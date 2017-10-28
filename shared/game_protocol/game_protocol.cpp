@@ -602,7 +602,7 @@ namespace wowpp
 			{
 				out_packet.start(server_packet::ContactList);
 				out_packet
-				        << io::write<NetUInt32>(game::social_flag::Friend | game::social_flag::Ignored | game::social_flag::Muted)
+				        << io::write<NetUInt32>(game::Friend | game::Ignored | game::Muted)
 				        << io::write<NetUInt32>(contacts.size());
 
 				for (const auto &contact : contacts)
@@ -612,7 +612,7 @@ namespace wowpp
 					        << io::write<NetUInt32>(contact.second.flags)
 					        << io::write_range(contact.second.note) << io::write<NetUInt8>(0);
 
-					if (contact.second.flags & game::social_flag::Friend)
+					if (contact.second.flags & game::Friend)
 					{
 						out_packet
 						        << io::write<NetUInt8>(contact.second.status);

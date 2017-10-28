@@ -50,9 +50,8 @@ namespace wowpp
 		if (m_leaderGUID != 0)
 			return true;
 
-		UInt64 leader = 0;
-		std::vector<UInt64> memberGuids;
-		if (!m_database.loadGroup(m_id, leader, memberGuids))
+		auto groupData = m_database.loadGroup(m_id);
+		if (!groupData)
 		{
 			// The group will automatically be deleted and not stored when not saved in GroupsById
 			ELOG("Could not load group from database");
@@ -60,13 +59,13 @@ namespace wowpp
 		}
 
 		// Convert leader id into cross realm compatible guid
-		m_playerManager.getCrossRealmGUID(leader);
+		m_playerManager.getCrossRealmGUID(groupData->leaderGuid);
 
 		// Save leader information
-		m_leaderGUID = leader;
+		m_leaderGUID = groupData->leaderGuid;
 
 		// Add the leader first
-		if (!addOfflineMember(leader))
+		if (!addOfflineMember(groupData->leaderGuid))
 		{
 			// Leader no longer exists?
 			ELOG("Could not add group leader");
@@ -74,7 +73,7 @@ namespace wowpp
 		}
 
 		// Same for members
-		for (auto &memberGuid : memberGuids)
+		for (auto &memberGuid : groupData->memberGuids)
 		{
 			m_playerManager.getCrossRealmGUID(memberGuid);
 			addOfflineMember(memberGuid);
@@ -171,7 +170,7 @@ namespace wowpp
 		// Make sure that all group members know about us
 		for (auto &it : m_members)
 		{
-			auto *player = m_playerManager.getPlayerByCharacterGuid(it.first);
+			auto player = m_playerManager.getPlayerByCharacterGuid(it.first);
 			if (!player)
 			{
 				// TODO
@@ -185,7 +184,7 @@ namespace wowpp
 					continue;
 				}
 
-				auto *player2 = m_playerManager.getPlayerByCharacterGuid(it2.first);
+				auto player2 = m_playerManager.getPlayerByCharacterGuid(it2.first);
 				if (!player2)
 				{
 					// TODO
@@ -227,7 +226,7 @@ namespace wowpp
 			}
 			else
 			{
-				auto *player = m_playerManager.getPlayerByCharacterGuid(guid);
+				auto player = m_playerManager.getPlayerByCharacterGuid(guid);
 				if (player)
 				{
 					auto *node = player->getWorldNode();
@@ -285,7 +284,7 @@ namespace wowpp
 		// Update member status
 		for (auto &member : m_members)
 		{
-			auto *player = m_playerManager.getPlayerByCharacterGuid(member.first);
+			auto player = m_playerManager.getPlayerByCharacterGuid(member.first);
 			if (!player)
 			{
 				member.second.status = game::group_member_status::Offline;
@@ -299,7 +298,7 @@ namespace wowpp
 		// Send to every group member
 		for (auto &member : m_members)
 		{
-			auto *player = m_playerManager.getPlayerByCharacterGuid(member.first);
+			auto player = m_playerManager.getPlayerByCharacterGuid(member.first);
 			if (!player)
 			{
 				continue;
@@ -334,7 +333,7 @@ namespace wowpp
 		auto memberList = m_members;
 		for (auto & it : memberList)
 		{
-			auto *player = m_playerManager.getPlayerByCharacterGuid(it.first);
+			auto player = m_playerManager.getPlayerByCharacterGuid(it.first);
 			if (player)
 			{
 				auto *node = player->getWorldNode();
@@ -462,27 +461,28 @@ namespace wowpp
 
 	bool PlayerGroup::addOfflineMember(UInt64 guid)
 	{
-		// Search for the leading character (Note: We use the database to resolve the character name)
-		game::CharEntry charEntry;
-		if (!m_database.getCharacterById(guid, charEntry))
+		try
 		{
-			// Could not find the group leader - abort
-			ELOG("Could not find character by guid " << guid);
-			return false;
+			game::CharEntry entry = m_database.getCharacterById(guid); 
+			
+			if (guid == m_leaderGUID)
+			{
+				m_leaderName = entry.name;
+			}
+
+			// Add group member
+			auto &newMember = m_members[guid];
+			newMember.name = entry.name;
+			newMember.group = 0;
+			newMember.assistant = false;
+			newMember.status = game::group_member_status::Offline;
+			return true;
+		}
+		catch(const std::exception& ex)
+		{
+			defaultLogException(ex);
 		}
 
-		if (guid == m_leaderGUID)
-		{
-			m_leaderName = charEntry.name;
-		}
-
-		// Add group member
-		auto &newMember = m_members[guid];
-		newMember.name = charEntry.name;
-		newMember.group = 0;
-		newMember.assistant = false;
-		newMember.status = game::group_member_status::Offline;
-		return true;
+		return false;
 	}
-
 }

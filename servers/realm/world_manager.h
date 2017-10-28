@@ -37,7 +37,8 @@ namespace wowpp
 
 	public:
 
-		typedef std::vector<std::unique_ptr<World>> Worlds;
+		typedef std::shared_ptr<World> WorldPtr;
+		typedef std::vector<WorldPtr> Worlds;
 
 	public:
 
@@ -56,7 +57,7 @@ namespace wowpp
 		/// Determines whether the player capacity limit has been reached.
 		bool hasWorldCapacityBeenReached() const;
 		/// Adds a new world instance to the manager.
-		void addWorld(std::unique_ptr<World> added);
+		void addWorld(WorldPtr added);
 		/// Gets a world which supports a specific map id if available.
 		World *getWorldByMapId(UInt32 mapId);
 		/// Gets a world which supports a specific instance id if available.

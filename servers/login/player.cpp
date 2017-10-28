@@ -118,7 +118,7 @@ namespace wowpp
 		destroy();
 	}
 
-	void Player::connectionPacketReceived(auth::IncomingPacket &packet)
+	PacketParseResult Player::connectionPacketReceived(auth::IncomingPacket &packet)
 	{
 		const auto packetId = packet.getId();
 		bool isValid = true;
@@ -156,9 +156,7 @@ namespace wowpp
 				WLOG("Unknown packet received from " << m_address 
 					<< " - ID: " << static_cast<UInt32>(packetId) 
 					<< "; Size: " << packet.getSource()->size() << " bytes");
-				m_connection->close();
-				destroy();
-				return;
+				return PacketParseResult::Disconnect;
 			}
 		}
 
@@ -167,6 +165,8 @@ namespace wowpp
 			// Update timeout event
 			m_timeout.setEnd(getCurrentTime() + constants::OneMinute);
 		}
+
+		return PacketParseResult::Pass;
 	}
 
 	void Player::handleLogonChallenge(auth::IncomingPacket &packet)

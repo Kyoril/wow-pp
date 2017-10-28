@@ -33,7 +33,8 @@ namespace wowpp
 		class Project;
 	}
 
-	class WebService : public web::WebService
+	class WebService 
+		: public web::WebService
 	{
 	public:
 
@@ -54,7 +55,7 @@ namespace wowpp
 		GameTime getStartTime() const { return m_startTime; }
 		const String &getPassword() const { return m_password; }
 
-		virtual std::unique_ptr<web::WebClient> createClient(std::shared_ptr<Client> connection) override;
+		virtual web::WebService::WebClientPtr createClient(std::shared_ptr<Client> connection) override;
 
 	private:
 

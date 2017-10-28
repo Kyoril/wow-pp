@@ -188,7 +188,7 @@ namespace wowpp
 						continue;
 				}
 				
-				auto *player = m_playerManager.getPlayerByCharacterGuid(member.first);
+				auto player = m_playerManager.getPlayerByCharacterGuid(member.first);
 				if (player)
 				{
 					if (causer != 0)

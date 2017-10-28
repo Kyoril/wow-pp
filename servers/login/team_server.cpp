@@ -63,7 +63,7 @@ namespace wowpp
 		destroy();
 	}
 
-	void TeamServer::connectionPacketReceived(pp::IncomingPacket &packet)
+	PacketParseResult TeamServer::connectionPacketReceived(pp::IncomingPacket &packet)
 	{
 		const auto packetId = packet.getId();
 
@@ -89,6 +89,8 @@ namespace wowpp
 				break;
 			}
 		}
+
+		return PacketParseResult::Pass;
 	}
 
 	void TeamServer::handleLogin(pp::IncomingPacket &packet)

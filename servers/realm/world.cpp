@@ -77,7 +77,7 @@ namespace wowpp
 		destroy();
 	}
 
-	void World::connectionPacketReceived(pp::IncomingPacket &packet)
+	PacketParseResult World::connectionPacketReceived(pp::IncomingPacket &packet)
 	{
 		using namespace wowpp::pp::world_realm;
 
@@ -131,6 +131,8 @@ namespace wowpp
 				break;
 			}
 		}
+
+		return PacketParseResult::Pass;
 	}
 
 	void World::handleLogin(pp::IncomingPacket &packet)
@@ -337,7 +339,7 @@ namespace wowpp
 		}
 
 		// Redirect client packet
-		auto *player = m_playerManager.getPlayerByCharacterId(characterId);
+		auto player = m_playerManager.getPlayerByCharacterId(characterId);
 		if (!player)
 		{
 			WLOG("Could not find player to redirect packet " << opCode);
@@ -375,7 +377,7 @@ namespace wowpp
 		packet.getSource()->seek(packetStart);
 
 		// Find the player using this character
-		auto *player = m_playerManager.getPlayerByCharacterId(characterId);
+		auto player = m_playerManager.getPlayerByCharacterId(characterId);
 		if (!player)
 		{
 			// Maybe the player disconnected already - create a temporary character copy and save this copy
@@ -422,7 +424,7 @@ namespace wowpp
 		}
 
 		// Find the player using this character
-		auto *player = m_playerManager.getPlayerByCharacterId(characterId);
+		auto player = m_playerManager.getPlayerByCharacterId(characterId);
 		if (!player)
 		{
 			ELOG("Can't find player by character id - transfer failed");
@@ -448,7 +450,7 @@ namespace wowpp
 			return;
 		}
 
-		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		auto player = m_playerManager.getPlayerByCharacterGuid(characterId);
 		if (!player)
 		{
 			WLOG("Couldn't find player by character id for group update");
@@ -501,10 +503,13 @@ namespace wowpp
 			return;
 		}
 
-		// Update quest data
-		if (!m_database.setQuestData(characterId, questId, data))
+		try
 		{
-			ELOG("Could not set character quest data!");
+			m_database.setQuestData(characterId, questId, data);
+		}
+		catch(const std::exception &ex)
+		{
+			ELOG("Could not set character quest data: " << ex.what());
 		}
 	}
 
@@ -516,7 +521,7 @@ namespace wowpp
 			return;
 		}
 
-		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		auto player = m_playerManager.getPlayerByCharacterGuid(characterId);
 		if (!player)
 		{
 			WLOG("Could not find player connection for spawned character");

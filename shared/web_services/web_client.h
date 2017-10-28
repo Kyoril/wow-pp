@@ -32,7 +32,8 @@ namespace wowpp
 
 		typedef net::http::OutgoingAnswer WebResponse;
 
-		class WebClient : public net::http::IClientListener
+		class WebClient 
+			: public net::http::IClientListener
 		{
 		public:
 
@@ -45,7 +46,7 @@ namespace wowpp
 
 			virtual void connectionLost();
 			virtual void connectionMalformedPacket();
-			virtual void connectionPacketReceived(net::http::IncomingRequest &packet);
+			virtual PacketParseResult connectionPacketReceived(net::http::IncomingRequest &packet);
 
 			WebService &getService() const;
 			Client &getConnection() const;

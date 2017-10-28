@@ -86,7 +86,7 @@ namespace wowpp
 		m_connection.reset();
 	}
 
-	void RealmConnector::connectionPacketReceived(pp::Protocol::IncomingPacket &packet)
+	PacketParseResult RealmConnector::connectionPacketReceived(pp::Protocol::IncomingPacket &packet)
 	{
 		const auto &packetId = packet.getId();
 
@@ -135,6 +135,8 @@ namespace wowpp
 					<< " from realm server at " << realm.realmAddress << ":" << realm.realmPort);
 				break;
 		}
+
+		return PacketParseResult::Pass;
 	}
 
 	bool RealmConnector::connectionEstablished(bool success)

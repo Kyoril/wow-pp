@@ -129,7 +129,7 @@ namespace wowpp
 		/// @copydoc wow::auth::IConnectionListener::connectionMalformedPacket()
 		void connectionMalformedPacket() override;
 		/// @copydoc wow::auth::IConnectionListener::connectionPacketReceived()
-		void connectionPacketReceived(auth::IncomingPacket &packet) override;
+		PacketParseResult connectionPacketReceived(auth::IncomingPacket &packet) override;
 
 		/// Handles an incoming packet with packet id LogonChallenge.
 		/// @param packet The packet data.
