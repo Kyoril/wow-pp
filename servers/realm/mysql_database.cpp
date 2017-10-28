@@ -464,7 +464,7 @@ namespace wowpp
 		MySQL::Transaction transation(m_connection);
 		{
 			if (!m_connection.execute(fmt::format(
-				"UPDATE `character` SET `account`=0, `deleted_account`={1}, `deleted_timestamp`=NULL WHERE `id`={0} AND `account`={1} AND `deleted_account` IS NULL LIMIT 1"
+				"UPDATE `character` SET `account`=0, `deleted_account`={1}, `deleted_timestamp`=CURRENT_TIMESTAMP WHERE `id`={0} AND `account`={1} AND `deleted_account` IS NULL LIMIT 1"
 				, lowerPart
 				, arguments.accountId)))
 			{
