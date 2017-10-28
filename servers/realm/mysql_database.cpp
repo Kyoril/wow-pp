@@ -31,6 +31,7 @@
 #include "player_manager.h"
 #include "log/default_log_levels.h"
 #include "proto_data/project.h"
+#include <stdexcept>
 
 namespace wowpp
 {
@@ -1076,7 +1077,7 @@ namespace wowpp
 			}
 			else
 			{
-				throw std::exception("Character doesn't exist");
+				throw std::runtime_error("Character doesn't exist");
 			}
 		}
 		else
@@ -1143,7 +1144,7 @@ namespace wowpp
 			}
 			else
 			{
-				throw std::exception("Character doesn't exist");
+				throw std::runtime_error("Character doesn't exist");
 			}
 		}
 		else

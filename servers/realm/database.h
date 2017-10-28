@@ -360,7 +360,7 @@ namespace wowpp
 				{
 					defaultLogException(ex);
 				}
-			}
+			};
 			m_asyncWorker(processor);
 		}
 
