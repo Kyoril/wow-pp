@@ -170,7 +170,7 @@ namespace wowpp
 		// Make sure that all group members know about us
 		for (auto &it : m_members)
 		{
-			auto *player = m_playerManager.getPlayerByCharacterGuid(it.first);
+			auto player = m_playerManager.getPlayerByCharacterGuid(it.first);
 			if (!player)
 			{
 				// TODO
@@ -184,7 +184,7 @@ namespace wowpp
 					continue;
 				}
 
-				auto *player2 = m_playerManager.getPlayerByCharacterGuid(it2.first);
+				auto player2 = m_playerManager.getPlayerByCharacterGuid(it2.first);
 				if (!player2)
 				{
 					// TODO
@@ -226,7 +226,7 @@ namespace wowpp
 			}
 			else
 			{
-				auto *player = m_playerManager.getPlayerByCharacterGuid(guid);
+				auto player = m_playerManager.getPlayerByCharacterGuid(guid);
 				if (player)
 				{
 					auto *node = player->getWorldNode();
@@ -284,7 +284,7 @@ namespace wowpp
 		// Update member status
 		for (auto &member : m_members)
 		{
-			auto *player = m_playerManager.getPlayerByCharacterGuid(member.first);
+			auto player = m_playerManager.getPlayerByCharacterGuid(member.first);
 			if (!player)
 			{
 				member.second.status = game::group_member_status::Offline;
@@ -298,7 +298,7 @@ namespace wowpp
 		// Send to every group member
 		for (auto &member : m_members)
 		{
-			auto *player = m_playerManager.getPlayerByCharacterGuid(member.first);
+			auto player = m_playerManager.getPlayerByCharacterGuid(member.first);
 			if (!player)
 			{
 				continue;
@@ -333,7 +333,7 @@ namespace wowpp
 		auto memberList = m_members;
 		for (auto & it : memberList)
 		{
-			auto *player = m_playerManager.getPlayerByCharacterGuid(it.first);
+			auto player = m_playerManager.getPlayerByCharacterGuid(it.first);
 			if (player)
 			{
 				auto *node = player->getWorldNode();

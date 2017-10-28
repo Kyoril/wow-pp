@@ -268,45 +268,41 @@ namespace wowpp
 
 					switch (state)
 					{
-					case receive_state::Incomplete:
-					{
-						break;
-					}
-
-					case receive_state::Complete:
-					{
-						if (m_listener)
-						{
-							auto result = m_listener->connectionPacketReceived(packet);
-							switch (result)
+						case receive_state::Incomplete:
+							break;
+						case receive_state::Complete:
+							if (m_listener)
 							{
-							case PacketParseResult::Pass:
-								nextPacket = true;
-								break;
-							case PacketParseResult::Block:
-								nextPacket = false;
-								break;
-							case PacketParseResult::Disconnect:
-								m_isClosedOnParsing = true;
-								nextPacket = false;
-								break;
+								auto result = m_listener->connectionPacketReceived(packet);
+								switch (result)
+								{
+								case PacketParseResult::Pass:
+									nextPacket = true;
+									break;
+								case PacketParseResult::Block:
+									nextPacket = false;
+									break;
+								case PacketParseResult::Disconnect:
+									nextPacket = false;
+									m_socket.reset();
+									if (m_listener)
+									{
+										m_listener->connectionMalformedPacket();
+										m_listener = nullptr;
+									}
+									break;
+								}
 							}
-						}
-
-						parsedUntil += static_cast<std::size_t>(source.getPosition() - source.getBegin());
-						break;
-					}
-
-					case receive_state::Malformed:
-					{
-						m_socket.reset();
-						if (m_listener)
-						{
-							m_listener->connectionMalformedPacket();
-							m_listener = nullptr;
-						}
-						return;
-					}
+							parsedUntil += static_cast<std::size_t>(source.getPosition() - source.getBegin());
+							break;
+						case receive_state::Malformed:
+							m_socket.reset();
+							if (m_listener)
+							{
+								m_listener->connectionMalformedPacket();
+								m_listener = nullptr;
+							}
+							return;
 					}
 
 					if (m_isClosedOnParsing)

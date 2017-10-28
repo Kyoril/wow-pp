@@ -117,7 +117,7 @@ namespace wowpp
 			if (it.second.flags & game::Friend)
 			{
 				// Check if the friend is online and update the friend info
-				Player *player = m_manager.getPlayerByCharacterGuid(it.first);
+				auto player = m_manager.getPlayerByCharacterGuid(it.first);
 				if (player)
 				{
 					// Update area etc.

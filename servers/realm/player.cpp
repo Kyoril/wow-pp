@@ -66,7 +66,8 @@ namespace wowpp
 		, m_connection(std::move(connection))
 		, m_address(address)
         , m_authed(false)
-		, m_characterId(std::numeric_limits<DatabaseId>::max())
+		, m_accountId(0)
+		, m_characterId(0)
 		, m_instanceId(std::numeric_limits<UInt32>::max())
 		, m_worldNode(nullptr)
 		, m_transferMap(0)
@@ -311,7 +312,7 @@ namespace wowpp
 		}
 
 		// Check if the player is online
-		Player *friendPlayer = m_manager.getPlayerByCharacterGuid(characterGUID);
+		auto friendPlayer = m_manager.getPlayerByCharacterGuid(characterGUID);
 		info.status = friendPlayer ? game::friend_status::Online : game::friend_status::Offline;
 		if (addResult == game::friend_result::AddedOffline &&
 			friendPlayer != nullptr)
@@ -447,7 +448,12 @@ namespace wowpp
 
 	void Player::connectionMalformedPacket()
 	{
-		ILOG("Client " << m_address << " sent malformed packet");
+		// Remove player character from the world node
+		if (m_worldNode && m_characterId != 0)
+		{
+			m_worldNode->leaveWorldInstance(m_characterId, pp::world_realm::world_left_reason::Disconnect);
+		}
+
 		destroy();
 	}
 
@@ -475,8 +481,15 @@ namespace wowpp
 
 			case game::session_status::LoggedIn:
 			{
-				if (!m_worldNode && verbose) WLOG("Packet " << name << " is only handled if the player is logged in!");
+				if (!m_worldNode && verbose) WLOG("Packet " << name << " is only handled if the player entered a world!");
 				return (m_worldNode != nullptr);
+			}
+
+			case game::session_status::NotLoggedIn:
+			{
+				const bool grantAccess = (m_authed && !m_worldNode && m_characterId == 0);
+				if (!grantAccess && verbose) WLOG("Packet " << name << " is only handled if the player hasn't entered a world!");
+				return grantAccess;
 			}
 
 			case game::session_status::TransferPending:
@@ -510,16 +523,16 @@ namespace wowpp
 			case wowpp::game::client_packet::name: \
 			{ \
 				if (!isSessionStatusValid(#name, sessionStatus, true)) \
-					break; \
+					return PacketParseResult::Disconnect; \
 				return handle##name(packet); \
 			}
 
 			WOWPP_HANDLE_PACKET(Ping, game::session_status::Always)
 			WOWPP_HANDLE_PACKET(AuthSession, game::session_status::Connected)
-			WOWPP_HANDLE_PACKET(CharEnum, game::session_status::Authentificated)
-			WOWPP_HANDLE_PACKET(CharCreate, game::session_status::Authentificated)
-			WOWPP_HANDLE_PACKET(CharDelete, game::session_status::Authentificated)
-			WOWPP_HANDLE_PACKET(PlayerLogin, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(CharEnum, game::session_status::NotLoggedIn)
+			WOWPP_HANDLE_PACKET(CharCreate, game::session_status::NotLoggedIn)
+			WOWPP_HANDLE_PACKET(CharDelete, game::session_status::NotLoggedIn)
+			WOWPP_HANDLE_PACKET(PlayerLogin, game::session_status::NotLoggedIn)
 			WOWPP_HANDLE_PACKET(MessageChat, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(NameQuery, game::session_status::Authentificated)
 			WOWPP_HANDLE_PACKET(ContactList, game::session_status::LoggedIn)
@@ -549,9 +562,9 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(GroupAssistentLeader, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(RaidReadyCheck, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(RaidReadyCheckFinished, game::session_status::LoggedIn)
-			WOWPP_HANDLE_PACKET(RealmSplit, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(RealmSplit, game::session_status::NotLoggedIn)
 			WOWPP_HANDLE_PACKET(VoiceSessionEnable, game::session_status::Authentificated)
-			WOWPP_HANDLE_PACKET(CharRename, game::session_status::Authentificated)
+			WOWPP_HANDLE_PACKET(CharRename, game::session_status::NotLoggedIn)
 			WOWPP_HANDLE_PACKET(QuestQuery, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(Who, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MinimapPing, game::session_status::LoggedIn)
@@ -943,7 +956,7 @@ namespace wowpp
 
 		if (leader != 0)
 		{
-			auto *player = m_manager.getPlayerByCharacterGuid(leader);
+			auto player = m_manager.getPlayerByCharacterGuid(leader);
 			if (player)
 			{
 				player->sendPacket(

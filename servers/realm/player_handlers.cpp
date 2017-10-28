@@ -669,7 +669,7 @@ namespace wowpp
 						UInt64 guid = createRealmGUID(entry->id, this_->m_loginConnector.getRealmID(), guid_type::Player);
 
 						// Check if that player is online right now
-						Player *other = this_->m_manager.getPlayerByCharacterGuid(guid);
+						auto other = this_->m_manager.getPlayerByCharacterGuid(guid);
 						if (!other)
 						{
 							this_->sendPacket(
@@ -1089,7 +1089,7 @@ namespace wowpp
 		capitalize(playerName);
 
 		// Try to find that player
-		auto *player = m_manager.getPlayerByCharacterName(playerName);
+		auto player = m_manager.getPlayerByCharacterName(playerName);
 		if (!player)
 		{
 			sendPacket(
@@ -1385,7 +1385,7 @@ namespace wowpp
 		}
 
 		// Try to find that player
-		auto *player = m_manager.getPlayerByCharacterGuid(guid);
+		auto player = m_manager.getPlayerByCharacterGuid(guid);
 		if (!player)
 		{
 			DLOG("Could not find player with character guid - send offline packet");
@@ -1420,7 +1420,7 @@ namespace wowpp
 		UInt32 groupInstanceId = std::numeric_limits<UInt32>::max();
 
 		// Determine group instance to join
-		auto *player = m_manager.getPlayerByCharacterGuid(m_gameCharacter->getGuid());
+		auto player = m_manager.getPlayerByCharacterGuid(m_gameCharacter->getGuid());
 		if (player)
 		{
 			if (auto *group = player->getGroup())

@@ -79,12 +79,20 @@ namespace wowpp
 		{
 			enum Type
 			{
+				/// Never process this packet.
 				Never = 0x00,
+				/// Always process this packet.
 				Always = 0x01,
+				/// Process this packet if the player is connected but not yet authenticated.
 				Connected = 0x02,
+				/// Process this packet if the player is authenticated.
 				Authentificated = 0x03,
+				/// Process this packet if the player entered a world.
 				LoggedIn = 0x04,
-				TransferPending = 0x05
+				/// Process this packet only if there is a pending transfer
+				TransferPending = 0x05,
+				/// Process this packet only if the player is authenticated but hasn't entered a world.
+				NotLoggedIn = 0x06
 			};
 		}
 

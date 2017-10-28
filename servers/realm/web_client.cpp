@@ -624,7 +624,7 @@ namespace wowpp
 		}
 
 		auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
-		auto *player = playerMgr.getPlayerByCharacterName(characterName);
+		auto player = playerMgr.getPlayerByCharacterName(characterName);
 		if (!player)
 		{
 			// TODO: Add item when offline
@@ -689,7 +689,7 @@ namespace wowpp
 		}
 
 		auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
-		auto *player = playerMgr.getPlayerByCharacterName(characterName);
+		auto player = playerMgr.getPlayerByCharacterName(characterName);
 		if (!player)
 		{
 			auto &db = static_cast<WebService &>(this->getService()).getDatabase();
@@ -794,7 +794,7 @@ namespace wowpp
 		}
 
 		auto &playerMgr = static_cast<WebService &>(this->getService()).getPlayerManager();
-		auto *player = playerMgr.getPlayerByCharacterName(characterName);
+		auto player = playerMgr.getPlayerByCharacterName(characterName);
 		if (!player)
 		{
 			// Player is offline, so just change database coordinates

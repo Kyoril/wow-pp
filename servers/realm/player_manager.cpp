@@ -72,7 +72,7 @@ namespace wowpp
 		m_players.back()->sendAuthChallenge();
 	}
 
-	Player * PlayerManager::getPlayerByAccountName(const String &accountName)
+	PlayerManager::PlayerPtr PlayerManager::getPlayerByAccountName(const String &accountName)
 	{
 		const auto p = std::find_if(
 			m_players.begin(),
@@ -84,13 +84,13 @@ namespace wowpp
 
 		if (p != m_players.end())
 		{
-			return (*p).get();
+			return *p;
 		}
 
 		return nullptr;
 	}
 
-	Player * PlayerManager::getPlayerByCharacterId(DatabaseId id)
+	PlayerManager::PlayerPtr PlayerManager::getPlayerByCharacterId(DatabaseId id)
 	{
 		// Invalid guid
 		if (id == 0)
@@ -109,13 +109,13 @@ namespace wowpp
 
 		if (p != m_players.end())
 		{
-			return (*p).get();
+			return *p;
 		}
 
 		return nullptr;
 	}
 
-	Player * PlayerManager::getPlayerByCharacterGuid(UInt64 id)
+	PlayerManager::PlayerPtr PlayerManager::getPlayerByCharacterGuid(UInt64 id)
 	{
 		// Invalid guid
 		if (id == 0)
@@ -134,13 +134,13 @@ namespace wowpp
 
 		if (p != m_players.end())
 		{
-			return (*p).get();
+			return *p;
 		}
 
 		return nullptr;
 	}
 
-	Player * PlayerManager::getPlayerByCharacterName(const String &name)
+	PlayerManager::PlayerPtr PlayerManager::getPlayerByCharacterName(const String &name)
 	{
 		if (name.empty())
 		{
@@ -164,7 +164,7 @@ namespace wowpp
 
 		if (p != m_players.end())
 		{
-			return (*p).get();
+			return *p;
 		}
 
 		return nullptr;

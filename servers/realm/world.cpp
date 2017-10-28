@@ -339,7 +339,7 @@ namespace wowpp
 		}
 
 		// Redirect client packet
-		auto *player = m_playerManager.getPlayerByCharacterId(characterId);
+		auto player = m_playerManager.getPlayerByCharacterId(characterId);
 		if (!player)
 		{
 			WLOG("Could not find player to redirect packet " << opCode);
@@ -377,7 +377,7 @@ namespace wowpp
 		packet.getSource()->seek(packetStart);
 
 		// Find the player using this character
-		auto *player = m_playerManager.getPlayerByCharacterId(characterId);
+		auto player = m_playerManager.getPlayerByCharacterId(characterId);
 		if (!player)
 		{
 			// Maybe the player disconnected already - create a temporary character copy and save this copy
@@ -424,7 +424,7 @@ namespace wowpp
 		}
 
 		// Find the player using this character
-		auto *player = m_playerManager.getPlayerByCharacterId(characterId);
+		auto player = m_playerManager.getPlayerByCharacterId(characterId);
 		if (!player)
 		{
 			ELOG("Can't find player by character id - transfer failed");
@@ -450,7 +450,7 @@ namespace wowpp
 			return;
 		}
 
-		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		auto player = m_playerManager.getPlayerByCharacterGuid(characterId);
 		if (!player)
 		{
 			WLOG("Couldn't find player by character id for group update");
@@ -521,7 +521,7 @@ namespace wowpp
 			return;
 		}
 
-		auto *player = m_playerManager.getPlayerByCharacterGuid(characterId);
+		auto player = m_playerManager.getPlayerByCharacterGuid(characterId);
 		if (!player)
 		{
 			WLOG("Could not find player connection for spawned character");
