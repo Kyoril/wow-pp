@@ -1155,6 +1155,82 @@ namespace wowpp
 		return entry;
 	}
 
+	game::CharEntries MySQLDatabase::getDeletedCharacters(UInt32 accountId)
+	{
+		game::CharEntries Result;
+
+		wowpp::MySQL::Select select(m_connection,
+			//      0     1       2       3        4        5       6        7       8    
+			fmt::format("SELECT `id`, `name`, `race`, `class`, `gender`,`bytes`,`bytes2`,`level`,`map`,"
+				//		 9       10            11            12           13		  14		15		  16
+				"`zone`,`position_x`,`position_y`,`position_z`,`orientation`,`cinematic`, `at_login`,`flags` FROM `character` WHERE `account`=0 AND `deleted_account`={0} ORDER BY `id`"
+				, accountId));
+		if (select.success())
+		{
+			wowpp::MySQL::Row row(select);
+			while (row)
+			{
+				UInt32 bytes = 0, bytes2 = 0;
+
+				game::CharEntry entry;
+
+				// Basic stuff
+				row.getField(0, entry.id);
+				row.getField(1, entry.name);
+
+				// Display
+				UInt32 tmp = 0;
+				row.getField(2, tmp);
+				entry.race = static_cast<game::Race>(tmp);
+				row.getField(3, tmp);
+				entry.class_ = static_cast<game::CharClass>(tmp);
+				row.getField(4, tmp);
+				entry.gender = static_cast<game::Gender>(tmp);
+				row.getField(5, bytes);
+				row.getField(6, bytes2);
+				row.getField(7, tmp);
+				entry.level = static_cast<UInt8>(tmp);
+
+				// Placement
+				row.getField(8, entry.mapId);
+				row.getField(9, entry.zoneId);
+				row.getField(10, entry.location.x);
+				row.getField(11, entry.location.y);
+				row.getField(12, entry.location.z);
+				row.getField(13, entry.o);
+
+				Int32 cinematic = 0;
+				row.getField(14, cinematic);
+				entry.cinematic = (cinematic != 0);
+
+				row.getField(15, tmp);
+				entry.atLogin = static_cast<game::AtLoginFlags>(tmp);
+
+				// Reinterpret bytes
+				entry.skin = static_cast<UInt8>(bytes);
+				entry.face = static_cast<UInt8>(bytes >> 8);
+				entry.hairStyle = static_cast<UInt8>(bytes >> 16);
+				entry.hairColor = static_cast<UInt8>(bytes >> 24);
+				entry.facialHair = static_cast<UInt8>(bytes2 & 0xff);
+
+				row.getField(16, tmp);
+				entry.flags = static_cast<game::CharacterFlags>(tmp);
+
+				// Add to vector
+				Result.push_back(entry);
+
+				// Next row
+				row = row.next(select);
+			}
+		}
+		else
+		{
+			throw MySQL::Exception(m_connection.getErrorMessage());
+		}
+
+		return Result;
+	}
+
 	boost::optional<PlayerSocialEntries> MySQLDatabase::getCharacterSocialList(DatabaseId characterId)
 	{
 		wowpp::MySQL::Select select(m_connection,

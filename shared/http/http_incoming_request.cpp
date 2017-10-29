@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string.hpp>
 #include "http_incoming_request.h"
 #include "common/constants.h"
 #include "base64/base64.h"
@@ -171,6 +172,33 @@ namespace wowpp
 				if (packet.m_path.empty())
 				{
 					return receive_state::Incomplete;
+				}
+
+				// Parse path arguments
+				auto argIt = packet.m_path.find('?');
+				if (argIt != packet.m_path.npos)
+				{
+					// Split arguments from the path
+					String argumentStrings = packet.m_path.substr(argIt + 1);
+
+					// Split arguments
+					std::vector<String> arguments;
+					boost::split(arguments, argumentStrings, boost::is_any_of("&"));
+
+					// Fill in argument map
+					for (const auto& arg : arguments)
+					{
+						auto delimiterPos = arg.find('=');
+						if (delimiterPos != arg.npos)
+						{
+							const String argName = arg.substr(0, delimiterPos);
+							const String argValue = arg.substr(delimiterPos + 1);
+							packet.m_pathArguments[argName] = argValue;
+						}
+					}
+
+					// Fix path by removing the arguments
+					packet.m_path.erase(argIt);
 				}
 
 				skipWhitespace(pos, end);

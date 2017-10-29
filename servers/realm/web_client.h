@@ -22,6 +22,7 @@
 #pragma once
 
 #include "web_services/web_client.h"
+#include "game_protocol/game_protocol.h"
 
 namespace wowpp
 {
@@ -52,20 +53,28 @@ namespace wowpp
 		virtual void handleRequest(const net::http::IncomingRequest &request, web::WebResponse &response) override;
 
 	private:
+
+		void listDeleteCharsHandler(const boost::optional<game::CharEntries> &result);
+
+	private:
 		// GET handlers
 
 		/// Handles the /uptime GET request.
 		/// 
 		/// @param response Can be used to send a response to the web client.
-		void handleGetUptime(web::WebResponse &response);
+		void handleGetUptime(const net::http::IncomingRequest &request, web::WebResponse &response);
 		/// Handles the /players GET request.
 		/// 
 		/// @param response Can be used to send a response to the web client.
-		void handleGetPlayers(web::WebResponse &response);
+		void handleGetPlayers(const net::http::IncomingRequest &request, web::WebResponse &response);
 		/// Handles the /nodes GET request.
 		/// 
 		/// @param response Can be used to send a response to the web client.
-		void handleGetNodes(web::WebResponse &response);
+		void handleGetNodes(const net::http::IncomingRequest &request, web::WebResponse &response);
+		/// Handles the /list-deleted-chars GET request.
+		/// 
+		/// @param response Can be used to receive a list of deleted characters.
+		void handleListDeletedChars(const net::http::IncomingRequest &request, web::WebResponse &response);
 
 	private:
 		// POST handlers
@@ -74,14 +83,14 @@ namespace wowpp
 		/// 
 		/// @param response Can be used to send a response to the web client.
 		/// @param arguments List of arguments which have been parsed from the POST data.
-		void handlePostShutdown(web::WebResponse &response, const std::vector<std::string> arguments);
+		void handlePostShutdown(web::WebResponse &response, const std::vector<std::string> &arguments);
 		/// Handles the /copy-premade POST request.
 		/// Required arguments: acc, race, class, lvl
 		/// Optional arguments: gender, map, x, y, z, o, items[n], spells[n]
 		/// 
 		/// @param response Can be used to send a response to the web client.
 		/// @param arguments List of arguments which have been parsed from the POST data.
-		void handlePostCopyPremade(web::WebResponse &response, const std::vector<std::string> arguments);
+		void handlePostCopyPremade(web::WebResponse &response, const std::vector<std::string> &arguments);
 #ifdef WOWPP_WITH_DEV_COMMANDS
 		/// Handles the /additem POST request.
 		/// Required arguments: character, item
@@ -89,20 +98,20 @@ namespace wowpp
 		/// 
 		/// @param response Can be used to send a response to the web client.
 		/// @param arguments List of arguments which have been parsed from the POST data.
-		void handlePostAddItem(web::WebResponse &response, const std::vector<std::string> arguments);
+		void handlePostAddItem(web::WebResponse &response, const std::vector<std::string> &arguments);
 		/// Handles the /learnspell POST request.
 		/// Required arguments: character, spell
 		/// 
 		/// @param response Can be used to send a response to the web client.
 		/// @param arguments List of arguments which have been parsed from the POST data.
-		void handlePostLearnSpell(web::WebResponse &response, const std::vector<std::string> arguments);
+		void handlePostLearnSpell(web::WebResponse &response, const std::vector<std::string> &arguments);
 		/// Handles the /teleport POST request.
 		/// Required arguments: character, map
 		/// Optional arguments: x, y, z, o
 		/// 
 		/// @param response Can be used to send a response to the web client.
 		/// @param arguments List of arguments which have been parsed from the POST data.
-		void handlePostTeleport(web::WebResponse &response, const std::vector<std::string> arguments);
+		void handlePostTeleport(web::WebResponse &response, const std::vector<std::string> &arguments);
 #endif
 	};
 }

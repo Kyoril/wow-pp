@@ -223,6 +223,7 @@ namespace wowpp
 			*PlayerManager,
 			*WorldManager,
 			*m_database,
+			asyncDatabase,
 			project
 			));
 

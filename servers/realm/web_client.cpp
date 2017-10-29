@@ -32,6 +32,7 @@
 #include "log/default_log_levels.h"
 #include "database.h"
 #include "proto_data/project.h"
+#include "common/weak_ptr_function.h"
 
 namespace wowpp
 {
@@ -70,15 +71,19 @@ namespace wowpp
 			{
 				if (url == "/uptime")
 				{
-					handleGetUptime(response);
+					handleGetUptime(request, response);
 				}
 				else if (url == "/players")
 				{
-					handleGetPlayers(response);
+					handleGetPlayers(request, response);
 				}
 				else if (url == "/nodes")
 				{
-					handleGetNodes(response);
+					handleGetNodes(request, response);
+				}
+				else if (url == "/list-deleted-chars")
+				{
+					handleListDeletedChars(request, response);
 				}
 				else
 				{
@@ -130,7 +135,40 @@ namespace wowpp
 		}
 	}
 
-	void WebClient::handleGetUptime(web::WebResponse &response)
+	void WebClient::listDeleteCharsHandler(const boost::optional<game::CharEntries>& result)
+	{
+		// Prepare a manual response
+		io::StringSink sink(getConnection().getSendBuffer());
+		web::WebResponse response(sink);
+		response.addHeader("Connection", "close");
+		
+		if (!result)
+		{
+			sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+		}
+		else
+		{
+			std::ostringstream strm;
+			strm << "<characters>";
+
+			for (const auto &entry : *result)
+			{
+				strm << "<char id=\"" << entry.id 
+					<< "\" name=\"" << entry.name 
+					<< "\" lvl=\"" << (UInt16)entry.level 
+					<< "\" race=\"" << (UInt16)entry.race 
+					<< "\" class=\"" << (UInt16)entry.class_ 
+					<< "\" />";
+			}
+
+			strm << "</characters>";
+			sendXmlAnswer(response, strm.str());
+		}
+
+		getConnection().flush();
+	}
+
+	void WebClient::handleGetUptime(const net::http::IncomingRequest &request, web::WebResponse &response)
 	{
 		const GameTime startTime = static_cast<WebService &>(getService()).getStartTime();
 
@@ -140,7 +178,7 @@ namespace wowpp
 		sendXmlAnswer(response, message.str());
 	}
 
-	void WebClient::handleGetPlayers(web::WebResponse &response)
+	void WebClient::handleGetPlayers(const net::http::IncomingRequest &request, web::WebResponse &response)
 	{
 		std::ostringstream message;
 		message << "<players>";
@@ -160,7 +198,7 @@ namespace wowpp
 		sendXmlAnswer(response, message.str());
 	}
 
-	void WebClient::handleGetNodes(web::WebResponse &response)
+	void WebClient::handleGetNodes(const net::http::IncomingRequest &request, web::WebResponse &response)
 	{
 		std::ostringstream message;
 		message << "<nodes>";
@@ -185,7 +223,28 @@ namespace wowpp
 		sendXmlAnswer(response, message.str());
 	}
 
-	void WebClient::handlePostShutdown(web::WebResponse & response, const std::vector<std::string> arguments)
+	void WebClient::handleListDeletedChars(const net::http::IncomingRequest &request, web::WebResponse & response)
+	{
+		// Check header arguments
+		const auto& pathArgs = request.getPathArguments();
+		auto accountIt = pathArgs.find("acc");
+		if (accountIt == pathArgs.end())
+		{
+			sendXmlAnswer(response, "<status>MISSING_DATA</status>");
+			return;
+		}
+
+		const UInt32 accountId = atoi(accountIt->second.c_str());
+
+		// Get database object for later use
+		auto &asyncDb = static_cast<WebService &>(this->getService()).getAsyncDatabase();
+
+		// Do request
+		auto handler = bind_weak_ptr(shared_from_this(), &WebClient::listDeleteCharsHandler);
+		asyncDb.asyncRequest(std::move(handler), &IDatabase::getDeletedCharacters, accountId);
+	}
+
+	void WebClient::handlePostShutdown(web::WebResponse & response, const std::vector<std::string> &arguments)
 	{
 		ILOG("Shutting down..");
 		sendXmlAnswer(response, "<message>Shutting down..</message>");
@@ -194,7 +253,7 @@ namespace wowpp
 		ioService.stop();
 	}
 
-	void WebClient::handlePostCopyPremade(web::WebResponse & response, const std::vector<std::string> arguments)
+	void WebClient::handlePostCopyPremade(web::WebResponse & response, const std::vector<std::string> &arguments)
 	{
 		auto &project = static_cast<WebService &>(this->getService()).getProject();
 
@@ -589,7 +648,7 @@ namespace wowpp
 	}
 
 #ifdef WOWPP_WITH_DEV_COMMANDS
-	void WebClient::handlePostAddItem(web::WebResponse & response, const std::vector<std::string> arguments)
+	void WebClient::handlePostAddItem(web::WebResponse & response, const std::vector<std::string> &arguments)
 	{
 		// Handle required data
 		String characterName;
@@ -654,7 +713,7 @@ namespace wowpp
 		}
 	}
 
-	void WebClient::handlePostLearnSpell(web::WebResponse & response, const std::vector<std::string> arguments)
+	void WebClient::handlePostLearnSpell(web::WebResponse & response, const std::vector<std::string> &arguments)
 	{
 		String characterName;
 		UInt32 spellId = 0;
@@ -740,7 +799,7 @@ namespace wowpp
 		}
 	}
 
-	void WebClient::handlePostTeleport(web::WebResponse & response, const std::vector<std::string> arguments)
+	void WebClient::handlePostTeleport(web::WebResponse & response, const std::vector<std::string> &arguments)
 	{
 		// Handle required data
 		String characterName;

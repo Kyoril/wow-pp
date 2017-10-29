@@ -35,12 +35,14 @@ namespace wowpp
 	    PlayerManager &playerManager,
 		WorldManager &worldManager,
 		IDatabase &database,
+		AsyncDatabase &asyncDatabase,
 		proto::Project &project
 	)
 		: web::WebService(service, port)
 		, m_playerManager(playerManager)
 		, m_worldManager(worldManager)
 		, m_database(database)
+		, m_asyncDatabase(asyncDatabase)
 		, m_project(project)
 		, m_startTime(getCurrentTime())
 		, m_password(std::move(password))

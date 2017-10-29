@@ -120,6 +120,12 @@ namespace wowpp
 		/// @throw std::exception If a database error occurred.
 		/// @return Filled CharEntry struct or nullptr on failure or non-existance.
 		virtual game::CharEntry getCharacterByName(const String &name) = 0;
+		/// Retrieves deleted character informations based on an account id.
+		/// 
+		/// @param accountId Id of the account.
+		/// @throw std::exception if a database error occurred.
+		/// @return std::vector of CharEntry structures.
+		virtual game::CharEntries getDeletedCharacters(UInt32 accountId) = 0;
 		/// Retrieves informations about all characters of a specific account.
 		/// 
 		/// @param accountId The account id.

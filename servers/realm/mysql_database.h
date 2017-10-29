@@ -54,6 +54,8 @@ namespace wowpp
 		game::CharEntry getCharacterById(DatabaseId id) override;
 		/// @copydoc wowpp::IDatabase::createCharacterByName
 		game::CharEntry getCharacterByName(const String &name) override;
+		/// @copydoc wowpp::IDatabase::getDeletedCharacters
+		game::CharEntries getDeletedCharacters(UInt32 accountId) override;
 		/// @copydoc wowpp::IDatabase::getCharacters
 		game::CharEntries getCharacters(UInt32 accountId) override;
 		/// @copydoc wowpp::IDatabase::deleteCharacter

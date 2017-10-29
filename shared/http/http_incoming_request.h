@@ -45,6 +45,7 @@ namespace wowpp
 				};
 
 				typedef std::map<String, String> Headers;
+				typedef std::map<String, String> Arguments;
 
 				IncomingRequest();
 				Type getType() const;
@@ -52,6 +53,7 @@ namespace wowpp
 				const String &getHost() const;
 				const String &getPostData() const;
 				const Headers &getHeaders() const;
+				const Arguments &getPathArguments() const { return m_pathArguments; }
 
 				static ReceiveState start(IncomingRequest &packet, io::MemorySource &source);
 
@@ -62,6 +64,7 @@ namespace wowpp
 				String m_host;
 				String m_postData;
 				Headers m_headers;
+				Arguments m_pathArguments;
 			};
 
 

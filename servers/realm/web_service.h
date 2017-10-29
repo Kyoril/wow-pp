@@ -28,6 +28,7 @@ namespace wowpp
 	class PlayerManager;
 	class WorldManager;
 	struct IDatabase;
+	class AsyncDatabase;
 	namespace proto
 	{
 		class Project;
@@ -45,12 +46,14 @@ namespace wowpp
 		    PlayerManager &playerManager,
 			WorldManager &worldManager,
 			IDatabase &database,
+			AsyncDatabase &asyncDatabase,
 			proto::Project &project
 		);
 
 		PlayerManager &getPlayerManager() const { return m_playerManager; }
 		WorldManager &getWorldManager() const { return m_worldManager; }
 		IDatabase &getDatabase() const { return m_database; }
+		AsyncDatabase &getAsyncDatabase() const { return m_asyncDatabase; }
 		proto::Project &getProject() const { return m_project; }
 		GameTime getStartTime() const { return m_startTime; }
 		const String &getPassword() const { return m_password; }
@@ -62,6 +65,7 @@ namespace wowpp
 		PlayerManager &m_playerManager;
 		WorldManager &m_worldManager;
 		IDatabase &m_database;
+		AsyncDatabase &m_asyncDatabase;
 		proto::Project &m_project;
 		const GameTime m_startTime;
 		const String m_password;
