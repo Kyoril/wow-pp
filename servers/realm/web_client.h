@@ -23,6 +23,7 @@
 
 #include "web_services/web_client.h"
 #include "game_protocol/game_protocol.h"
+#include "database.h"
 
 namespace wowpp
 {
@@ -55,6 +56,8 @@ namespace wowpp
 	private:
 
 		void listDeleteCharsHandler(const boost::optional<game::CharEntries> &result);
+
+		void restoreCharacterHandler(RequestStatus status);
 
 	private:
 		// GET handlers
@@ -91,6 +94,12 @@ namespace wowpp
 		/// @param response Can be used to send a response to the web client.
 		/// @param arguments List of arguments which have been parsed from the POST data.
 		void handlePostCopyPremade(web::WebResponse &response, const std::vector<std::string> &arguments);
+		/// Handles the /restore-char POST request.
+		/// Required arguments: id
+		/// 
+		/// @param response Can be used to send a response to the web client.
+		/// @param arguments List of arguments which have been parsed from the POST data.
+		void handlePostRestoreChar(web::WebResponse &response, const std::vector<std::string> &arguments);
 #ifdef WOWPP_WITH_DEV_COMMANDS
 		/// Handles the /additem POST request.
 		/// Required arguments: character, item

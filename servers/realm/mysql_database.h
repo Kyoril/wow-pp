@@ -60,6 +60,8 @@ namespace wowpp
 		game::CharEntries getCharacters(UInt32 accountId) override;
 		/// @copydoc wowpp::IDatabase::deleteCharacter
 		void deleteCharacter(DeleteCharacterArgs arguments) override;
+		/// @copydoc wowpp::IDatabase::restoreCharacter
+		void restoreCharacter(DatabaseId characterId) override;
 		/// @copydoc wowpp::IDatabase::getGameCharacter
 		bool getGameCharacter(DatabaseId characterId, GameCharacter &out_character) override;
 		/// @copydoc wowpp::IDatabase::saveGamecharacter

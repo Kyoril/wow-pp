@@ -481,6 +481,23 @@ namespace wowpp
 		transation.commit();
 	}
 
+	void MySQLDatabase::restoreCharacter(DatabaseId characterId)
+	{
+		const UInt32 lowerPart = guidLowerPart(characterId);
+
+		// Start transaction
+		MySQL::Transaction transation(m_connection);
+		{
+			if (!m_connection.execute(fmt::format(
+				"UPDATE `character` SET `account`=`deleted_account`, `deleted_account`=NULL, `deleted_timestamp`=NULL WHERE `id`={0} AND `deleted_account` IS NOT NULL LIMIT 1"
+				, lowerPart)))
+			{
+				throw MySQL::Exception(m_connection.getErrorMessage());
+			}
+		}
+		transation.commit();
+	}
+
 	bool MySQLDatabase::getGameCharacter(DatabaseId characterId, GameCharacter &out_character)
 	{
 		wowpp::MySQL::Select select(m_connection, fmt::format(

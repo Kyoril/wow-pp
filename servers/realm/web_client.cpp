@@ -30,7 +30,6 @@
 #include "world.h"
 #include "game/game_character.h"
 #include "log/default_log_levels.h"
-#include "database.h"
 #include "proto_data/project.h"
 #include "common/weak_ptr_function.h"
 
@@ -108,6 +107,10 @@ namespace wowpp
 				{
 					handlePostCopyPremade(response, arguments);
 				}
+				else if (url == "/restore-char")
+				{
+					handlePostRestoreChar(response, arguments);
+				}
 #ifdef WOWPP_WITH_DEV_COMMANDS
 				else if (url == "/additem")
 				{
@@ -163,6 +166,25 @@ namespace wowpp
 
 			strm << "</characters>";
 			sendXmlAnswer(response, strm.str());
+		}
+
+		getConnection().flush();
+	}
+
+	void WebClient::restoreCharacterHandler(RequestStatus status)
+	{
+		// Prepare a manual response
+		io::StringSink sink(getConnection().getSendBuffer());
+		web::WebResponse response(sink);
+		response.addHeader("Connection", "close");
+
+		if (status == RequestFail)
+		{
+			sendXmlAnswer(response, "<status>DATABASE_ERROR</status>");
+		}
+		else
+		{
+			sendXmlAnswer(response, "<status>SUCCESS</status>");
 		}
 
 		getConnection().flush();
@@ -647,6 +669,39 @@ namespace wowpp
 		}
 	}
 
+	void WebClient::handlePostRestoreChar(web::WebResponse & response, const std::vector<std::string>& arguments)
+	{
+		// Get database object for later use
+		auto &database = static_cast<WebService &>(this->getService()).getAsyncDatabase();
+
+		UInt32 characterId = 0;
+		for (const auto& arg : arguments)
+		{
+			auto delimiterPos = arg.find('=');
+			if (delimiterPos == arg.npos)
+			{
+				continue;
+			}
+
+			String argName = arg.substr(0, delimiterPos);
+			String argValue = arg.substr(delimiterPos + 1);
+
+			if (argName == "id")
+			{
+				characterId = atoi(argValue.c_str());
+			}
+		}
+
+		if (characterId == 0)
+		{
+			sendXmlAnswer(response, "<status>MISSING_DATA</status>");
+			return;
+		}
+
+		auto handler = bind_weak_ptr(shared_from_this(), &WebClient::restoreCharacterHandler);
+		database.asyncRequest(std::move(handler), &IDatabase::restoreCharacter, characterId);
+	}
+
 #ifdef WOWPP_WITH_DEV_COMMANDS
 	void WebClient::handlePostAddItem(web::WebResponse & response, const std::vector<std::string> &arguments)
 	{
@@ -658,6 +713,11 @@ namespace wowpp
 		for (auto &arg : arguments)
 		{
 			auto delimiterPos = arg.find('=');
+			if (delimiterPos == arg.npos)
+			{
+				continue;
+			}
+
 			String argName = arg.substr(0, delimiterPos);
 			String argValue = arg.substr(delimiterPos + 1);
 

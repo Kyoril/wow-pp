@@ -139,6 +139,11 @@ namespace wowpp
 		/// @param arguments Function arguments.
 		/// @throw std::exception If a database error occurred.
 		virtual void deleteCharacter(DeleteCharacterArgs arguments) = 0;
+		/// Tries to restore a deleted character based on it's character id.
+		/// 
+		/// @param characterId Database id of the character to restore.
+		/// @throw std::exception If a database error occurred.
+		virtual void restoreCharacter(DatabaseId characterId) = 0;
 		/// Loads all game-relevant data of a specific character from the database. This query
 		/// is quite expensive!
 		/// 
