@@ -39,6 +39,12 @@
 #include "universe.h"
 #include "unit_mover.h"
 
+// Set this to 1, to only spawn exactly one timber wolf in northshire, northern
+// to the human starting zone. This makes debugging creature stuff easier, as the
+// world node will have only one unit to process, and it will enable movement
+// logging etc.
+#define UNIT_DEBUG_MODE 0
+
 namespace wowpp
 {
 	namespace
@@ -120,7 +126,6 @@ namespace wowpp
 			m_map = &mapIt->second;
 		}
 
-#if 1
 		// Add object spawners
 		for (int i = 0; i < m_mapEntry.objectspawns_size(); ++i)
 		{
@@ -147,7 +152,6 @@ namespace wowpp
 				m_objectSpawnsByName[spawn.name()] = m_objectSpawners.back().get();
 			}
 		}
-#endif
 
 		// Add creature spawners
 		for (int i = 0; i < m_mapEntry.unitspawns_size(); ++i)
@@ -158,9 +162,9 @@ namespace wowpp
 			const auto *unitEntry = m_project.units.getById(spawn.unitentry());
 			ASSERT(unitEntry);
 
-#if 0
+#if UNIT_DEBUG_MODE
 			// Only spawn timber wolf
-			if (unitEntry->id() != 16517)
+			if (unitEntry->id() != 69)
 				continue;
 #endif
 
@@ -175,6 +179,11 @@ namespace wowpp
 			{
 				m_creatureSpawnsByName[spawn.name()] = m_creatureSpawners.back().get();
 			}
+
+#if UNIT_DEBUG_MODE
+			// Only spawn exactly ONE wolf
+			break;
+#endif
 		}
 
 		ILOG("Created instance of map " << m_mapEntry.id());
@@ -195,6 +204,10 @@ namespace wowpp
 		spawned->setGuid(createEntryGUID(m_objectIdGenerator.generateId(), entry.id(), guid_type::Unit));	// RealmID (TODO: these spawns don't need to have a specific realm id)
 		spawned->setMapId(m_mapEntry.id());
 		spawned->relocate(position, o);
+
+#if UNIT_DEBUG_MODE
+		spawned->getMover().setDebugOutput(true);
+#endif
 
 		return spawned;
 	}

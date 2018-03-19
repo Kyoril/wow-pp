@@ -202,9 +202,6 @@ namespace wowpp
 		{
 			const float dist =
 				(i == 0) ? ((path[i] - currentLoc).length()) : (path[i] - path[i - 1]).length();
-			if (dist == 0.0f)
-				continue;
-
 			moveTime += (dist / customSpeed) * constants::OneSecond;
 			m_path.addPosition(moveTime, path[i]);
 		}

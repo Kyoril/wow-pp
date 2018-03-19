@@ -682,6 +682,7 @@ namespace wowpp
 			)
 			{
 				ASSERT(!path.empty());
+				ASSERT(path.size() >= 1);
 
 				out_packet.start(server_packet::MonsterMove);
 				out_packet
@@ -695,8 +696,8 @@ namespace wowpp
 				out_packet
 					<< io::write<NetUInt32>(256)
 					<< io::write<NetUInt32>(time)
-					<< io::write<NetUInt32>(path.size() - 1);	// Number of points between target and start
-				// Write destination point
+					<< io::write<NetUInt32>(path.size() - 1);	// Number of points between target and start, without start point
+				// Write destination point (this counts as the first point)
 				const auto &pt = path.back();
 				out_packet
 					<< io::write<float>(pt.x)
