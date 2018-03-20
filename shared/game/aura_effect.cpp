@@ -217,6 +217,9 @@ namespace wowpp
 		case aura::ModFlightSpeedNotStacking:
 			handleFlySpeedModifier(apply);
 			break;
+		case aura::ModFlightSpeedMounted:
+			handleModFlightSpeedMounted(apply);
+			break;
 		case aura::ModIncreaseSwimSpeed:
 			handleSwimSpeedModifier(apply);
 			break;

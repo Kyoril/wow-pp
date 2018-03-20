@@ -35,33 +35,33 @@ namespace wowpp
 
 		void addWork(TWork work)
 		{
-			boost::mutex::scoped_lock lock(m_workMutex);
+			std::mutex::scoped_lock lock(m_workMutex);
 			m_work.push(work);
 			m_workToDo.notify_one();
 		}
 
 		void stop()
 		{
-			boost::mutex::scoped_lock lock(m_workMutex);
+			std::mutex::scoped_lock lock(m_workMutex);
 			m_run = false;
 			m_workToDo.notify_one();
 		}
 
 		bool isWorking()
 		{
-			boost::mutex::scoped_lock lock(m_workMutex);
+			std::mutex::scoped_lock lock(m_workMutex);
 			return !m_work.empty();
 		}
 
 		bool hasResults()
 		{
-			boost::mutex::scoped_lock lock(m_workMutex);
+			std::mutex::scoped_lock lock(m_workMutex);
 			return !m_results.empty();
 		}
 
 		bool getResult(TResult &out_result)
 		{
-			boost::mutex::scoped_lock lock(m_resultsMutex);
+			std::mutex::scoped_lock lock(m_resultsMutex);
 			if (m_results.empty())
 			{
 				return false;
@@ -81,7 +81,7 @@ namespace wowpp
 				TWork work;
 
 				{
-					boost::unique_lock<boost::mutex> lock(m_workMutex);
+					std::unique_lock<std::mutex> lock(m_workMutex);
 
 					while (m_run &&
 					        m_work.empty())
@@ -101,7 +101,7 @@ namespace wowpp
 				const TResult result = work();
 
 				{
-					boost::mutex::scoped_lock lock(m_resultsMutex);
+					std::mutex::scoped_lock lock(m_resultsMutex);
 					m_results.push(result);
 				}
 			}
@@ -115,9 +115,9 @@ namespace wowpp
 
 		bool m_run;
 		Work m_work;
-		boost::mutex m_workMutex;
-		boost::condition_variable m_workToDo;
+		std::mutex m_workMutex;
+		std::condition_variable m_workToDo;
 		Results m_results;
-		boost::mutex m_resultsMutex;
+		std::mutex m_resultsMutex;
 	};
 }

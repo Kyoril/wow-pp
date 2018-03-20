@@ -257,6 +257,27 @@ namespace wowpp
 		m_target.notifySpeedChanged(movement_type::Flight);
 	}
 
+	void AuraEffect::handleModFlightSpeedMounted(bool apply)
+	{
+		m_target.notifySpeedChanged(movement_type::Flight);
+
+		// Determined to prevent falling when one aura is still left
+		const bool hasFlyAura = m_target.getAuras().hasAura(game::aura_type::Fly);
+
+		auto *world = m_target.getWorldInstance();
+		if (world)
+		{
+			if (apply)
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveSetCanFly, std::placeholders::_1, m_target.getGuid()));
+			}
+			else if (!hasFlyAura)
+			{
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveUnsetCanFly, std::placeholders::_1, m_target.getGuid()));
+			}
+		}
+	}
+
 	void AuraEffect::handleModShapeShift(bool apply)
 	{
 		UInt8 form = m_effect.miscvaluea();
@@ -741,7 +762,6 @@ namespace wowpp
 	{
 		// Determined to prevent falling when one aura is still left
 		const bool hasFlyAura = m_target.getAuras().hasAura(game::aura_type::Fly);
-
 		if (m_target.isCreature())
 		{
 			if (!apply && !hasFlyAura)

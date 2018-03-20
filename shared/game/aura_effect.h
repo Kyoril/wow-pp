@@ -160,6 +160,8 @@ namespace wowpp
 		void handleSwimSpeedModifier(bool apply);
 		/// 33, 171, 206, 208, 210
 		void handleFlySpeedModifier(bool apply);
+		/// 
+		void handleModFlightSpeedMounted(bool apply);
 		/// 36
 		void handleModShapeShift(bool apply);
 		/// 44

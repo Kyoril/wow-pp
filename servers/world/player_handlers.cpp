@@ -562,6 +562,17 @@ namespace wowpp
 			return;
 		}
 
+		// Are we flying now and weren't flying before?
+		if ((m_character->getMovementInfo().moveFlags & game::movement_flags::Flying2) == 0 &&
+			(info.moveFlags & game::movement_flags::Flying2) != 0)
+		{
+			if (!(m_character->getAuras().hasAura(game::aura_type::Fly) || m_character->getAuras().hasAura(game::aura_type::ModFlightSpeedMounted)))
+			{
+				kick();
+				return;
+			}
+		}
+
 		if (opCode != game::client_packet::MoveStop)
 		{
 			// Don't accept these when it's not a move-stop

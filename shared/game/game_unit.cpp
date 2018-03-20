@@ -301,12 +301,12 @@ namespace wowpp
 		if (enable)
 		{
 			setByteValue(unit_fields::Bytes1, 3, getByteValue(unit_fields::Bytes1, 3) | 2);
-			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags | game::movement_flags::Flying | game::movement_flags::Flying2);
+			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags | game::movement_flags::Flying/* | game::movement_flags::Flying2*/);
 		}
 		else
 		{
 			setByteValue(unit_fields::Bytes1, 3, getByteValue(unit_fields::Bytes1, 3) & ~2);
-			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags & ~(game::movement_flags::Flying | game::movement_flags::Flying2));
+			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags & ~(game::movement_flags::Flying/* | game::movement_flags::Flying2*/));
 		}
 	}
 
@@ -740,7 +740,7 @@ namespace wowpp
 			}
 
 			// Distance check
-			const bool isFlyingOrSwimming = victim->getMovementInfo().moveFlags & (game::movement_flags::Flying | game::movement_flags::Flying2 | game::movement_flags::Swimming);
+			const bool isFlyingOrSwimming = victim->getMovementInfo().moveFlags & (game::movement_flags::Flying2 | game::movement_flags::Swimming);
 			const float distanceSq = getSquaredDistanceTo(*victim, isFlyingOrSwimming || isGameCharacter());
 			const float combatRangeSq = 
 				::powf(getMeleeReach() + victim->getMeleeReach() + rangeBonus, 2.0f);
@@ -3140,9 +3140,18 @@ namespace wowpp
 				mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseSwimSpeed);
 				break;
 			case movement_type::Flight:
-				mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeed);
-				stackBonus = m_auras.getTotalMultiplier(game::aura_type::ModFlightSpeedStacking);
-				nonStackBonus = (100.0f + static_cast<float>(m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeedNotStacking))) / 100.0f;
+				if (isMounted())
+				{
+					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeedMounted);
+					stackBonus = m_auras.getTotalMultiplier(game::aura_type::ModFlightSpeedMountedStacking);
+					nonStackBonus = (100.0f + static_cast<float>(m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeedMountedNotStacking))) / 100.0f;
+				}
+				else
+				{
+					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeed);
+					stackBonus = m_auras.getTotalMultiplier(game::aura_type::ModFlightSpeedStacking);
+					nonStackBonus = (100.0f + static_cast<float>(m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeedNotStacking))) / 100.0f;
+				}
 				break;
 			default:
 				break;

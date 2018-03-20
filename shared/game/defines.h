@@ -1889,8 +1889,8 @@ namespace wowpp
 				FeedPet					= 101,
 				DismissPet				= 102,
 				Reputation				= 103,
-				Effect_104				= 104,
-				Effect_105				= 105,
+				Effect_104				= 104,	// Traps
+				Effect_105				= 105,	// Battle standarts
 				Effect_106				= 106,
 				Effect_107				= 107,
 				DispelMechanic			= 108,
@@ -1916,7 +1916,7 @@ namespace wowpp
 				ApplyAreaAuraFriend		= 128,
 				ApplyAreaAuraEnemy		= 129,
 				RedirectThreat			= 130,
-				Effect_131				= 131,
+				Effect_131				= 131,	// 4 dev spells: 40019, 40074, 46873, 49963
 				PlayMusic				= 132,
 				UnlearnSpecialization	= 133,
 				KillCredit				= 134,
@@ -1926,8 +1926,8 @@ namespace wowpp
 				LeapBack				= 138,
 				ClearQuest				= 139,
 				ForceCast				= 140,
-				Effect_141				= 141,
-				TriggerSpellWithValue	= 142,
+				Effect_141				= 141,	// Only one spell: 41065
+				TriggerSpellWithValue	= 142,	
 				ApplyAreaAuraOwner		= 143,
 				KnockBack2				= 144,
 				Effect_145				= 145,

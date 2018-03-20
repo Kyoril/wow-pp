@@ -92,6 +92,14 @@ namespace wowpp
 					return false;
 				}
 
+				// Check if we could potentially reach the unit if it's flying
+				const bool targetIsFlying = (unit.getMovementInfo().moveFlags & game::movement_flags::Flying2);
+				const bool controlledIsFlying = (controlled.getMovementInfo().moveFlags & game::movement_flags::Flying2);
+				if (targetIsFlying && !controlledIsFlying)
+				{
+					return false;
+				}
+
 				// Check if we are hostile against this unit
 				const auto &unitFaction = unit.getFactionTemplate();
 				if (controlled.isNeutralToAll())
