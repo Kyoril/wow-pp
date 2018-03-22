@@ -828,13 +828,16 @@ namespace wowpp
 		auto *world = m_target.getWorldInstance();
 		if (world)
 		{
+			const UInt32 ackId = m_target.generateAckId();
+			m_target.queueClientAck(game::client_packet::MoveFeatherFallAck, ackId);
+
 			if (apply)
 			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveFeatherFall, std::placeholders::_1, m_target.getGuid()));
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveFeatherFall, std::placeholders::_1, m_target.getGuid(), ackId));
 			}
 			else
 			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveNormalFall, std::placeholders::_1, m_target.getGuid()));
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveNormalFall, std::placeholders::_1, m_target.getGuid(), ackId));
 			}
 		}
 	}
@@ -844,13 +847,16 @@ namespace wowpp
 		auto *world = m_target.getWorldInstance();
 		if (world)
 		{
+			const UInt32 ackId = m_target.generateAckId();
+			m_target.queueClientAck(game::client_packet::MoveHoverAck, ackId);
+
 			if (apply)
 			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveSetHover, std::placeholders::_1, m_target.getGuid()));
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveSetHover, std::placeholders::_1, m_target.getGuid(), ackId));
 			}
 			else
 			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveUnsetHover, std::placeholders::_1, m_target.getGuid()));
+				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveUnsetHover, std::placeholders::_1, m_target.getGuid(), ackId));
 			}
 		}
 	}

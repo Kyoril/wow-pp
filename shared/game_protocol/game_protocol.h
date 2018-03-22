@@ -2086,22 +2086,26 @@ namespace wowpp
 			
 			void moveFeatherFall(
 				game::OutgoingPacket &out_packet,
-				UInt64 guid
+				UInt64 guid,
+				UInt32 counter
 			);
 			
 			void moveNormalFall(
 				game::OutgoingPacket &out_packet,
-				UInt64 guid
+				UInt64 guid,
+				UInt32 counter
 			);
 
 			void moveSetHover(
 				game::OutgoingPacket &out_packet,
-				UInt64 guid
+				UInt64 guid,
+				UInt32 counter
 			);
 
 			void moveUnsetHover(
 				game::OutgoingPacket &out_packet,
-				UInt64 guid
+				UInt64 guid,
+				UInt32 counter
 			);
 
 			void moveWaterWalk(

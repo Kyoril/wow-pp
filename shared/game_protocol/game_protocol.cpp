@@ -1902,21 +1902,21 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void forceMoveRoot(game::OutgoingPacket &out_packet, UInt64 guid, UInt32 unknown)
+			void forceMoveRoot(game::OutgoingPacket &out_packet, UInt64 guid, UInt32 counter)
 			{
 				out_packet.start(game::server_packet::ForceMoveRoot);
 				out_packet
 					<< io::write_packed_guid(guid)
-				    << io::write<NetUInt32>(unknown);
+				    << io::write<NetUInt32>(counter);
 				out_packet.finish();
 			}
 
-			void forceMoveUnroot(game::OutgoingPacket &out_packet, UInt64 guid, UInt32 unknown)
+			void forceMoveUnroot(game::OutgoingPacket &out_packet, UInt64 guid, UInt32 counter)
 			{
 				out_packet.start(game::server_packet::ForceMoveUnroot);
 				out_packet
 					<< io::write_packed_guid(guid)
-				    << io::write<NetUInt32>(unknown);
+				    << io::write<NetUInt32>(counter);
 				out_packet.finish();
 			}
 
@@ -3127,39 +3127,39 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void moveFeatherFall(game::OutgoingPacket & out_packet, UInt64 guid)
+			void moveFeatherFall(game::OutgoingPacket & out_packet, UInt64 guid, UInt32 counter)
 			{
 				out_packet.start(game::server_packet::MoveFeatherFall);
 				out_packet
 					<< io::write_packed_guid(guid)
-					<< io::write<NetUInt32>(0);
+					<< io::write<NetUInt32>(counter);
 				out_packet.finish();
 			}
 
-			void moveNormalFall(game::OutgoingPacket & out_packet, UInt64 guid)
+			void moveNormalFall(game::OutgoingPacket & out_packet, UInt64 guid, UInt32 counter)
 			{
 				out_packet.start(game::server_packet::MoveNormalFall);
 				out_packet
 					<< io::write_packed_guid(guid)
-					<< io::write<NetUInt32>(0);
+					<< io::write<NetUInt32>(counter);
 				out_packet.finish();
 			}
 			
-			void moveSetHover(game::OutgoingPacket & out_packet, UInt64 guid)
+			void moveSetHover(game::OutgoingPacket & out_packet, UInt64 guid, UInt32 counter)
 			{
 				out_packet.start(game::server_packet::MoveSetHover);
 				out_packet
 					<< io::write_packed_guid(guid)
-					<< io::write<NetUInt32>(0);
+					<< io::write<NetUInt32>(counter);
 				out_packet.finish();
 			}
 
-			void moveUnsetHover(game::OutgoingPacket & out_packet, UInt64 guid)
+			void moveUnsetHover(game::OutgoingPacket & out_packet, UInt64 guid, UInt32 counter)
 			{
 				out_packet.start(game::server_packet::MoveUnsetHover);
 				out_packet
 					<< io::write_packed_guid(guid)
-					<< io::write<NetUInt32>(0);
+					<< io::write<NetUInt32>(counter);
 				out_packet.finish();
 			}
 

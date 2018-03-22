@@ -227,8 +227,11 @@ namespace wowpp
 
 			// Root our character
 			m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
+
+			const UInt32 ackId = m_character->generateAckId();
+			m_character->queueClientAck(game::client_packet::ForceMoveRootAck, ackId);
 			sendProxyPacket(
-				std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
+				std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), ackId));
 
 			// Send answer and engage logout process
 			sendProxyPacket(
@@ -246,8 +249,11 @@ namespace wowpp
 	{
 		// Unroot
 		m_character->removeFlag(unit_fields::UnitFlags, 0x00040000);
+
+		const UInt32 ackId = m_character->generateAckId();
+		m_character->queueClientAck(game::client_packet::ForceMoveUnrootAck, ackId);
 		sendProxyPacket(
-			std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
+			std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), ackId));
 
 		// Stand up again
 		m_character->setStandState(unit_stand_state::Stand);

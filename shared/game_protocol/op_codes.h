@@ -176,8 +176,8 @@ namespace wowpp
 				ToggleCloak						= 0x2BA,
 				SetActionBarToggles				= 0x2BF,
 				ItemNameQuery					= 0x2C4,
-				MoveFallReset					= 0x2CA,
 				CharRename						= 0x2C7,
+				MoveFallReset					= 0x2CA,
 				MoveTimeSkipped					= 0x2CE,
 				MoveFeatherFallAck				= 0x2CF,		// ACK
 				MoveWaterWalkAck				= 0x2D0,		// ACK
