@@ -541,6 +541,81 @@ namespace wowpp
 		m_character->revive(m_character->getUInt32Value(unit_fields::MaxHealth), 0);
 	}
 
+	static bool validateMovementInfo(UInt16 opCode, const MovementInfo& clientInfo, const MovementInfo& serverInfo)
+	{
+		// Validate rooted flag
+		{
+			if ((serverInfo.moveFlags & game::movement_flags::Root) && !(clientInfo.moveFlags & game::movement_flags::Root))
+			{
+				// Client is missing Root flag which was expected
+				if (opCode != game::client_packet::ForceMoveUnrootAck)
+					return false;
+			}
+			if ((clientInfo.moveFlags & game::movement_flags::Root) && !(serverInfo.moveFlags & game::movement_flags::Root))
+			{
+				// Client sent Root flag in packet which wasn't expected to contain that flag
+				if (opCode != game::client_packet::ForceMoveRootAck)
+					return false;
+			}
+
+			if (clientInfo.moveFlags & game::movement_flags::Root)
+			{
+				// Player is moving while being rooted - impossible
+				if (clientInfo.moveFlags & game::movement_flags::Moving)
+					return false;
+			}
+		}
+
+		// Validate flying flag
+		{
+			if (opCode != game::client_packet::MoveSetCanFlyAck)
+			{
+				if ((serverInfo.moveFlags & game::movement_flags::Flying) && !(clientInfo.moveFlags & game::movement_flags::Flying))
+					return false;
+				else if ((clientInfo.moveFlags & game::movement_flags::Flying) && !(serverInfo.moveFlags & game::movement_flags::Flying))
+					return false;
+			}
+
+			// If the player is currently flying but shouldn't be able to fly
+			if ((clientInfo.moveFlags & game::movement_flags::Flying2) && !(clientInfo.moveFlags & game::movement_flags::Flying))
+				return false;
+		}
+
+		// Ascending should only be possible while swimming or flying
+		if (!(clientInfo.moveFlags & game::movement_flags::Swimming) && !(clientInfo.moveFlags & game::movement_flags::Flying2))
+		{
+			if (clientInfo.moveFlags & game::movement_flags::Ascending)
+				return false;
+		}
+
+		// Falling should not be possible while swimming or flying
+		if ((clientInfo.moveFlags & game::movement_flags::Swimming) || (clientInfo.moveFlags & game::movement_flags::Flying2))
+		{
+			if ((clientInfo.moveFlags & game::movement_flags::Falling) || (clientInfo.moveFlags & game::movement_flags::FallingFar))
+				return false;
+		}
+
+		// Hover check
+		if (opCode != game::client_packet::MoveHoverAck)
+		{
+			if ((clientInfo.moveFlags & game::movement_flags::Hover) && !(serverInfo.moveFlags & game::movement_flags::Hover))
+				return false;
+			else if ((serverInfo.moveFlags & game::movement_flags::Hover) && !(clientInfo.moveFlags & game::movement_flags::Hover))
+				return false;
+		}
+		
+		// Waterwalk check
+		if (opCode != game::client_packet::MoveWaterWalkAck)
+		{
+			if ((clientInfo.moveFlags & game::movement_flags::WaterWalking) && !(serverInfo.moveFlags & game::movement_flags::WaterWalking))
+				return false;
+			else if ((serverInfo.moveFlags & game::movement_flags::WaterWalking) && !(clientInfo.moveFlags & game::movement_flags::WaterWalking))
+				return false;
+		}
+
+		return true;
+	}
+
 	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
 	{
 		// Can't receive player input when in one of these CC states
@@ -553,6 +628,13 @@ namespace wowpp
 			WLOG("Could not read packet data");
 			return;
 		}
+
+		if (!validateMovementInfo(opCode, info, m_character->getMovementInfo()))
+		{
+			WLOG("Invalid movement info received from client!");
+			kick();
+			return;
+		}
 		
 		// TODO: There need to be a lot of movement packet checks, and these should probably be done in a separate class
 		// No heartbeat if not started to move
@@ -560,17 +642,6 @@ namespace wowpp
 			!(m_character->getMovementInfo().moveFlags & game::movement_flags::Moving))
 		{
 			return;
-		}
-
-		// Are we flying now and weren't flying before?
-		if ((m_character->getMovementInfo().moveFlags & game::movement_flags::Flying2) == 0 &&
-			(info.moveFlags & game::movement_flags::Flying2) != 0)
-		{
-			if (!(m_character->getAuras().hasAura(game::aura_type::Fly) || m_character->getAuras().hasAura(game::aura_type::ModFlightSpeedMounted)))
-			{
-				kick();
-				return;
-			}
 		}
 
 		if (opCode != game::client_packet::MoveStop)
@@ -1580,71 +1651,74 @@ namespace wowpp
 			return;
 		}
 
+		// Ack needs to be for the controlled character
 		if (guid != m_character->getGuid())
 		{
 			WLOG("Received ack opcode from other character!");
+			kick();
+			return;
+		}
+		
+		// Read movement info
+		MovementInfo info;
+		if (!(packet >> info))
+		{
+			WLOG("Could not read movement info from ack packet 0x" << std::hex << opCode);
 			return;
 		}
 
-		// Next data depends on opCode
-		switch (opCode)
+		// TODO: Validate ack: if we didn't expect this ack packet from the client, kick
+
+		// Validate movement info
+		if (!validateMovementInfo(opCode, info, m_character->getMovementInfo()))
 		{
-			case wowpp::game::client_packet::MoveKnockBackAck:
+			WLOG("Unexpected movement flags sent from client!");
+			kick();
+			return;
+		}
+
+		// TODO: Validate movement (speed hack, position change while rooted etc.)
+
+		// Apply movement info
+		m_character->setMovementInfo(info);
+
+		auto location = math::Vector3(info.x, info.y, info.z);
+		m_character->relocate(location, info.o, true);
+		info.time = m_serverSync + (info.time - m_clientSync);
+
+		// Knock-back case
+		if (opCode == game::client_packet::MoveKnockBackAck)
+		{
+			// Transform into grid location
+			TileIndex2D gridIndex;
+			if (!m_character->getTileIndex(gridIndex))
 			{
-				MovementInfo info;
-				if (!(packet >> info))
+				ELOG("Could not resolve grid location!");
+				return;
+			}
+
+			auto &grid = getWorldInstance().getGrid();
+			(void)grid.requireTile(gridIndex);
+
+			// Notify all watchers
+			forEachTileInSight(
+				getWorldInstance().getGrid(),
+				gridIndex,
+				[this, &info](VisibilityTile &tile)
+			{
+				for (auto &watcher : tile.getWatchers())
 				{
-					WLOG("Could not read movement info from CMSG_MOVE_KNOCK_BACK_ACK!");
-					return;
-				}
-
-				//const auto &location = m_character->getLocation();
-				auto location = math::Vector3(info.x, info.y, info.z);
-
-				// Store movement information
-				m_character->setMovementInfo(info);
-				m_character->relocate(location, info.o, true);
-				info.time = m_serverSync + (info.time - m_clientSync);
-
-				// Transform into grid location
-				TileIndex2D gridIndex;
-				if (!m_character->getTileIndex(gridIndex))
-				{
-					ELOG("Could not resolve grid location!");
-					return;
-				}
-
-				auto &grid = getWorldInstance().getGrid();
-				(void)grid.requireTile(gridIndex);
-
-				// Notify all watchers
-				forEachTileInSight(
-					getWorldInstance().getGrid(),
-					gridIndex,
-					[this, &info](VisibilityTile &tile)
-				{
-					for (auto &watcher : tile.getWatchers())
+					if (watcher != this)
 					{
-						if (watcher != this)
-						{
-							// Create the chat packet
-							std::vector<char> buffer;
-							io::VectorSink sink(buffer);
-							game::Protocol::OutgoingPacket movePacket(sink);
-							game::server_write::moveKnockBackWithInfo(movePacket, m_character->getGuid(), info);
-							watcher->sendPacket(movePacket, buffer);
-						}
+						// Create the chat packet
+						std::vector<char> buffer;
+						io::VectorSink sink(buffer);
+						game::Protocol::OutgoingPacket movePacket(sink);
+						game::server_write::moveKnockBackWithInfo(movePacket, m_character->getGuid(), info);
+						watcher->sendPacket(movePacket, buffer);
 					}
-				});
-
-				break;
-			}
-
-			default:
-			{
-				WLOG("Unhandled Ack packet received: " << opCode);
-				break;
-			}
+				}
+			});
 		}
 	}
 

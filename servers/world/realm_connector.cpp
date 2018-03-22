@@ -807,8 +807,25 @@ namespace wowpp
 				sender->handleMovementCode(clientPacket, opCode);
 				break;
 			}
-			// TODO: Add more ACK handlers
+			case game::client_packet::MoveTeleportAck:
+			case game::client_packet::MoveWorldPortAck:
+			case game::client_packet::MoveSetRawPositionAck:
+			case game::client_packet::ForceRunSpeedChangeAck:
+			case game::client_packet::ForceRunBackSpeedChangeAck:
+			case game::client_packet::ForceSwimSpeedChangeAck:
+			case game::client_packet::ForceSwimBackSpeedChangeAck:
+			case game::client_packet::ForceMoveRootAck:
+			case game::client_packet::ForceMoveUnrootAck:
 			case game::client_packet::MoveKnockBackAck:
+			case game::client_packet::MoveHoverAck:
+			case game::client_packet::MoveFeatherFallAck:
+			case game::client_packet::MoveWaterWalkAck:
+			case game::client_packet::ForceWalkSpeedChangeAck:
+			case game::client_packet::ForceTurnRateChangeAck:
+			case game::client_packet::MoveFlightAck:
+			case game::client_packet::MoveSetCanFlyAck:
+			case game::client_packet::ForceFlightSpeedChangeAck:
+			case game::client_packet::ForceFlightBackSpeedChangeAck:
 			{
 				sender->handleAckCode(clientPacket, opCode);
 				break;
