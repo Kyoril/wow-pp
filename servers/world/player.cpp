@@ -1137,7 +1137,7 @@ namespace wowpp
 
 	bool Player::isIgnored(UInt64 guid) const
 	{
-		return guid == 504403158265495562;
+		return m_ignoredGUIDs.contains(guid);
 	}
 
 	UInt32 Player::convertTimestamp(UInt32 otherTimestamp, UInt32 otherTick) const
