@@ -629,6 +629,13 @@ namespace wowpp
 			return;
 		}
 
+		if (hasTimedOutAck())
+		{
+			WLOG("Expected client ack which has timed out!");
+			kick();
+			return;
+		}
+
 		if (!validateMovementInfo(opCode, info, m_character->getMovementInfo()))
 		{
 			WLOG("Invalid movement info received from client!");
@@ -1659,6 +1666,16 @@ namespace wowpp
 			return;
 		}
 		
+		//DLOG("client ack index: " << index);
+
+		// Try to consume client ack
+		if (!consumeClientAck(opCode, index))
+		{
+			WLOG("Received unexpected client ack: 0x" << std::hex << opCode << " with index " << index);
+			kick();
+			return;
+		}
+
 		// Read movement info
 		MovementInfo info;
 		if (!(packet >> info))

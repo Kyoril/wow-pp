@@ -36,6 +36,7 @@
 #include "proto_data/trigger_helper.h"
 #include "game_world_object.h"
 #include "game_dyn_object.h"
+#include "common/id_generator.h"
 
 namespace wowpp
 {
@@ -414,6 +415,8 @@ namespace wowpp
 		simple::signal<void(UnitStandState)> standStateChanged;
 		/// Fired on any proc event (damage done, taken, healed, etc).
 		simple::signal<void(bool, GameUnit *, UInt32, UInt32, const proto::SpellEntry *, UInt32, UInt8, bool)> spellProcEvent;
+		/// Fired when the unit expects a client ack.
+		simple::signal<void(UInt32 opCode, UInt32 counter)> queueClientAck;
 
 	public:
 
@@ -805,6 +808,8 @@ namespace wowpp
 		/// Enables or disables flight mode.
 		/// @param enable Whether flight mode will be enabled.
 		void setFlightMode(bool enable);
+		/// Sends a MoveSetCanFly notification to the client.
+		void setCanFly(bool enable);
 
 		///
 		void procEvent(GameUnit *target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, const proto::SpellEntry *procSpell, bool canRemove);
@@ -902,7 +907,6 @@ namespace wowpp
 		virtual void onRegeneration();
 
 	private:
-
 		/// 
 		void updateDisplayIds();
 		/// 
@@ -925,7 +929,6 @@ namespace wowpp
 		void triggerNextFearMove();
 
 	public:
-
 		/// Adds a new dynamic object instance and spawns it in the units world (if any).
 		void addDynamicObject(std::shared_ptr<DynObject> object);
 		/// Despawns and probably deletes a dynamic object instance by it's guid.
@@ -933,6 +936,10 @@ namespace wowpp
 		/// Despawns and probably deletes all dynamic object instances.
 		void removeAllDynamicObjects();
 
+	public:
+		/// Generates the next client ack id for this unit.
+		inline UInt32 generateAckId() { return m_ackGenerator.generateId(); }
+		
 	private:
 
 		typedef std::array<float, unit_mod_type::End> UnitModTypeArray;
@@ -970,6 +977,7 @@ namespace wowpp
 		math::Vector3 m_confusedLoc;
 		TrackAuraTargetsMap m_trackAuraTargets;
 		std::map<UInt64, std::shared_ptr<DynObject>> m_dynamicObjects;
+		IdGenerator<UInt32> m_ackGenerator;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const &object);

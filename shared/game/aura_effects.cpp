@@ -262,20 +262,11 @@ namespace wowpp
 		m_target.notifySpeedChanged(movement_type::Flight);
 
 		// Determined to prevent falling when one aura is still left
-		const bool hasFlyAura = m_target.getAuras().hasAura(game::aura_type::Fly);
+		const bool hasFlyAura = m_target.getAuras().hasAura(game::aura_type::Fly) | m_target.getAuras().hasAura(game::aura_type::ModFlightSpeedMounted);
 
-		auto *world = m_target.getWorldInstance();
-		if (world)
-		{
-			if (apply)
-			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveSetCanFly, std::placeholders::_1, m_target.getGuid()));
-			}
-			else if (!hasFlyAura)
-			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveUnsetCanFly, std::placeholders::_1, m_target.getGuid()));
-			}
-		}
+		// Only send 
+		if (apply || !hasFlyAura)
+			m_target.setCanFly(apply);
 	}
 
 	void AuraEffect::handleModShapeShift(bool apply)
@@ -761,7 +752,9 @@ namespace wowpp
 	void AuraEffect::handleFly(bool apply)
 	{
 		// Determined to prevent falling when one aura is still left
-		const bool hasFlyAura = m_target.getAuras().hasAura(game::aura_type::Fly);
+		const bool hasFlyAura = m_target.getAuras().hasAura(game::aura_type::Fly) | m_target.getAuras().hasAura(game::aura_type::ModFlightSpeedMounted);
+
+		// Determined to prevent falling when one aura is still left
 		if (m_target.isCreature())
 		{
 			if (!apply && !hasFlyAura)
@@ -770,18 +763,9 @@ namespace wowpp
 			}
 		}
 
-		auto *world = m_target.getWorldInstance();
-		if (world)
-		{
-			if (apply)
-			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveSetCanFly, std::placeholders::_1, m_target.getGuid()));
-			}
-			else if (!hasFlyAura)
-			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveUnsetCanFly, std::placeholders::_1, m_target.getGuid()));
-			}
-		}
+		// Only send 
+		if (apply || !hasFlyAura)
+			m_target.setCanFly(apply);
 	}
 
 	void AuraEffect::handleModAttackPower(bool apply)
@@ -817,18 +801,26 @@ namespace wowpp
 
 	void AuraEffect::handleWaterWalk(bool apply)
 	{
-		auto *world = m_target.getWorldInstance();
-		if (world)
+		const bool hasWaterWalkAura = m_target.getAuras().hasAura(game::aura_type::WaterWalk);
+		if (apply || !hasWaterWalkAura)
 		{
-			if (apply)
+			const UInt32 ackId = m_target.generateAckId();
+			m_target.queueClientAck(game::client_packet::MoveWaterWalkAck, ackId);
+
+			auto *world = m_target.getWorldInstance();
+			if (world)
 			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveWaterWalk, std::placeholders::_1, m_target.getGuid()));
-			}
-			else
-			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveLandWalk, std::placeholders::_1, m_target.getGuid()));
+				if (apply)
+				{
+					world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveWaterWalk, std::placeholders::_1, m_target.getGuid(), ackId));
+				}
+				else
+				{
+					world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveLandWalk, std::placeholders::_1, m_target.getGuid(), ackId));
+				}
 			}
 		}
+
 	}
 
 	void AuraEffect::handleFeatherFall(bool apply)

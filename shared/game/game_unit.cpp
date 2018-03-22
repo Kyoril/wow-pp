@@ -310,6 +310,25 @@ namespace wowpp
 		}
 	}
 
+	void GameUnit::setCanFly(bool enable)
+	{
+		auto *world = getWorldInstance();
+		if (world)
+		{
+			const UInt32 ackId = generateAckId();
+			queueClientAck(game::client_packet::MoveSetCanFlyAck, ackId);
+
+			if (enable)
+			{
+				world->sendPacketToNearbyPlayers(*this, std::bind(game::server_write::moveSetCanFly, std::placeholders::_1, getGuid(), ackId));
+			}
+			else
+			{
+				world->sendPacketToNearbyPlayers(*this, std::bind(game::server_write::moveUnsetCanFly, std::placeholders::_1, getGuid(), ackId));
+			}
+		}
+	}
+
 	void GameUnit::procEvent(GameUnit * target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, proto::SpellEntry const * procSpell, bool canRemove)
 	{
 		if (procAttacker)
@@ -3120,6 +3139,8 @@ namespace wowpp
 		float speed = 1.0f;
 		bool mounted = isMounted();
 
+		UInt32 ackOpCode = 0;
+
 		// Apply speed buffs
 		{
 			Int32 mainSpeedMod = 0;
@@ -3127,6 +3148,7 @@ namespace wowpp
 			switch (type)
 			{
 			case movement_type::Run:
+				ackOpCode = game::client_packet::ForceRunSpeedChangeAck;
 				if (mounted) {
 					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseMountedSpeed);
 				}
@@ -3137,9 +3159,11 @@ namespace wowpp
 				nonStackBonus = (100.0f + static_cast<float>(m_auras.getMaximumBasePoints(game::aura_type::ModSpeedNotStack))) / 100.0f;
 				break;
 			case movement_type::Swim:
+				ackOpCode = game::client_packet::ForceSwimSpeedChangeAck;
 				mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseSwimSpeed);
 				break;
 			case movement_type::Flight:
+				ackOpCode = game::client_packet::ForceFlightSpeedChangeAck;
 				if (isMounted())
 				{
 					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeedMounted);
@@ -3180,11 +3204,15 @@ namespace wowpp
 			// Now store the speed bonus value
 			m_speedBonus[type] = speed;
 
+			// Expect ack opcode
+			const UInt32 ackId = generateAckId();
+			queueClientAck(ackOpCode, ackId);
+
 			// Send packets to all listeners around
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);
 			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::changeSpeed(packet, type, getGuid(), speed * getBaseSpeed(type));
+			game::server_write::changeSpeed(packet, type, getGuid(), speed * getBaseSpeed(type), ackId);
 
 			// Notify all tile subscribers about this event
 			TileIndex2D tileIndex;

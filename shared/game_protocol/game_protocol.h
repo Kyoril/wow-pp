@@ -1883,7 +1883,8 @@ namespace wowpp
 			    game::OutgoingPacket &out_packet,
 			    MovementType moveType,
 			    UInt64 guid,
-			    float speed
+			    float speed,
+				UInt32 counter
 			);
 
 			void questgiverStatus(
@@ -2073,12 +2074,14 @@ namespace wowpp
 
 			void moveSetCanFly(
 				game::OutgoingPacket &out_packet,
-				UInt64 guid
+				UInt64 guid,
+				UInt32 counter
 			);
 
 			void moveUnsetCanFly(
 				game::OutgoingPacket &out_packet,
-				UInt64 guid
+				UInt64 guid,
+				UInt32 counter
 			);
 			
 			void moveFeatherFall(
@@ -2103,12 +2106,14 @@ namespace wowpp
 
 			void moveWaterWalk(
 				game::OutgoingPacket &out_packet,
-				UInt64 guid
+				UInt64 guid,
+				UInt32 counter
 			);
 
 			void moveLandWalk(
 				game::OutgoingPacket &out_packet,
-				UInt64 guid
+				UInt64 guid,
+				UInt32 counter
 			);
 
 			void lootStartRoll(

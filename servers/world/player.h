@@ -300,6 +300,15 @@ namespace wowpp
 		void onResurrectRequest(UInt64 objectGUID, const String &sentName, UInt8 typeId);
 		/// Executed when the next client sync should be requested.
 		void onClientSync();
+		/// Consumes the next client ack and verifies, that the ack is valid.
+		/// @param opCode The expected ack op code.
+		/// @param counter The expected counter.
+		/// @return false if the ack is invalid, either because none was expected or another one was expected.
+		bool consumeClientAck(UInt32 opCode, UInt32 counter);
+		/// Checks whether there is a timed out pending client ack.
+		bool hasTimedOutAck();
+		/// Adds a new pending client ack to the list.
+		void onClientAckQueue(UInt32 opCode, UInt32 counter);
 
 	private:
 
@@ -320,6 +329,7 @@ namespace wowpp
 		simple::scoped_connection m_onLootCleared, m_onLootInspect, m_spellModChanged;
 		simple::scoped_connection m_onSpellLearned, m_onItemAdded, m_onResurrectRequest;
 		simple::scoped_connection_container m_lootSignals;
+		simple::scoped_connection m_onClientAck;
 		AttackSwingError m_lastError;
 		UInt32 m_lastFallTime;
 		float m_lastFallZ;
@@ -335,6 +345,16 @@ namespace wowpp
 		UInt32 m_timeSyncCounter;
 		GameTime m_lastTimeSync;
 
+		struct ClientAck
+		{
+			/// The expected op code from the client.
+			UInt32 opCode;
+			/// The expected counter value.
+			UInt32 counter;
+			/// The timestamp at which the 
+			UInt64 timestampSent;
+		};
 
+		std::queue<ClientAck> m_expectedAcks;
 	};
 }

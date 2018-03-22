@@ -2327,7 +2327,7 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void changeSpeed(game::OutgoingPacket &out_packet, MovementType moveType, UInt64 guid, float speed)
+			void changeSpeed(game::OutgoingPacket &out_packet, MovementType moveType, UInt64 guid, float speed, UInt32 counter)
 			{
 				switch (moveType)
 				{
@@ -2361,7 +2361,7 @@ namespace wowpp
 
 				out_packet
 					<< io::write_packed_guid(guid)
-				    << io::write<NetUInt32>(0);
+				    << io::write<NetUInt32>(counter);
 				if (moveType == movement_type::Run)
 				{
 					out_packet
@@ -3109,21 +3109,21 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void moveSetCanFly(game::OutgoingPacket & out_packet, UInt64 guid)
+			void moveSetCanFly(game::OutgoingPacket & out_packet, UInt64 guid, UInt32 counter)
 			{
 				out_packet.start(game::server_packet::MoveSetCanFly);
 				out_packet
 					<< io::write_packed_guid(guid)
-					<< io::write<NetUInt32>(0);
+					<< io::write<NetUInt32>(counter);
 				out_packet.finish();
 			}
 
-			void moveUnsetCanFly(game::OutgoingPacket & out_packet, UInt64 guid)
+			void moveUnsetCanFly(game::OutgoingPacket & out_packet, UInt64 guid, UInt32 counter)
 			{
 				out_packet.start(game::server_packet::MoveUnsetCanFly);
 				out_packet
 					<< io::write_packed_guid(guid)
-					<< io::write<NetUInt32>(0);
+					<< io::write<NetUInt32>(counter);
 				out_packet.finish();
 			}
 
@@ -3163,21 +3163,21 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void moveWaterWalk(game::OutgoingPacket & out_packet, UInt64 guid)
+			void moveWaterWalk(game::OutgoingPacket & out_packet, UInt64 guid, UInt32 counter)
 			{
 				out_packet.start(game::server_packet::MoveWaterWalk);
 				out_packet
 					<< io::write_packed_guid(guid)
-					<< io::write<NetUInt32>(0);
+					<< io::write<NetUInt32>(counter);
 				out_packet.finish();
 			}
 
-			void moveLandWalk(game::OutgoingPacket & out_packet, UInt64 guid)
+			void moveLandWalk(game::OutgoingPacket & out_packet, UInt64 guid, UInt32 counter)
 			{
 				out_packet.start(game::server_packet::MoveLandWalk);
 				out_packet
 					<< io::write_packed_guid(guid)
-					<< io::write<NetUInt32>(0);
+					<< io::write<NetUInt32>(counter);
 				out_packet.finish();
 			}
 
