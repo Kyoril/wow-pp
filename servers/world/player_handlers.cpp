@@ -34,6 +34,7 @@
 #include "trade_data.h"
 #include "game/unit_mover.h"
 #include "game/mail.h"
+#include "movement_validation.h"
 
 using namespace std;
 
@@ -539,81 +540,6 @@ namespace wowpp
 
 		WLOG("TODO: repop at nearest graveyard!");
 		m_character->revive(m_character->getUInt32Value(unit_fields::MaxHealth), 0);
-	}
-
-	static bool validateMovementInfo(UInt16 opCode, const MovementInfo& clientInfo, const MovementInfo& serverInfo)
-	{
-		// Validate rooted flag
-		{
-			if ((serverInfo.moveFlags & game::movement_flags::Root) && !(clientInfo.moveFlags & game::movement_flags::Root))
-			{
-				// Client is missing Root flag which was expected
-				if (opCode != game::client_packet::ForceMoveUnrootAck)
-					return false;
-			}
-			if ((clientInfo.moveFlags & game::movement_flags::Root) && !(serverInfo.moveFlags & game::movement_flags::Root))
-			{
-				// Client sent Root flag in packet which wasn't expected to contain that flag
-				if (opCode != game::client_packet::ForceMoveRootAck)
-					return false;
-			}
-
-			if (clientInfo.moveFlags & game::movement_flags::Root)
-			{
-				// Player is moving while being rooted - impossible
-				if (clientInfo.moveFlags & game::movement_flags::Moving)
-					return false;
-			}
-		}
-
-		// Validate flying flag
-		{
-			if (opCode != game::client_packet::MoveSetCanFlyAck)
-			{
-				if ((serverInfo.moveFlags & game::movement_flags::CanFly) && !(clientInfo.moveFlags & game::movement_flags::CanFly))
-					return false;
-				else if ((clientInfo.moveFlags & game::movement_flags::CanFly) && !(serverInfo.moveFlags & game::movement_flags::CanFly))
-					return false;
-			}
-
-			// If the player is currently flying but shouldn't be able to fly
-			if ((clientInfo.moveFlags & game::movement_flags::Flying) && !(clientInfo.moveFlags & game::movement_flags::CanFly))
-				return false;
-		}
-
-		// Ascending should only be possible while swimming or flying
-		if (!(clientInfo.moveFlags & game::movement_flags::Swimming) && !(clientInfo.moveFlags & game::movement_flags::Flying))
-		{
-			if (clientInfo.moveFlags & game::movement_flags::Ascending)
-				return false;
-		}
-
-		// Falling should not be possible while swimming or flying
-		if ((clientInfo.moveFlags & game::movement_flags::Swimming) || (clientInfo.moveFlags & game::movement_flags::Flying))
-		{
-			if ((clientInfo.moveFlags & game::movement_flags::Falling) || (clientInfo.moveFlags & game::movement_flags::FallingFar))
-				return false;
-		}
-
-		// Hover check
-		if (opCode != game::client_packet::MoveHoverAck)
-		{
-			if ((clientInfo.moveFlags & game::movement_flags::Hover) && !(serverInfo.moveFlags & game::movement_flags::Hover))
-				return false;
-			else if ((serverInfo.moveFlags & game::movement_flags::Hover) && !(clientInfo.moveFlags & game::movement_flags::Hover))
-				return false;
-		}
-		
-		// Waterwalk check
-		if (opCode != game::client_packet::MoveWaterWalkAck)
-		{
-			if ((clientInfo.moveFlags & game::movement_flags::WaterWalking) && !(serverInfo.moveFlags & game::movement_flags::WaterWalking))
-				return false;
-			else if ((serverInfo.moveFlags & game::movement_flags::WaterWalking) && !(clientInfo.moveFlags & game::movement_flags::WaterWalking))
-				return false;
-		}
-
-		return true;
 	}
 
 	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
@@ -1646,49 +1572,6 @@ namespace wowpp
 				m_character->getPlayTime(player_time_index::LevelPlayTime)	// Time on characters level in seconds
 			)
 		);
-	}
-
-	static bool validateSpeedAck(const PendingMovementChange& change, float receivedSpeed, MovementType& outMoveTypeSent)
-	{
-		switch (change.changeType)
-		{
-			case MovementChangeType::SpeedChangeWalk:				outMoveTypeSent = movement_type::Walk; break;
-			case MovementChangeType::SpeedChangeRun:				outMoveTypeSent = movement_type::Run; break;
-			case MovementChangeType::SpeedChangeRunBack:			outMoveTypeSent = movement_type::Backwards; break;
-			case MovementChangeType::SpeedChangeSwim:				outMoveTypeSent = movement_type::Swim; break;
-			case MovementChangeType::SpeedChangeSwimBack:			outMoveTypeSent = movement_type::SwimBackwards; break;
-			case MovementChangeType::SpeedChangeTurnRate:			outMoveTypeSent = movement_type::Turn; break;
-			case MovementChangeType::SpeedChangeFlightSpeed:		outMoveTypeSent = movement_type::Flight; break;
-			case MovementChangeType::SpeedChangeFlightBackSpeed:	outMoveTypeSent = movement_type::FlightBackwards; break;
-			default:
-				WLOG("Incorrect ack data for speed change ack");
-				return false;
-		}
-
-		if (std::fabs(receivedSpeed - change.speed) > FLT_EPSILON)
-		{
-			WLOG("Incorrect speed value received in ack");
-			return false;
-		}
-
-		return true;
-	}
-
-	static bool validateMoveFlagsOnApply(bool apply, UInt32 flags, UInt32 possiblyAppliedFlags)
-	{
-		// If apply is true, at least one of the possible flags needs to be set
-		if (apply && !(flags & possiblyAppliedFlags))
-		{
-			return false;
-		}
-
-		// If apply is false, none of the possible flags may be set
-		if (!apply && (flags & possiblyAppliedFlags))
-		{
-			return false;
-		}
-
-		return true;
 	}
 
 	void Player::handleAckCode(game::Protocol::IncomingPacket & packet, UInt16 opCode)

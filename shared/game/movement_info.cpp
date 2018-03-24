@@ -21,6 +21,7 @@
 
 #include "pch.h"
 #include "movement_info.h"
+#include "game/defines.h"
 
 namespace wowpp
 {
@@ -45,47 +46,44 @@ namespace wowpp
 	io::Writer &operator<<(io::Writer &w, MovementInfo const &info)
 	{
 		w
-		        << io::write<NetUInt32>(info.moveFlags)
-		        << io::write<NetUInt8>(info.moveFlags2)
-		        << io::write<NetUInt32>(info.time)
-		        << io::write<float>(info.x)
-		        << io::write<float>(info.y)
-		        << io::write<float>(info.z)
-		        << io::write<float>(info.o);
+			<< io::write<NetUInt32>(info.moveFlags)
+			<< io::write<NetUInt8>(info.moveFlags2)
+			<< io::write<NetUInt32>(info.time)
+			<< io::write<float>(info.x)
+			<< io::write<float>(info.y)
+			<< io::write<float>(info.z)
+			<< io::write<float>(info.o);
 
 		if (info.moveFlags & game::movement_flags::OnTransport)
 		{
 			w
-			        << io::write<NetUInt64>(info.transportGuid)
-			        << io::write<float>(info.tX)
-			        << io::write<float>(info.tY)
-			        << io::write<float>(info.tZ)
-			        << io::write<float>(info.tO)
-			        << io::write<NetUInt32>(info.transportTime);
+				<< io::write<NetUInt64>(info.transportGuid)
+				<< io::write<float>(info.tX)
+				<< io::write<float>(info.tY)
+				<< io::write<float>(info.tZ)
+				<< io::write<float>(info.tO)
+				<< io::write<NetUInt32>(info.transportTime);
 		}
 
 		if (info.moveFlags & (game::movement_flags::Swimming | game::movement_flags::Flying))
 		{
-			w
-			        << io::write<float>(info.pitch);
+			w << io::write<float>(info.pitch);
 		}
 
-		w
-		        << io::write<NetUInt32>(info.fallTime);
+		w << io::write<NetUInt32>(info.fallTime);
 
 		if (info.moveFlags & game::movement_flags::Falling)
 		{
 			w
-			        << io::write<float>(info.jumpVelocity)
-			        << io::write<float>(info.jumpSinAngle)
-			        << io::write<float>(info.jumpCosAngle)
-			        << io::write<float>(info.jumpXYSpeed);
+				<< io::write<float>(info.jumpVelocity)
+				<< io::write<float>(info.jumpSinAngle)
+				<< io::write<float>(info.jumpCosAngle)
+				<< io::write<float>(info.jumpXYSpeed);
 		}
 
 		if (info.moveFlags & game::movement_flags::SplineElevation)
 		{
-			w
-			        << io::write<float>(info.unknown1);
+			w << io::write<float>(info.unknown1);
 		}
 
 		return w;
@@ -94,47 +92,44 @@ namespace wowpp
 	io::Reader &operator>>(io::Reader &r, MovementInfo &info)
 	{
 		r
-		        >> io::read<NetUInt32>(info.moveFlags)
-		        >> io::read<NetUInt8>(info.moveFlags2)
-		        >> io::read<NetUInt32>(info.time)
-		        >> io::read<float>(info.x)
-		        >> io::read<float>(info.y)
-		        >> io::read<float>(info.z)
-		        >> io::read<float>(info.o);
+			>> io::read<NetUInt32>(info.moveFlags)
+			>> io::read<NetUInt8>(info.moveFlags2)
+			>> io::read<NetUInt32>(info.time)
+			>> io::read<float>(info.x)
+			>> io::read<float>(info.y)
+			>> io::read<float>(info.z)
+			>> io::read<float>(info.o);
 
 		if (info.moveFlags & game::movement_flags::OnTransport)
 		{
 			r
-			        >> io::read<NetUInt64>(info.transportGuid)
-			        >> io::read<float>(info.tX)
-			        >> io::read<float>(info.tY)
-			        >> io::read<float>(info.tZ)
-			        >> io::read<float>(info.tO)
-			        >> io::read<NetUInt32>(info.transportTime);
+				>> io::read<NetUInt64>(info.transportGuid)
+				>> io::read<float>(info.tX)
+				>> io::read<float>(info.tY)
+				>> io::read<float>(info.tZ)
+				>> io::read<float>(info.tO)
+				>> io::read<NetUInt32>(info.transportTime);
 		}
 
 		if (info.moveFlags & (game::movement_flags::Swimming | game::movement_flags::Flying))
 		{
-			r
-			        >> io::read<float>(info.pitch);
+			r >> io::read<float>(info.pitch);
 		}
 
-		r
-		        >> io::read<NetUInt32>(info.fallTime);
+		r >> io::read<NetUInt32>(info.fallTime);
 
 		if (info.moveFlags & game::movement_flags::Falling)
 		{
 			r
-			        >> io::read<float>(info.jumpVelocity)
-			        >> io::read<float>(info.jumpSinAngle)
-			        >> io::read<float>(info.jumpCosAngle)
-			        >> io::read<float>(info.jumpXYSpeed);
+				>> io::read<float>(info.jumpVelocity)
+				>> io::read<float>(info.jumpSinAngle)
+				>> io::read<float>(info.jumpCosAngle)
+				>> io::read<float>(info.jumpXYSpeed);
 		}
 
 		if (info.moveFlags & game::movement_flags::SplineElevation)
 		{
-			r
-			        >> io::read<float>(info.unknown1);
+			r >> io::read<float>(info.unknown1);
 		}
 
 		return r;

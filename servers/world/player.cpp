@@ -222,17 +222,8 @@ namespace wowpp
 			m_character->setStandState(unit_stand_state::Sit);
 
 			// Root our character
-			m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
-
-			const UInt32 ackId = m_character->generateAckId();
-
-			PendingMovementChange change;
-			change.counter = ackId;
-			change.changeType = MovementChangeType::Root;
-			m_character->pushPendingMovementChange(change);
-
-			sendProxyPacket(
-				std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), ackId));
+			//m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
+			m_character->setPendingMovementFlag(MovementChangeType::Root, true);
 
 			// Send answer and engage logout process
 			sendProxyPacket(
@@ -249,17 +240,8 @@ namespace wowpp
 	void Player::cancelLogoutRequest()
 	{
 		// Unroot
-		m_character->removeFlag(unit_fields::UnitFlags, 0x00040000);
-
-		const UInt32 ackId = m_character->generateAckId();
-
-		PendingMovementChange change;
-		change.counter = ackId;
-		change.changeType = MovementChangeType::Root;
-		m_character->pushPendingMovementChange(change);
-
-		sendProxyPacket(
-			std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), ackId));
+		//m_character->removeFlag(unit_fields::UnitFlags, 0x00040000);
+		m_character->setPendingMovementFlag(MovementChangeType::Root, false);
 
 		// Stand up again
 		m_character->setStandState(unit_stand_state::Stand);
