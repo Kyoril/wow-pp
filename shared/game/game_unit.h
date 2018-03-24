@@ -762,7 +762,7 @@ namespace wowpp
 		/// Determine whether the root flag is present in the movement info. This flag
 		/// is delayed for player characters until the client has ackknowledged the root.
 		inline bool isRootedForMovement() const {
-			return (m_movementInfo.moveFlags & game::movement_flags::Root);
+			return (m_movementInfo.moveFlags & game::movement_flags::Root) != 0;
 		}
 		/// Determines whether this unit is feared.
 		inline bool isFeared() const {
