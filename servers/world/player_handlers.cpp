@@ -1878,21 +1878,24 @@ namespace wowpp
 				auto &grid = getWorldInstance().getGrid();
 				(void)grid.requireTile(gridIndex);
 
+				// Create knock back packet for observers
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket movePacket(sink);
+				game::server_write::moveKnockBackWithInfo(movePacket, m_character->getGuid(), info);
+
 				// Notify all watchers
 				forEachTileInSight(
 					getWorldInstance().getGrid(),
 					gridIndex,
-					[this, &info](VisibilityTile &tile)
+					[this, &info, &buffer, &movePacket](VisibilityTile &tile)
 				{
 					for (auto &watcher : tile.getWatchers())
 					{
+						// We don't need to inform the player who sent the ack since he already received
+						// the forced knockback packet.
 						if (watcher != this)
 						{
-							// Create the chat packet
-							std::vector<char> buffer;
-							io::VectorSink sink(buffer);
-							game::Protocol::OutgoingPacket movePacket(sink);
-							game::server_write::moveKnockBackWithInfo(movePacket, m_character->getGuid(), info);
 							watcher->sendPacket(movePacket, buffer);
 						}
 					}
