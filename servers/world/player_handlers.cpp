@@ -571,39 +571,6 @@ namespace wowpp
 			return;
 		}
 		
-		// TODO: There need to be a lot of movement packet checks, and these should probably be done in a separate class
-		// No heartbeat if not started to move
-		if (opCode == game::client_packet::MoveHeartBeat && 
-			!(m_character->getMovementInfo().moveFlags & game::movement_flags::Moving))
-		{
-			return;
-		}
-
-		// TODO: Move these checks (if they are still required at all)
-		if (opCode != game::client_packet::MoveStop)
-		{
-			// Don't accept these when it's not a move-stop
-			if (m_character->isStunned())
-			{
-				WLOG("Ignored packet " << opCode << " because of stuns");
-				return;
-			}
-
-			if (m_character->isRooted() && info.moveFlags & game::movement_flags::Moving)
-			{
-				WLOG("Ignored packet " << opCode << " because of roots");
-				return;
-			}
-
-			auto flags = m_character->getUInt32Value(unit_fields::UnitFlags);
-			if ((flags & 0x00040000) != 0 ||
-				(flags & 0x00000004) != 0)
-			{
-				WLOG("Character is unable to move, ignoring move packet");
-				return;
-			}
-		}
-
 		// Sender guid
 		auto guid = m_character->getGuid();
 

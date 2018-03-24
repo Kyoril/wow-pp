@@ -138,7 +138,7 @@ namespace wowpp
 		auto onRootOrStunUpdate = [&](UInt32 state, bool flag) {
 			if (state == unit_state::Rooted || state == unit_state::Stunned)
 			{
-				if (flag || m_character->isRooted() || m_character->isStunned())
+				if (flag || m_character->isRootedForSpell() || m_character->isStunned())
 				{
 					// Root the character
 					if (m_character->isStunned())

@@ -120,6 +120,13 @@ namespace wowpp
 			}
 		}
 
+		// Falling flags have to be removed in MoveFallLand
+		if (opCode == MoveFallLand && (clientInfo.moveFlags & (Falling | FallingFar)))
+		{
+			WLOG("Falling flag in MoveFallLand op code detected");
+			return false;
+		}
+
 		return true;
 	}
 

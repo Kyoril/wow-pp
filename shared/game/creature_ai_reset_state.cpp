@@ -75,7 +75,7 @@ namespace wowpp
 		m_onStateChanged = getControlled().unitStateChanged.connect([this](UInt32 state, bool stunned)
 		{
 			auto &controlled = getControlled();
-			if (!controlled.isStunned() && !controlled.isRooted() && !controlled.isConfused() && !controlled.isFeared())
+			if (!controlled.isStunned() && !controlled.isRootedForSpell() && !controlled.isConfused() && !controlled.isFeared())
 			{
 				controlled.getMover().moveTo(getAI().getHome().position);
 			}

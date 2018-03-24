@@ -1279,7 +1279,7 @@ namespace wowpp
 		GameUnit *targetUnit = nullptr;
 		m_target.resolvePointers(*world, &targetUnit, nullptr, nullptr, nullptr);
 
-		if (targetUnit->isRooted() || targetUnit->isStunned())
+		if (targetUnit->isRootedForSpell() || targetUnit->isStunned())
 		{
 			return;
 		}

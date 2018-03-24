@@ -425,7 +425,7 @@ namespace wowpp
 		}
 
 		GameUnit *victim = controlled.getVictim();
-		bool rooted = controlled.isRooted();
+		bool rooted = controlled.isRootedForSpell();
 
 		// Now, determine the victim with the highest threat value
 		float highestThreat = -1.0f;
@@ -522,7 +522,7 @@ namespace wowpp
 		if (!victim)
 		{
 			// No victim found (threat list probably empty or rooted)
-			if (!controlled.isRooted() && !controlled.isStunned() && !controlled.isFeared() && !controlled.isConfused())
+			if (!controlled.isRootedForSpell() && !controlled.isStunned() && !controlled.isFeared() && !controlled.isConfused())
 			{
 				// Warning: this will destroy the current AI state.
 				getAI().reset();

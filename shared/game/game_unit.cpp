@@ -3088,7 +3088,7 @@ namespace wowpp
 
 	void GameUnit::notifyRootChanged()
 	{
-		const bool wasRooted = isRooted();
+		const bool wasRooted = isRootedForSpell();
 		const bool isRooted = m_auras.hasAura(game::aura_type::ModRoot);
 		if (isRooted)
 		{

@@ -128,7 +128,7 @@ namespace wowpp
 		auto &moved = getMoved();
 
 		// Dead units can't move
-		if (!moved.canMove())
+		if (!moved.isAlive() || moved.isStunned() || moved.isRootedForMovement())
 		{
 			return false;
 		}

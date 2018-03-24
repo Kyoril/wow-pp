@@ -749,45 +749,61 @@ namespace wowpp
 		/// 
 		virtual std::shared_ptr<GameItem> getOffHandWeapon() const { return nullptr; }
 
-		/// 
-		bool isStunned() const {
+		/// Determines if the unit has a stun spell effect on it.
+		inline bool isStunned() const {
 			return (m_state & unit_state::Stunned);
 		}
-		/// 
-		bool isRooted() const {
+		/// Determines if a root aura has been applied to the unit. This is an effect that
+		/// is immediatly updated on aura changes no matter what and should not be used
+		/// for movement related code.
+		inline bool isRootedForSpell() const {
 			return (m_state & unit_state::Rooted);
 		}
+		/// Determine whether the root flag is present in the movement info. This flag
+		/// is delayed for player characters until the client has ackknowledged the root.
+		inline bool isRootedForMovement() const {
+			return (m_movementInfo.moveFlags & game::movement_flags::Root);
+		}
 		/// Determines whether this unit is feared.
-		bool isFeared() const {
+		inline bool isFeared() const {
 			return (m_state & unit_state::Feared);
 		}
 		/// Determines whether this unit is confused.
-		bool isConfused() const {
+		inline bool isConfused() const {
 			return (m_state & unit_state::Confused);
 		}
-		///
-		bool canAutoAttack() const {
+		/// Determines if auto attacks are possible.
+		inline bool canAutoAttack() const {
 			return isAlive() && !isFeared() && !isStunned() && !isConfused();
 		}
-		/// 
-		bool canMove() const {
-			return isAlive() && !isStunned() && !isRooted();
-		}
-		/// 
+
+		/// Called by spell auras to notify that a stun aura has been applied or misapplied.
+		/// This performs checks whether another stun aura is still present and updates the
+		/// internal state.
 		void notifyStunChanged();
-		/// 
+		/// Called by spell auras to notify that a root aura has been applied or misapplied.
+		/// This performs checks whether another root aura is still present and updates the
+		/// internal state.
 		void notifyRootChanged();
-		/// 
+		/// Called by spell auras to notify that a fear aura has been applied or misapplied.
+		/// This performs checks whether another fear aura is still present and updates the
+		/// internal state.
 		void notifyFearChanged();
-		/// 
+		/// Called by spell auras to notify that a fear aura has been applied or misapplied.
+		/// This performs checks whether another fear aura is still present and updates the
+		/// internal state.
 		void notifyConfusedChanged();
-		/// 
+		/// Called by spell auras to notify that a speed aura has been applied or misapplied.
+		/// If this unit is player controlled, a client notification is sent and the speed is
+		/// only changed after the client has ackknowledged this change. Otherwise, the speed
+		/// is immediatly applied using applySpeedChange.
 		void notifySpeedChanged(MovementType type);
-		/// Applies a speed change.
+		/// Immediatly applies a speed change for this unit. Never call this method directly
+		/// unless you know what you're doing.
 		void applySpeedChange(MovementType type, float speed);
-		/// 
+		/// Gets the current (applied) movement speed in units per second.
 		float getSpeed(MovementType type) const;
-		/// 
+		/// Gets the base movement speed in units per second.
 		virtual float getBaseSpeed(MovementType type) const;
 
 		/// 
