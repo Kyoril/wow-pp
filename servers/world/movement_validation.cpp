@@ -59,7 +59,7 @@ namespace wowpp
 		{ Root,				{ Moving							, None				, ForceMoveRootAck		, ForceMoveUnrootAck	} },
 		{ Falling,			{ Root | Swimming | Flying 			, None				, 0						, 0						} },
 		{ FallingFar,		{ Root | Swimming | Flying			, None				, 0						, 0						} },
-		{ Swimming,			{ Falling | FallingFar				, None				, 0						, 0						} },
+		{ Swimming,			{ Falling | FallingFar				, None				, MoveStartSwim			, MoveStopSwim			} },
 		{ Ascending,		{ Descending | Root					, Swimming | Flying , 0						, 0						} },
 		{ Descending,		{ Ascending | Root					, Swimming | Flying , 0						, 0						} },
 		{ CanFly,			{ Falling							, None				, MoveSetCanFlyAck		, MoveSetCanFlyAck		} },
@@ -70,7 +70,7 @@ namespace wowpp
 		{ SafeFall,			{ None								, None				, MoveFeatherFallAck	, MoveFeatherFallAck	} },
 		{ Hover,			{ None								, None				, MoveHoverAck			, MoveHoverAck			} }
 	};
-
+	
 
 	bool validateMovementInfo(UInt16 opCode, const MovementInfo& clientInfo, const MovementInfo& serverInfo)
 	{
@@ -124,7 +124,15 @@ namespace wowpp
 		if ((opCode == MoveFallLand || opCode == MoveStartSwim || opCode == MoveSetFly) && 
 			(clientInfo.moveFlags & (Falling | FallingFar)))
 		{
-			WLOG("Falling flag in MoveFallLand op code detected");
+			WLOG("Falling flag detected which shouldn't be there");
+			return false;
+		}
+
+		// Falling flag has to be set in MSG_MOVE_FALL_RESET and MSG_MOVE_JUMP
+		if ((opCode == MoveFallReset || opCode == MoveJump) && 
+			!(clientInfo.moveFlags & Falling))
+		{
+			WLOG("Missing move flag Falling detected");
 			return false;
 		}
 

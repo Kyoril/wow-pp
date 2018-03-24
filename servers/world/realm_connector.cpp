@@ -782,7 +782,7 @@ namespace wowpp
 			case game::client_packet::StartStrafeLeft:
 			case game::client_packet::StartStrafeRight:
 			case game::client_packet::StopStrafe:
-			case game::client_packet::Jump:
+			case game::client_packet::MoveJump:
 			case game::client_packet::StartTurnLeft:
 			case game::client_packet::StartTurnRight:
 			case game::client_packet::StopTurn:
