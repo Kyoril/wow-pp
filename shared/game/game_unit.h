@@ -340,6 +340,99 @@ namespace wowpp
 
 	class UnitMover;
 
+	/// Enumerates possible movement changes which need to be acknowledged by the client.
+	enum class MovementChangeType
+	{
+		/// Default value. Do not use!
+		Invalid,
+
+		/// Character has been rooted or unrooted.
+		Root,
+		/// Character can or can no longer walk on water.
+		WaterWalk,
+		/// Character is hovering or no longer hovering.
+		Hover,
+		/// Character can or can no longer fly.
+		CanFly,
+		/// Character has or has no longer slow fall
+		FeatherFall,
+		
+		/// Walk speed changed
+		SpeedChangeWalk,
+		/// Run speed changed
+		SpeedChangeRun,
+		/// Run back speed changed
+		SpeedChangeRunBack,
+		/// Swim speed changed
+		SpeedChangeSwim,
+		/// Swim back speed changed
+		SpeedChangeSwimBack,
+		/// Turn rate changed
+		SpeedChangeTurnRate,
+		/// Flight speed changed
+		SpeedChangeFlightSpeed,
+		/// Flight back speed changed
+		SpeedChangeFlightBackSpeed,
+		
+		/// Character teleported
+		Teleport,
+		/// Character was knocked back
+		KnockBack
+	};
+
+	/// Contains infos about a pending movement change which first needs to
+	/// be acknowledged by the client before it's effects can be applied.
+	struct PendingMovementChange final
+	{
+		/// A counter which is used to verify that the ackknowledged change
+		/// is for the expected pending change.
+		UInt32 counter;
+		/// Defines what kind of change should be applied.
+		MovementChangeType changeType;
+		/// A timestamp value used for timeouts.
+		UInt64 timestamp;
+
+		// Additional data to perform checks whether the ack packet data is correct
+		// and hasn't been modified at the client side.
+		union
+		{
+			/// The new value which should be applied. Currently only used for speed changes.
+			float speed;
+			/// Whether the respective movement flags should be applied or misapplied. This is
+			/// only used for Hover / FeatherFall etc., and ignored for speed changes.
+			bool apply;
+
+			/// Bundles informations which are only used for knock back acks.
+			struct KnockBackInfo
+			{
+				float vcos = 0.0f;
+				float vsin = 0.0f;
+				/// 2d speed value
+				float speedXY = 0.0f;
+				/// z axis speed value
+				float speedZ = 0.0f;
+			} knockBackInfo;
+		};
+
+		/// Default constructor clears all variables
+		PendingMovementChange();
+	};
+
+	/// Interface for watching unit events which need to generate net packets that
+	/// are sent to one or multiple clients.
+	struct INetUnitWatcher
+	{
+		/// Virtual destructor
+		virtual ~INetUnitWatcher() {}
+
+	public:
+		/// Executed when a speed change was applied on the watched unit.
+		/// @param type The movement type whose speed value was changed.
+		/// @param speed The new movement speed in units per second.
+		/// @param ackId An index which will be sent back by the client to identify the ack packet.
+		virtual void onSpeedChangeApplied(MovementType type, float speed, UInt32 ackId) = 0;
+	};
+
 	/// Base class for all units in the world. A unit is an object with health, which can
 	/// be controlled, fight etc. This class will be inherited by the GameCreature and the
 	/// GameCharacter classes.
@@ -416,7 +509,7 @@ namespace wowpp
 		/// Fired on any proc event (damage done, taken, healed, etc).
 		simple::signal<void(bool, GameUnit *, UInt32, UInt32, const proto::SpellEntry *, UInt32, UInt8, bool)> spellProcEvent;
 		/// Fired when the unit expects a client ack.
-		simple::signal<void(UInt32 opCode, UInt32 counter)> queueClientAck;
+		//simple::signal<void(UInt32 opCode, UInt32 counter)> queueClientAck;
 
 	public:
 
@@ -680,6 +773,8 @@ namespace wowpp
 		void notifyConfusedChanged();
 		/// 
 		void notifySpeedChanged(MovementType type);
+		/// Applies a speed change.
+		void applySpeedChange(MovementType type, float speed);
 		/// 
 		float getSpeed(MovementType type) const;
 		/// 
@@ -874,6 +969,21 @@ namespace wowpp
 		///                will continue it's current movement for this amount of time.
 		math::Vector3 getPredictedPosition(float seconds) const;
 
+		/// Gets the next pending movement change and removes it from the queue of pending movement changes.
+		/// You need to make sure that there are any pending changes before calling this method.
+		PendingMovementChange popPendingMovementChange();
+		/// Pushes a new pending movement change to the queue.
+		/// @param change The new pending movement change to push.
+		void pushPendingMovementChange(PendingMovementChange change);
+		/// Determines whether there are any pending movement changes at all.
+		inline bool hasPendingMovementChange() const { return !m_pendingMoveChanges.empty(); }
+		/// Determines whether there is a timed out pending movement change.
+		bool hasTimedOutPendingMovementChange() const;
+
+		/// Sets or unsets a net unit watcher instance.
+		/// @param watcher Pointer to the watcher instance to be notified or nullptr.
+		void setNetUnitWatcher(INetUnitWatcher* watcher);
+
 	public:
 
 		/// @copydoc GameObject::relocate
@@ -978,6 +1088,8 @@ namespace wowpp
 		TrackAuraTargetsMap m_trackAuraTargets;
 		std::map<UInt64, std::shared_ptr<DynObject>> m_dynamicObjects;
 		IdGenerator<UInt32> m_ackGenerator;
+		std::list<PendingMovementChange> m_pendingMoveChanges;
+		INetUnitWatcher* m_netWatcher;
 	};
 
 	io::Writer &operator << (io::Writer &w, GameUnit const &object);

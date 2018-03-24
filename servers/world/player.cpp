@@ -39,12 +39,6 @@ using namespace std;
 
 namespace wowpp
 {
-	/// A flat timeout tolerance value in milliseconds. If an expected client ack hasn't been received
-	/// within this amount of time, it is handled as a disconnect. Note that this value doesn't mean that you
-	/// get kicked immediatly after 750 ms, as the check is performed in the movement packet handler. So,
-	/// if you don't move, for example, the ack can be delayed an infinite amount of time until you finally move.
-	static constexpr UInt32 ClientAckTimeoutToleranceMs = 1500;
-
 	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance, proto::Project &project)
 		: m_manager(manager)
 		, m_realmConnector(realmConnector)
@@ -74,7 +68,6 @@ namespace wowpp
 			m_nextClientSync.ended.connect(this, &Player::onClientSync)
 		});
 
-		m_onClientAck = m_character->queueClientAck.connect(this, &Player::onClientAckQueue);
 		m_onProfChanged = m_character->proficiencyChanged.connect(this, &Player::onProficiencyChanged);
 		m_onAtkSwingErr = m_character->autoAttackError.connect(this, &Player::onAttackSwingError);
 		m_onInvFailure = m_character->inventoryChangeFailure.connect(this, &Player::onInventoryChangeFailure);
@@ -213,6 +206,9 @@ namespace wowpp
 
 		// Initialize value
 		m_lastPlayTimeUpdate = getCurrentTime();
+
+		// Register as network unit watcher
+		m_character->setNetUnitWatcher(this);
 	}
 
 	void Player::logoutRequest()
@@ -229,7 +225,12 @@ namespace wowpp
 			m_character->addFlag(unit_fields::UnitFlags, 0x00040000);
 
 			const UInt32 ackId = m_character->generateAckId();
-			m_character->queueClientAck(game::client_packet::ForceMoveRootAck, ackId);
+
+			PendingMovementChange change;
+			change.counter = ackId;
+			change.changeType = MovementChangeType::Root;
+			m_character->pushPendingMovementChange(change);
+
 			sendProxyPacket(
 				std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), ackId));
 
@@ -251,7 +252,12 @@ namespace wowpp
 		m_character->removeFlag(unit_fields::UnitFlags, 0x00040000);
 
 		const UInt32 ackId = m_character->generateAckId();
-		m_character->queueClientAck(game::client_packet::ForceMoveUnrootAck, ackId);
+
+		PendingMovementChange change;
+		change.counter = ackId;
+		change.changeType = MovementChangeType::Root;
+		m_character->pushPendingMovementChange(change);
+
 		sendProxyPacket(
 			std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), ackId));
 
@@ -277,6 +283,9 @@ namespace wowpp
 
 	void Player::onLogout()
 	{
+		// Remove net unit watcher
+		m_character->setNetUnitWatcher(nullptr);
+
 		// Remove the character from the world
 		m_instance.removeGameObject(*m_character);
 		m_character.reset();
@@ -622,6 +631,9 @@ namespace wowpp
 
 	void Player::onDespawn(GameObject &/*despawning*/)
 	{
+		// No longer watch for network events
+		m_character->setNetUnitWatcher(nullptr);
+
 		// Cancel trade (if any)
 		cancelTrade();
 
@@ -1079,54 +1091,10 @@ namespace wowpp
 		m_nextClientSync.setEnd(m_lastTimeSync + constants::OneSecond * 30);
 	}
 
-	bool Player::consumeClientAck(UInt32 opCode, UInt32 counter)
+	void Player::onSpeedChangeApplied(MovementType type, float speed, UInt32 ackId)
 	{
-		if (m_expectedAcks.empty())
-			return false;
-
-		// Grab the first client ack
-		ClientAck ack = m_expectedAcks.front();
-		m_expectedAcks.pop();
-
-		if (ack.opCode != opCode) {
-			//DLOG("Expected op code 0x" << std::hex << ack.counter);
-			return false;
-		}
-
-		if (ack.counter != counter) {
-			//DLOG("Expected counter " << ack.counter);
-			return false;
-		}
-
-		// TODO: Eventual timeout check? Shouldn't be needed here though as this should be
-		// done when receiving movement events.
-
-		return true;
-	}
-
-	bool Player::hasTimedOutAck()
-	{
-		// No ack = no timeout
-		if (m_expectedAcks.empty())
-			return false;
-
-		const ClientAck& front = m_expectedAcks.front();
-		if (front.timestampSent + ClientAckTimeoutToleranceMs >= getCurrentTime())
-			return true;
-
-		// Not timed out
-		return false;
-	}
-
-	void Player::onClientAckQueue(UInt32 opCode, UInt32 counter)
-	{
-		//DLOG("Adding expected ack 0x" << std::hex << opCode << " with counter " << counter);
-
-		ClientAck ack;
-		ack.opCode = opCode;
-		ack.counter = counter;
-		ack.timestampSent = getCurrentTime();
-		m_expectedAcks.push(std::move(ack));
+		sendProxyPacket(
+			std::bind(game::server_write::sendForceSpeedChange, std::placeholders::_1, type, m_character->getGuid(), speed, ackId));
 	}
 
 	void Player::setFallInfo(UInt32 time, float z)

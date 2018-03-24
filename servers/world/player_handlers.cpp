@@ -629,13 +629,15 @@ namespace wowpp
 			return;
 		}
 
-		if (hasTimedOutAck())
+		// Make sure that there is no timed out pending movement change (lag tolerance)
+		if (m_character->hasTimedOutPendingMovementChange())
 		{
 			WLOG("Expected client ack which has timed out!");
 			kick();
 			return;
 		}
 
+		// Validate that the client doesn't send fake data like wrong movement flags
 		if (!validateMovementInfo(opCode, info, m_character->getMovementInfo()))
 		{
 			WLOG("Invalid movement info received from client!");
@@ -651,6 +653,7 @@ namespace wowpp
 			return;
 		}
 
+		// TODO: Move these checks (if they are still required at all)
 		if (opCode != game::client_packet::MoveStop)
 		{
 			// Don't accept these when it's not a move-stop
@@ -1645,6 +1648,32 @@ namespace wowpp
 		);
 	}
 
+	static bool validateSpeedAck(const PendingMovementChange& change, float receivedSpeed, MovementType& outMoveTypeSent)
+	{
+		switch (change.changeType)
+		{
+			case MovementChangeType::SpeedChangeWalk:				outMoveTypeSent = movement_type::Walk; break;
+			case MovementChangeType::SpeedChangeRun:				outMoveTypeSent = movement_type::Run; break;
+			case MovementChangeType::SpeedChangeRunBack:			outMoveTypeSent = movement_type::Backwards; break;
+			case MovementChangeType::SpeedChangeSwim:				outMoveTypeSent = movement_type::Swim; break;
+			case MovementChangeType::SpeedChangeSwimBack:			outMoveTypeSent = movement_type::SwimBackwards; break;
+			case MovementChangeType::SpeedChangeTurnRate:			outMoveTypeSent = movement_type::Turn; break;
+			case MovementChangeType::SpeedChangeFlightSpeed:		outMoveTypeSent = movement_type::Flight; break;
+			case MovementChangeType::SpeedChangeFlightBackSpeed:	outMoveTypeSent = movement_type::FlightBackwards; break;
+			default:
+				WLOG("Incorrect ack data for speed change ack");
+				return false;
+		}
+
+		if (receivedSpeed != change.speed)
+		{
+			WLOG("Incorrect speed value received in ack");
+			return false;
+		}
+
+		return true;
+	}
+
 	void Player::handleAckCode(game::Protocol::IncomingPacket & packet, UInt16 opCode)
 	{
 		// Read the guid values first
@@ -1666,12 +1695,19 @@ namespace wowpp
 			return;
 		}
 		
-		//DLOG("client ack index: " << index);
+		// Make sure that we have a pending movement change at all
+		if (!m_character->hasPendingMovementChange())
+		{
+			WLOG("Received client ack packet without expecting any!");
+			kick();
+			return;
+		}
 
 		// Try to consume client ack
-		if (!consumeClientAck(opCode, index))
+		PendingMovementChange change = m_character->popPendingMovementChange();
+		if (change.counter != index)
 		{
-			WLOG("Received unexpected client ack: 0x" << std::hex << opCode << " with index " << index);
+			WLOG("Received client ack with wrong index (different index expected)");
 			kick();
 			return;
 		}
@@ -1684,8 +1720,6 @@ namespace wowpp
 			return;
 		}
 
-		// TODO: Validate ack: if we didn't expect this ack packet from the client, kick
-
 		// Validate movement info
 		if (!validateMovementInfo(opCode, info, m_character->getMovementInfo()))
 		{
@@ -1694,48 +1728,156 @@ namespace wowpp
 			return;
 		}
 
+		// Used by speed change acks
+		MovementType typeSent = movement_type::Count;
+		float receivedSpeed = 0.0f;
+
+		// Check op-code dependant checks and actions
+		switch (opCode)
+		{
+			case game::client_packet::MoveHoverAck:
+				if (change.changeType != MovementChangeType::Hover)
+				{
+					kick();
+					return;
+				}
+				break;
+			case game::client_packet::MoveFeatherFallAck:
+				if (change.changeType != MovementChangeType::FeatherFall)
+				{
+					kick();
+					return;
+				}
+				break;
+			case game::client_packet::MoveWaterWalkAck:
+				if (change.changeType != MovementChangeType::WaterWalk)
+				{
+					kick();
+					return;
+				}
+				break;
+			case game::client_packet::ForceMoveRootAck:
+			case game::client_packet::ForceMoveUnrootAck:
+				if (change.changeType != MovementChangeType::Root)
+				{
+					kick();
+					return;
+				}
+				break;
+			case game::client_packet::ForceRunSpeedChangeAck:
+			case game::client_packet::ForceRunBackSpeedChangeAck:
+			case game::client_packet::ForceSwimSpeedChangeAck:
+			case game::client_packet::ForceSwimBackSpeedChangeAck:
+			case game::client_packet::ForceWalkSpeedChangeAck:
+			case game::client_packet::ForceTurnRateChangeAck:
+			case game::client_packet::ForceFlightSpeedChangeAck:
+			case game::client_packet::ForceFlightBackSpeedChangeAck:
+			{
+				// Read the additional new speed value (note that this is in units/second).
+				if (!(packet >> receivedSpeed))
+				{
+					WLOG("Incomplete ack packet data received!");
+					kick();
+					return;
+				}
+
+				// Validate that all parameters match the pending movement change and also determine
+				// the movement type that should be altered based on the change.
+				if (!validateSpeedAck(change, receivedSpeed, typeSent))
+				{
+					kick();
+					return;
+				}
+
+				// Determine the base speed and make sure it's greater than 0, since we want to
+				// use it as divider
+				const float baseSpeed = m_character->getBaseSpeed(typeSent);
+				ASSERT(baseSpeed > 0.0f);
+
+				// Calculate the speed rate
+				receivedSpeed /= baseSpeed;
+				break;
+			}
+			case game::client_packet::MoveKnockBackAck:
+			{
+				// Check knock back parameters
+				if (std::fabs(change.knockBackInfo.speedXY - info.jumpXYSpeed) > 0.01f ||
+					std::fabs(change.knockBackInfo.speedZ - info.jumpVelocity) > 0.01f ||
+					std::fabs(change.knockBackInfo.vcos - info.jumpCosAngle) > 0.01f ||
+					std::fabs(change.knockBackInfo.vsin - info.jumpSinAngle) > 0.01f)
+				{
+					kick();
+					return;
+				}
+			}
+			default:
+				break;
+		}
+		
 		// TODO: Validate movement (speed hack, position change while rooted etc.)
 
 		// Apply movement info
 		m_character->setMovementInfo(info);
 
+		// Relocate the character
 		auto location = math::Vector3(info.x, info.y, info.z);
 		m_character->relocate(location, info.o, true);
-		info.time = m_serverSync + (info.time - m_clientSync);
 
-		// Knock-back case
-		if (opCode == game::client_packet::MoveKnockBackAck)
+		// TODO: Validate what time value needs to be sent to clients in the following 
+		// packets to have smooth movement!
+		//info.time = m_serverSync + (info.time - m_clientSync);
+
+		// Perform application - we need to do this after all checks have been made
+		switch (opCode)
 		{
-			// Transform into grid location
-			TileIndex2D gridIndex;
-			if (!m_character->getTileIndex(gridIndex))
+			case game::client_packet::ForceRunSpeedChangeAck:
+			case game::client_packet::ForceRunBackSpeedChangeAck:
+			case game::client_packet::ForceSwimSpeedChangeAck:
+			case game::client_packet::ForceSwimBackSpeedChangeAck:
+			case game::client_packet::ForceWalkSpeedChangeAck:
+			case game::client_packet::ForceTurnRateChangeAck:
+			case game::client_packet::ForceFlightSpeedChangeAck:
+			case game::client_packet::ForceFlightBackSpeedChangeAck:
+				// Apply speed rate so that anti cheat detection can detect speed hacks
+				// properly now since we made sure that the client has received the speed
+				// change and all following movement packets need to use these new speed
+				// values.
+				m_character->applySpeedChange(typeSent, receivedSpeed);
+				break;
+			case game::client_packet::MoveKnockBackAck:
 			{
-				ELOG("Could not resolve grid location!");
-				return;
-			}
-
-			auto &grid = getWorldInstance().getGrid();
-			(void)grid.requireTile(gridIndex);
-
-			// Notify all watchers
-			forEachTileInSight(
-				getWorldInstance().getGrid(),
-				gridIndex,
-				[this, &info](VisibilityTile &tile)
-			{
-				for (auto &watcher : tile.getWatchers())
+				// Transform into grid location
+				TileIndex2D gridIndex;
+				if (!m_character->getTileIndex(gridIndex))
 				{
-					if (watcher != this)
-					{
-						// Create the chat packet
-						std::vector<char> buffer;
-						io::VectorSink sink(buffer);
-						game::Protocol::OutgoingPacket movePacket(sink);
-						game::server_write::moveKnockBackWithInfo(movePacket, m_character->getGuid(), info);
-						watcher->sendPacket(movePacket, buffer);
-					}
+					ELOG("Could not resolve grid location!");
+					return;
 				}
-			});
+
+				auto &grid = getWorldInstance().getGrid();
+				(void)grid.requireTile(gridIndex);
+
+				// Notify all watchers
+				forEachTileInSight(
+					getWorldInstance().getGrid(),
+					gridIndex,
+					[this, &info](VisibilityTile &tile)
+				{
+					for (auto &watcher : tile.getWatchers())
+					{
+						if (watcher != this)
+						{
+							// Create the chat packet
+							std::vector<char> buffer;
+							io::VectorSink sink(buffer);
+							game::Protocol::OutgoingPacket movePacket(sink);
+							game::server_write::moveKnockBackWithInfo(movePacket, m_character->getGuid(), info);
+							watcher->sendPacket(movePacket, buffer);
+						}
+					}
+				});
+				break;
+			}
 		}
 	}
 

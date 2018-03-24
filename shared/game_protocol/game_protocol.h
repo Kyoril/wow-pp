@@ -1879,12 +1879,20 @@ namespace wowpp
 			    const String &newName
 			);
 
-			void changeSpeed(
+			void sendForceSpeedChange(
 			    game::OutgoingPacket &out_packet,
 			    MovementType moveType,
 			    UInt64 guid,
 			    float speed,
 				UInt32 counter
+			);
+
+			void sendSpeedChange(
+				game::OutgoingPacket &out_packet,
+				MovementType moveType,
+				UInt64 guid,
+				const MovementInfo &info,
+				float newRate
 			);
 
 			void questgiverStatus(

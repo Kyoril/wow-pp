@@ -805,7 +805,13 @@ namespace wowpp
 		if (apply || !hasWaterWalkAura)
 		{
 			const UInt32 ackId = m_target.generateAckId();
-			m_target.queueClientAck(game::client_packet::MoveWaterWalkAck, ackId);
+			if (m_target.isGameCharacter())
+			{
+				PendingMovementChange change;
+				change.counter = ackId;
+				change.changeType = MovementChangeType::WaterWalk;
+				m_target.pushPendingMovementChange(change);
+			}
 
 			auto *world = m_target.getWorldInstance();
 			if (world)
@@ -829,7 +835,13 @@ namespace wowpp
 		if (world)
 		{
 			const UInt32 ackId = m_target.generateAckId();
-			m_target.queueClientAck(game::client_packet::MoveFeatherFallAck, ackId);
+			if (m_target.isGameCharacter())
+			{
+				PendingMovementChange change;
+				change.counter = ackId;
+				change.changeType = MovementChangeType::FeatherFall;
+				m_target.pushPendingMovementChange(change);
+			}
 
 			if (apply)
 			{
@@ -848,7 +860,13 @@ namespace wowpp
 		if (world)
 		{
 			const UInt32 ackId = m_target.generateAckId();
-			m_target.queueClientAck(game::client_packet::MoveHoverAck, ackId);
+			if (m_target.isGameCharacter())
+			{
+				PendingMovementChange change;
+				change.counter = ackId;
+				change.changeType = MovementChangeType::Hover;
+				m_target.pushPendingMovementChange(change);
+			}
 
 			if (apply)
 			{

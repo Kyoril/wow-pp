@@ -36,6 +36,12 @@
 
 namespace wowpp
 {
+	/// A flat timeout tolerance value in milliseconds. If an expected client ack hasn't been received
+	/// within this amount of time, it is handled as a disconnect. Note that this value doesn't mean that you
+	/// get kicked immediatly after 750 ms, as the check is performed in the movement packet handler. So,
+	/// if you don't move, for example, the ack can be delayed an infinite amount of time until you finally move.
+	static constexpr UInt32 ClientAckTimeoutToleranceMs = 750;
+
 	GameUnit::GameUnit(
 	    proto::Project &project,
 	    TimerQueue &timers)
@@ -57,6 +63,7 @@ namespace wowpp
 		, m_isStealthed(false)
 		, m_state(unit_state::Default)
 		, m_standState(unit_stand_state::Stand)
+		, m_netWatcher(nullptr)
 	{
 		// Resize values field
 		m_values.resize(unit_fields::UnitFieldCount, 0);
@@ -316,7 +323,13 @@ namespace wowpp
 		if (world)
 		{
 			const UInt32 ackId = generateAckId();
-			queueClientAck(game::client_packet::MoveSetCanFlyAck, ackId);
+			if (isGameCharacter())
+			{
+				PendingMovementChange change;
+				change.counter = ackId;
+				change.changeType = MovementChangeType::CanFly;
+				pushPendingMovementChange(change);
+			}
 
 			if (enable)
 			{
@@ -449,6 +462,42 @@ namespace wowpp
 			sideFactor = 1.0f * runSpeed;
 
 		return getRelativeLocation(forwardFactor * seconds, sideFactor * seconds, 0.0f);
+	}
+
+	PendingMovementChange GameUnit::popPendingMovementChange()
+	{
+		ASSERT(!m_pendingMoveChanges.empty());
+
+		PendingMovementChange change = m_pendingMoveChanges.front();
+		m_pendingMoveChanges.pop_front();
+
+		DLOG("Popped pending movement change " << (UInt32)change.changeType);
+
+		return change;
+	}
+
+	void GameUnit::pushPendingMovementChange(PendingMovementChange change)
+	{
+		DLOG("Pushed pending movement change " << (UInt32)change.changeType);
+		m_pendingMoveChanges.emplace_back(change);
+	}
+
+	bool GameUnit::hasTimedOutPendingMovementChange() const
+	{
+		// No pending movement change = no timed out change
+		if (m_pendingMoveChanges.empty())
+			return false;
+
+		// Compare timestamp
+		if (m_pendingMoveChanges.front().timestamp + ClientAckTimeoutToleranceMs <= getCurrentTime())
+			return true;
+
+		return false;
+	}
+
+	void GameUnit::setNetUnitWatcher(INetUnitWatcher * watcher)
+	{
+		m_netWatcher = watcher;
 	}
 
 	void GameUnit::relocate(const math::Vector3 & position, float o, bool fire)
@@ -3134,12 +3183,10 @@ namespace wowpp
 
 	void GameUnit::notifySpeedChanged(MovementType type)
 	{
-		const float oldBonus = m_speedBonus[type];
-
 		float speed = 1.0f;
 		bool mounted = isMounted();
 
-		UInt32 ackOpCode = 0;
+		MovementChangeType changeType;
 
 		// Apply speed buffs
 		{
@@ -3148,7 +3195,7 @@ namespace wowpp
 			switch (type)
 			{
 			case movement_type::Run:
-				ackOpCode = game::client_packet::ForceRunSpeedChangeAck;
+				changeType = MovementChangeType::SpeedChangeRun;
 				if (mounted) {
 					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseMountedSpeed);
 				}
@@ -3159,11 +3206,11 @@ namespace wowpp
 				nonStackBonus = (100.0f + static_cast<float>(m_auras.getMaximumBasePoints(game::aura_type::ModSpeedNotStack))) / 100.0f;
 				break;
 			case movement_type::Swim:
-				ackOpCode = game::client_packet::ForceSwimSpeedChangeAck;
+				changeType = MovementChangeType::SpeedChangeSwim;
 				mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModIncreaseSwimSpeed);
 				break;
 			case movement_type::Flight:
-				ackOpCode = game::client_packet::ForceFlightSpeedChangeAck;
+				changeType = MovementChangeType::SpeedChangeFlightSpeed;
 				if (isMounted())
 				{
 					mainSpeedMod = m_auras.getMaximumBasePoints(game::aura_type::ModFlightSpeedMounted);
@@ -3199,40 +3246,95 @@ namespace wowpp
 			}
 		}
 
+		float oldBonus = m_speedBonus[type];
+
+		// If there is a pending movement change...
+		if (!m_pendingMoveChanges.empty())
+		{
+			// Iterate backwards until we find a pending movement change for this move type
+			for (auto it = m_pendingMoveChanges.cend(); it != m_pendingMoveChanges.cbegin(); it--)
+			{
+				if (it->changeType == changeType)
+				{
+					DLOG("Found pending move change for type " << type << ": using this as old value");
+					oldBonus = it->speed / getBaseSpeed(type);
+					break;
+				}
+			}
+		}
+
+		DLOG("Old bonus: " << oldBonus << "; New speed rate: " << speed << " (Type: " << type << ")");
 		if (oldBonus != speed)
 		{
-			// Now store the speed bonus value
-			m_speedBonus[type] = speed;
+			if (isGameCharacter() && getWorldInstance())
+			{
+				// Not sure about this one. Technically, there should always be a watcher active if 
+				// this packet is handled, but just in case we add an assert here for debugging.
+				// The problem is, that if the watcher isn't notified, the client won't send an ACK
+				// packet and doesn't even notice the change. However, if we would simply push the 
+				// movement change to the queue, the client would be disconnected due to a timed out 
+				// pending movement change which isn't acked.
+				ASSERT(m_netWatcher);
 
-			// Expect ack opcode
-			const UInt32 ackId = generateAckId();
-			queueClientAck(ackOpCode, ackId);
+				// Notify the watcher about this event if there is one
+				if (m_netWatcher)
+				{
+					const UInt32 ackId = generateAckId();
 
-			// Send packets to all listeners around
+					const float absSpeed = getBaseSpeed(type) * speed;
+
+					// Expect ack opcode
+					PendingMovementChange change;
+					change.counter = ackId;
+					change.changeType = changeType;
+					change.speed = absSpeed;
+					change.timestamp = getCurrentTime();
+					pushPendingMovementChange(change);
+
+					// Notify the watcher
+					m_netWatcher->onSpeedChangeApplied(type, absSpeed, ackId);
+				}
+			} 
+			else
+			{
+				// Immediatly apply speed change
+				applySpeedChange(type, speed);
+			}
+		}
+	}
+
+	void GameUnit::applySpeedChange(MovementType type, float speed)
+	{
+		// Now store the speed bonus value
+		m_speedBonus[type] = speed;
+
+		// Notify all tile subscribers about this event
+		TileIndex2D tileIndex;
+		if (getTileIndex(tileIndex))
+		{
+			// Send packets to all listeners around except ourself
 			std::vector<char> buffer;
 			io::VectorSink sink(buffer);
 			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::changeSpeed(packet, type, getGuid(), speed * getBaseSpeed(type), ackId);
+			game::server_write::sendSpeedChange(packet, type, getGuid(), getMovementInfo(), speed * getBaseSpeed(type));
 
-			// Notify all tile subscribers about this event
-			TileIndex2D tileIndex;
-			if (getTileIndex(tileIndex))
+			const GameUnit* me = this;
+
+			forEachSubscriberInSight(
+				m_worldInstance->getGrid(),
+				tileIndex,
+				[&packet, &buffer, me](ITileSubscriber & subscriber)
 			{
-				forEachSubscriberInSight(
-				    m_worldInstance->getGrid(),
-				    tileIndex,
-				    [&packet, &buffer](ITileSubscriber & subscriber)
-				{
+				if (subscriber.getControlledObject() != me)
 					subscriber.sendPacket(packet, buffer);
-				});
-			}
-
-			// Notify the unit mover about this change
-			m_mover->onMoveSpeedChanged(type);
-
-			// Raise signal
-			speedChanged(type);
+			});
 		}
+
+		// Notify the unit mover about this change
+		m_mover->onMoveSpeedChanged(type);
+
+		// Raise signal
+		speedChanged(type);
 	}
 
 	float GameUnit::getSpeed(MovementType type) const
@@ -3285,5 +3387,13 @@ namespace wowpp
 			return false;
 
 		return (m_mechanicImmunity & (1 << mechanic)) != 0;
+	}
+
+	PendingMovementChange::PendingMovementChange()
+		: counter(0)
+		, changeType(MovementChangeType::Invalid)
+		, timestamp(0)
+		, speed(0.0f)
+	{
 	}
 }

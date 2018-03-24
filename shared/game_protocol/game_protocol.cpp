@@ -2327,48 +2327,43 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void changeSpeed(game::OutgoingPacket &out_packet, MovementType moveType, UInt64 guid, float speed, UInt32 counter)
-			{
-				switch (moveType)
-				{
-				case movement_type::Walk:
-					out_packet.start(game::server_packet::WalkSpeedChange);
-					break;
-				case movement_type::Run:
-					out_packet.start(game::server_packet::RunSpeedChange);
-					break;
-				case movement_type::Swim:
-					out_packet.start(game::server_packet::SwimSpeedChange);
-					break;
-				case movement_type::Flight:
-					out_packet.start(game::server_packet::FlightSpeedChange);
-					break;
-				case movement_type::Turn:
-					out_packet.start(game::server_packet::TurnRateChange);
-					break;
-				case movement_type::Backwards:
-					out_packet.start(game::server_packet::RunBackSpeedChange);
-					break;
-				case movement_type::SwimBackwards:
-					out_packet.start(game::server_packet::SwimBackSpeedChange);
-					break;
-				case movement_type::FlightBackwards:
-					out_packet.start(game::server_packet::FlightBackSpeedChange);
-					break;
-				default:
-					return;
-				}
+			// Force / Without Force opcodes to send for each movement type
+			static const UInt32 moveOpCodes[MovementType::Count][2] = {
+				{ game::server_packet::ForceWalkSpeedChange, game::server_packet::MoveSetWalkSpeed },
+				{ game::server_packet::ForceRunSpeedChange, game::server_packet::MoveSetRunSpeed },
+				{ game::server_packet::ForceRunBackSpeedChange, game::server_packet::MoveSetRunBackSpeed },
+				{ game::server_packet::ForceSwimSpeedChange, game::server_packet::MoveSetSwimSpeed },
+				{ game::server_packet::ForceSwimBackSpeedChange, game::server_packet::MoveSetSwimBackSpeed },
+				{ game::server_packet::ForceTurnRateChange, game::server_packet::MoveSetTurnRate },
+				{ game::server_packet::ForceFlightSpeedChange, game::server_packet::SetFlightSpeed },
+				{ game::server_packet::ForceFlightBackSpeedChange, game::server_packet::SetFlightBackSpeed },
+			};
 
+			void sendForceSpeedChange(game::OutgoingPacket &out_packet, MovementType moveType, UInt64 guid, float speed, UInt32 counter)
+			{
+				ASSERT(moveType < MovementType::Count);
+				out_packet.start(moveOpCodes[moveType][0]);
 				out_packet
 					<< io::write_packed_guid(guid)
 				    << io::write<NetUInt32>(counter);
 				if (moveType == movement_type::Run)
 				{
-					out_packet
-					        << io::write<NetUInt8>(0);
+					// If this is set to true, the client stores the speed value for some
+					// yet unknown reason which seems to be transport related.
+					out_packet << io::write<NetUInt8>(0);
 				}
+				out_packet << float(speed);
+				out_packet.finish();
+			}
+
+			void sendSpeedChange(game::OutgoingPacket & out_packet, MovementType moveType, UInt64 guid, const MovementInfo & info, float newRate)
+			{
+				ASSERT(moveType < MovementType::Count);
+				out_packet.start(moveOpCodes[moveType][1]);
 				out_packet
-				    << float(speed);
+					<< io::write_packed_guid(guid)
+					<< info;
+				out_packet << newRate;
 				out_packet.finish();
 			}
 

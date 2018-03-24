@@ -247,10 +247,10 @@ namespace wowpp
 	{
 		ASSERT(index < m_values.size());
 
-		UInt32 newValue = m_values[index] | flag;
-		if (newValue != m_values[index])
+		UInt32 speed = m_values[index] | flag;
+		if (speed != m_values[index])
 		{
-			m_values[index] = newValue;
+			m_values[index] = speed;
 
 			UInt16 bitIndex = index >> 3;
 
@@ -266,10 +266,10 @@ namespace wowpp
 	{
 		ASSERT(index < m_values.size());
 
-		UInt32 newValue = m_values[index] & ~flag;
-		if (newValue != m_values[index])
+		UInt32 speed = m_values[index] & ~flag;
+		if (speed != m_values[index])
 		{
-			m_values[index] = newValue;
+			m_values[index] = speed;
 			UInt16 bitIndex = index >> 3;
 
 			// Mark bit as changed

@@ -52,6 +52,7 @@ namespace wowpp
 	/// Player connection class.
 	class Player final
 		: public ITileSubscriber
+		, public INetUnitWatcher
 	{
 	private:
 
@@ -300,15 +301,11 @@ namespace wowpp
 		void onResurrectRequest(UInt64 objectGUID, const String &sentName, UInt8 typeId);
 		/// Executed when the next client sync should be requested.
 		void onClientSync();
-		/// Consumes the next client ack and verifies, that the ack is valid.
-		/// @param opCode The expected ack op code.
-		/// @param counter The expected counter.
-		/// @return false if the ack is invalid, either because none was expected or another one was expected.
-		bool consumeClientAck(UInt32 opCode, UInt32 counter);
-		/// Checks whether there is a timed out pending client ack.
-		bool hasTimedOutAck();
-		/// Adds a new pending client ack to the list.
-		void onClientAckQueue(UInt32 opCode, UInt32 counter);
+
+	public:
+		// Begin INetUnitWatcher
+		void onSpeedChangeApplied(MovementType type, float speed, UInt32 ackId) override;
+		// End INetUnitWatcher
 
 	private:
 
@@ -345,7 +342,7 @@ namespace wowpp
 		UInt32 m_timeSyncCounter;
 		GameTime m_lastTimeSync;
 
-		struct ClientAck
+		/*struct ClientAck
 		{
 			/// The expected op code from the client.
 			UInt32 opCode;
@@ -355,6 +352,6 @@ namespace wowpp
 			UInt64 timestampSent;
 		};
 
-		std::queue<ClientAck> m_expectedAcks;
+		std::queue<ClientAck> m_expectedAcks;*/
 	};
 }
