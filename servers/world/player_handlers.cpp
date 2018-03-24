@@ -558,7 +558,6 @@ namespace wowpp
 		// Make sure that there is no timed out pending movement change (lag tolerance)
 		if (m_character->hasTimedOutPendingMovementChange())
 		{
-			WLOG("Expected client ack which has timed out!");
 			kick();
 			return;
 		}

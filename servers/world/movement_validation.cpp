@@ -145,6 +145,13 @@ namespace wowpp
 			return false;
 		}
 
+		// If the player was already falling, he can't jump until he landed
+		if (opCode == MoveJump && (serverInfo.moveFlags & (Falling | FallingFar)))
+		{
+			WLOG("Impossible MoveJump packet detected!");
+			return false;
+		}
+
 		return true;
 	}
 

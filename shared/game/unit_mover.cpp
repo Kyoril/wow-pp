@@ -177,9 +177,6 @@ namespace wowpp
 			return false;
 		}
 
-		// Clear the current movement path
-		m_path.clear();
-		
 		// Calculate path
 		std::vector<math::Vector3> path;
 		if (!map->calculatePath(currentLoc, target, path, m_canWalkOnTerrain, clipping))
@@ -189,6 +186,9 @@ namespace wowpp
 
 		if (path.empty())
 			return false;
+
+		// Clear the current movement path
+		m_path.clear();
 
 		// Update timing
 		m_moveStart = getCurrentTime();

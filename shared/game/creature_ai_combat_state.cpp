@@ -1009,7 +1009,7 @@ namespace wowpp
 					(victim->getLocation() - getControlled().getLocation()).squared_length();
 				if (distance <= (getControlled().getMeleeReach() * getControlled().getMeleeReach()))
 				{
-					getControlled().getMover().stopMovement();
+					//getControlled().getMover().stopMovement();
 
 					m_nextActionCountdown.setEnd(getCurrentTime() + 500);
 				}

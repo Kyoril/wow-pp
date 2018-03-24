@@ -40,7 +40,7 @@ namespace wowpp
 	/// within this amount of time, it is handled as a disconnect. Note that this value doesn't mean that you
 	/// get kicked immediatly after 750 ms, as the check is performed in the movement packet handler. So,
 	/// if you don't move, for example, the ack can be delayed an infinite amount of time until you finally move.
-	static constexpr UInt32 ClientAckTimeoutToleranceMs = 750;
+	static constexpr UInt32 ClientAckTimeoutToleranceMs = 1500;
 
 	GameUnit::GameUnit(
 	    proto::Project &project,
@@ -327,6 +327,7 @@ namespace wowpp
 			change.counter = ackId;
 			change.changeType = type;
 			change.apply = enable;
+			change.timestamp = getCurrentTime();
 			pushPendingMovementChange(change);
 
 			switch (type)
@@ -344,7 +345,7 @@ namespace wowpp
 					m_netWatcher->onCanWaterWalkChangeApplied(enable, ackId);
 					break;
 				case MovementChangeType::Root:
-					m_netWatcher->onHoverChangeApplied(enable, ackId);
+					m_netWatcher->onRootChangeApplied(enable, ackId);
 					break;
 			}
 		}
@@ -497,10 +498,9 @@ namespace wowpp
 			return false;
 
 		// Compare timestamp
-		if (m_pendingMoveChanges.front().timestamp + ClientAckTimeoutToleranceMs <= getCurrentTime())
-			return true;
-
-		return false;
+		const UInt64 now = getCurrentTime();
+		const UInt64 timeout = m_pendingMoveChanges.front().timestamp + ClientAckTimeoutToleranceMs;
+		return (timeout <= now);
 	}
 
 	void GameUnit::setNetUnitWatcher(INetUnitWatcher * watcher)
