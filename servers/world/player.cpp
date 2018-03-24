@@ -145,8 +145,8 @@ namespace wowpp
 					{
 						m_character->addFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
 					}
-					sendProxyPacket(
-						std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));
+					/*sendProxyPacket(
+						std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), 2));*/
 				}
 				else
 				{
@@ -154,8 +154,8 @@ namespace wowpp
 					{
 						m_character->removeFlag(unit_fields::UnitFlags, game::unit_flags::Stunned);
 					}
-					sendProxyPacket(
-						std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));
+					/*sendProxyPacket(
+						std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), 0));*/
 				}
 			}
 		};
@@ -1095,6 +1095,66 @@ namespace wowpp
 	{
 		sendProxyPacket(
 			std::bind(game::server_write::sendForceSpeedChange, std::placeholders::_1, type, m_character->getGuid(), speed, ackId));
+	}
+
+	void Player::onCanFlyChangeApplied(bool canFly, UInt32 ackId)
+	{
+		if (canFly)
+		{
+			sendProxyPacket(std::bind(game::server_write::moveSetCanFly, std::placeholders::_1, m_character->getGuid(), ackId));
+		}
+		else
+		{
+			sendProxyPacket(std::bind(game::server_write::moveUnsetCanFly, std::placeholders::_1, m_character->getGuid(), ackId));
+		}
+	}
+
+	void Player::onCanWaterWalkChangeApplied(bool canWaterWalk, UInt32 ackId)
+	{
+		if (canWaterWalk)
+		{
+			sendProxyPacket(std::bind(game::server_write::moveWaterWalk, std::placeholders::_1, m_character->getGuid(), ackId));
+		}
+		else
+		{
+			sendProxyPacket(std::bind(game::server_write::moveLandWalk, std::placeholders::_1, m_character->getGuid(), ackId));
+		}
+	}
+
+	void Player::onHoverChangeApplied(bool hover, UInt32 ackId)
+	{
+		if (hover)
+		{
+			sendProxyPacket(std::bind(game::server_write::moveSetHover, std::placeholders::_1, m_character->getGuid(), ackId));
+		}
+		else
+		{
+			sendProxyPacket(std::bind(game::server_write::moveUnsetHover, std::placeholders::_1, m_character->getGuid(), ackId));
+		}
+	}
+
+	void Player::onFeatherFallChangeApplied(bool featherFall, UInt32 ackId)
+	{
+		if (featherFall)
+		{
+			sendProxyPacket(std::bind(game::server_write::moveFeatherFall, std::placeholders::_1, m_character->getGuid(), ackId));
+		}
+		else
+		{
+			sendProxyPacket(std::bind(game::server_write::moveNormalFall, std::placeholders::_1, m_character->getGuid(), ackId));
+		}
+	}
+
+	void Player::onRootChangeApplied(bool rooted, UInt32 ackId)
+	{
+		if (rooted)
+		{
+			sendProxyPacket(std::bind(game::server_write::forceMoveRoot, std::placeholders::_1, m_character->getGuid(), ackId));
+		}
+		else
+		{
+			sendProxyPacket(std::bind(game::server_write::forceMoveUnroot, std::placeholders::_1, m_character->getGuid(), ackId));
+		}
 	}
 
 	void Player::setFallInfo(UInt32 time, float z)

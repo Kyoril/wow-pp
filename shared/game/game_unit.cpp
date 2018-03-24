@@ -308,36 +308,44 @@ namespace wowpp
 		if (enable)
 		{
 			setByteValue(unit_fields::Bytes1, 3, getByteValue(unit_fields::Bytes1, 3) | 2);
-			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags | game::movement_flags::Flying/* | game::movement_flags::Flying2*/);
+			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags | game::movement_flags::CanFly);
 		}
 		else
 		{
 			setByteValue(unit_fields::Bytes1, 3, getByteValue(unit_fields::Bytes1, 3) & ~2);
-			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags & ~(game::movement_flags::Flying/* | game::movement_flags::Flying2*/));
+			m_movementInfo.moveFlags = game::MovementFlags(m_movementInfo.moveFlags & ~(game::movement_flags::CanFly));
 		}
 	}
-
-	void GameUnit::setCanFly(bool enable)
+	
+	void GameUnit::setPendingMovementFlag(MovementChangeType type, bool enable)
 	{
-		auto *world = getWorldInstance();
-		if (world)
+		if (m_netWatcher)
 		{
 			const UInt32 ackId = generateAckId();
-			if (isGameCharacter())
-			{
-				PendingMovementChange change;
-				change.counter = ackId;
-				change.changeType = MovementChangeType::CanFly;
-				pushPendingMovementChange(change);
-			}
 
-			if (enable)
+			PendingMovementChange change;
+			change.counter = ackId;
+			change.changeType = type;
+			change.apply = enable;
+			pushPendingMovementChange(change);
+
+			switch (type)
 			{
-				world->sendPacketToNearbyPlayers(*this, std::bind(game::server_write::moveSetCanFly, std::placeholders::_1, getGuid(), ackId));
-			}
-			else
-			{
-				world->sendPacketToNearbyPlayers(*this, std::bind(game::server_write::moveUnsetCanFly, std::placeholders::_1, getGuid(), ackId));
+				case MovementChangeType::CanFly:
+					m_netWatcher->onCanFlyChangeApplied(enable, ackId);
+					break;
+				case MovementChangeType::FeatherFall:
+					m_netWatcher->onFeatherFallChangeApplied(enable, ackId);
+					break;
+				case MovementChangeType::Hover:
+					m_netWatcher->onHoverChangeApplied(enable, ackId);
+					break;
+				case MovementChangeType::WaterWalk:
+					m_netWatcher->onCanWaterWalkChangeApplied(enable, ackId);
+					break;
+				case MovementChangeType::Root:
+					m_netWatcher->onHoverChangeApplied(enable, ackId);
+					break;
 			}
 		}
 	}
@@ -808,7 +816,7 @@ namespace wowpp
 			}
 
 			// Distance check
-			const bool isFlyingOrSwimming = victim->getMovementInfo().moveFlags & (game::movement_flags::Flying2 | game::movement_flags::Swimming);
+			const bool isFlyingOrSwimming = victim->getMovementInfo().moveFlags & (game::movement_flags::Flying | game::movement_flags::Swimming);
 			const float distanceSq = getSquaredDistanceTo(*victim, isFlyingOrSwimming || isGameCharacter());
 			const float combatRangeSq = 
 				::powf(getMeleeReach() + victim->getMeleeReach() + rangeBonus, 2.0f);
@@ -3265,35 +3273,27 @@ namespace wowpp
 
 		if (oldBonus != speed)
 		{
-			if (isGameCharacter() && getWorldInstance())
+			// If there is a watcher, we need to notify him about this change first, and he needs
+			// to send an ack packet before we finally apply the speed change. If there is no
+			// watcher, we simply apply the speed change as this is most likely a creature which isn't
+			// controlled by a player (however, mind-controlled creatures will have a m_netWatcher).
+			if (m_netWatcher)
 			{
-				// Not sure about this one. Technically, there should always be a watcher active if 
-				// this packet is handled, but just in case we add an assert here for debugging.
-				// The problem is, that if the watcher isn't notified, the client won't send an ACK
-				// packet and doesn't even notice the change. However, if we would simply push the 
-				// movement change to the queue, the client would be disconnected due to a timed out 
-				// pending movement change which isn't acked.
-				ASSERT(m_netWatcher);
+				const UInt32 ackId = generateAckId();
 
-				// Notify the watcher about this event if there is one
-				if (m_netWatcher)
-				{
-					const UInt32 ackId = generateAckId();
+				const float absSpeed = getBaseSpeed(type) * speed;
 
-					const float absSpeed = getBaseSpeed(type) * speed;
+				// Expect ack opcode
+				PendingMovementChange change;
+				change.counter = ackId;
+				change.changeType = changeType;
+				change.speed = absSpeed;
+				change.timestamp = getCurrentTime();
+				pushPendingMovementChange(change);
 
-					// Expect ack opcode
-					PendingMovementChange change;
-					change.counter = ackId;
-					change.changeType = changeType;
-					change.speed = absSpeed;
-					change.timestamp = getCurrentTime();
-					pushPendingMovementChange(change);
-
-					// Notify the watcher
-					m_netWatcher->onSpeedChangeApplied(type, absSpeed, ackId);
-				}
-			} 
+				// Notify the watcher
+				m_netWatcher->onSpeedChangeApplied(type, absSpeed, ackId);
+			}
 			else
 			{
 				// Immediatly apply speed change

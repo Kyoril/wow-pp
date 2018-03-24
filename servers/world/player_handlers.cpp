@@ -570,26 +570,26 @@ namespace wowpp
 		{
 			if (opCode != game::client_packet::MoveSetCanFlyAck)
 			{
-				if ((serverInfo.moveFlags & game::movement_flags::Flying) && !(clientInfo.moveFlags & game::movement_flags::Flying))
+				if ((serverInfo.moveFlags & game::movement_flags::CanFly) && !(clientInfo.moveFlags & game::movement_flags::CanFly))
 					return false;
-				else if ((clientInfo.moveFlags & game::movement_flags::Flying) && !(serverInfo.moveFlags & game::movement_flags::Flying))
+				else if ((clientInfo.moveFlags & game::movement_flags::CanFly) && !(serverInfo.moveFlags & game::movement_flags::CanFly))
 					return false;
 			}
 
 			// If the player is currently flying but shouldn't be able to fly
-			if ((clientInfo.moveFlags & game::movement_flags::Flying2) && !(clientInfo.moveFlags & game::movement_flags::Flying))
+			if ((clientInfo.moveFlags & game::movement_flags::Flying) && !(clientInfo.moveFlags & game::movement_flags::CanFly))
 				return false;
 		}
 
 		// Ascending should only be possible while swimming or flying
-		if (!(clientInfo.moveFlags & game::movement_flags::Swimming) && !(clientInfo.moveFlags & game::movement_flags::Flying2))
+		if (!(clientInfo.moveFlags & game::movement_flags::Swimming) && !(clientInfo.moveFlags & game::movement_flags::Flying))
 		{
 			if (clientInfo.moveFlags & game::movement_flags::Ascending)
 				return false;
 		}
 
 		// Falling should not be possible while swimming or flying
-		if ((clientInfo.moveFlags & game::movement_flags::Swimming) || (clientInfo.moveFlags & game::movement_flags::Flying2))
+		if ((clientInfo.moveFlags & game::movement_flags::Swimming) || (clientInfo.moveFlags & game::movement_flags::Flying))
 		{
 			if ((clientInfo.moveFlags & game::movement_flags::Falling) || (clientInfo.moveFlags & game::movement_flags::FallingFar))
 				return false;
@@ -1665,9 +1665,26 @@ namespace wowpp
 				return false;
 		}
 
-		if (receivedSpeed != change.speed)
+		if (std::fabs(receivedSpeed - change.speed) > FLT_EPSILON)
 		{
 			WLOG("Incorrect speed value received in ack");
+			return false;
+		}
+
+		return true;
+	}
+
+	static bool validateMoveFlagsOnApply(bool apply, UInt32 flags, UInt32 possiblyAppliedFlags)
+	{
+		// If apply is true, at least one of the possible flags needs to be set
+		if (apply && !(flags & possiblyAppliedFlags))
+		{
+			return false;
+		}
+
+		// If apply is false, none of the possible flags may be set
+		if (!apply && (flags & possiblyAppliedFlags))
+		{
 			return false;
 		}
 
@@ -1736,21 +1753,24 @@ namespace wowpp
 		switch (opCode)
 		{
 			case game::client_packet::MoveHoverAck:
-				if (change.changeType != MovementChangeType::Hover)
+				if (change.changeType != MovementChangeType::Hover ||
+					!validateMoveFlagsOnApply(change.apply, info.moveFlags, game::movement_flags::Hover))
 				{
 					kick();
 					return;
 				}
 				break;
 			case game::client_packet::MoveFeatherFallAck:
-				if (change.changeType != MovementChangeType::FeatherFall)
+				if (change.changeType != MovementChangeType::FeatherFall ||
+					!validateMoveFlagsOnApply(change.apply, info.moveFlags, game::movement_flags::SafeFall))
 				{
 					kick();
 					return;
 				}
 				break;
 			case game::client_packet::MoveWaterWalkAck:
-				if (change.changeType != MovementChangeType::WaterWalk)
+				if (change.changeType != MovementChangeType::WaterWalk ||
+					!validateMoveFlagsOnApply(change.apply, info.moveFlags, game::movement_flags::WaterWalking))
 				{
 					kick();
 					return;
@@ -1758,7 +1778,8 @@ namespace wowpp
 				break;
 			case game::client_packet::ForceMoveRootAck:
 			case game::client_packet::ForceMoveUnrootAck:
-				if (change.changeType != MovementChangeType::Root)
+				if (change.changeType != MovementChangeType::Root ||
+					!validateMoveFlagsOnApply(change.apply, info.moveFlags, game::movement_flags::Root))
 				{
 					kick();
 					return;
@@ -1821,6 +1842,13 @@ namespace wowpp
 			}
 			case game::client_packet::MoveKnockBackAck:
 			{
+				// Validate change type
+				if (change.changeType != MovementChangeType::KnockBack)
+				{
+					kick();
+					return;
+				}
+
 				// Check knock back parameters
 				if (std::fabs(change.knockBackInfo.speedXY - info.jumpXYSpeed) > 0.01f ||
 					std::fabs(change.knockBackInfo.speedZ - info.jumpVelocity) > 0.01f ||

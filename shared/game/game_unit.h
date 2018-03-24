@@ -431,6 +431,16 @@ namespace wowpp
 		/// @param speed The new movement speed in units per second.
 		/// @param ackId An index which will be sent back by the client to identify the ack packet.
 		virtual void onSpeedChangeApplied(MovementType type, float speed, UInt32 ackId) = 0;
+
+		virtual void onCanFlyChangeApplied(bool canFly, UInt32 ackId) = 0;
+
+		virtual void onCanWaterWalkChangeApplied(bool canWaterWalk, UInt32 ackId) = 0;
+
+		virtual void onHoverChangeApplied(bool hover, UInt32 ackId) = 0;
+
+		virtual void onFeatherFallChangeApplied(bool featherFall, UInt32 ackId) = 0;
+
+		virtual void onRootChangeApplied(bool rooted, UInt32 ackId) = 0;
 	};
 
 	/// Base class for all units in the world. A unit is an object with health, which can
@@ -903,8 +913,7 @@ namespace wowpp
 		/// Enables or disables flight mode.
 		/// @param enable Whether flight mode will be enabled.
 		void setFlightMode(bool enable);
-		/// Sends a MoveSetCanFly notification to the client.
-		void setCanFly(bool enable);
+		void setPendingMovementFlag(MovementChangeType type, bool enable);
 
 		///
 		void procEvent(GameUnit *target, UInt32 procAttacker, UInt32 procVictim, UInt32 procEx, UInt32 amount, UInt8 attackType, const proto::SpellEntry *procSpell, bool canRemove);

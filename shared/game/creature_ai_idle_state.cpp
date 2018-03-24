@@ -93,8 +93,8 @@ namespace wowpp
 				}
 
 				// Check if we could potentially reach the unit if it's flying
-				const bool targetIsFlying = (unit.getMovementInfo().moveFlags & game::movement_flags::Flying2);
-				const bool controlledIsFlying = (controlled.getMovementInfo().moveFlags & game::movement_flags::Flying2);
+				const bool targetIsFlying = (unit.getMovementInfo().moveFlags & game::movement_flags::Flying);
+				const bool controlledIsFlying = (controlled.getMovementInfo().moveFlags & game::movement_flags::Flying);
 				if (targetIsFlying && !controlledIsFlying)
 				{
 					return false;

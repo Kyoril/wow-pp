@@ -865,7 +865,7 @@ namespace wowpp
 				}
 
 				// Pitch info
-				if (moveFlags & (game::movement_flags::Swimming | game::movement_flags::Flying2))
+				if (moveFlags & (game::movement_flags::Swimming | game::movement_flags::Flying))
 				{
 					if (object.isGameCharacter())
 					{

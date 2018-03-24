@@ -215,6 +215,11 @@ namespace wowpp
 	void AuraEffect::handleModRoot(bool apply)
 	{
 		m_target.notifyRootChanged();
+
+		const bool hasAura = m_target.getAuras().hasAura(game::aura_type::ModRoot);
+
+		if (apply || !hasAura)
+			m_target.setPendingMovementFlag(MovementChangeType::Root, apply);
 	}
 
 	void AuraEffect::handleModStat(bool apply)
@@ -266,7 +271,7 @@ namespace wowpp
 
 		// Only send 
 		if (apply || !hasFlyAura)
-			m_target.setCanFly(apply);
+			m_target.setPendingMovementFlag(MovementChangeType::CanFly, apply);
 	}
 
 	void AuraEffect::handleModShapeShift(bool apply)
@@ -763,9 +768,8 @@ namespace wowpp
 			}
 		}
 
-		// Only send 
 		if (apply || !hasFlyAura)
-			m_target.setCanFly(apply);
+			m_target.setPendingMovementFlag(MovementChangeType::CanFly, apply);
 	}
 
 	void AuraEffect::handleModAttackPower(bool apply)
@@ -801,82 +805,26 @@ namespace wowpp
 
 	void AuraEffect::handleWaterWalk(bool apply)
 	{
-		const bool hasWaterWalkAura = m_target.getAuras().hasAura(game::aura_type::WaterWalk);
-		if (apply || !hasWaterWalkAura)
-		{
-			const UInt32 ackId = m_target.generateAckId();
-			if (m_target.isGameCharacter())
-			{
-				PendingMovementChange change;
-				change.counter = ackId;
-				change.changeType = MovementChangeType::WaterWalk;
-				m_target.pushPendingMovementChange(change);
-			}
-
-			auto *world = m_target.getWorldInstance();
-			if (world)
-			{
-				if (apply)
-				{
-					world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveWaterWalk, std::placeholders::_1, m_target.getGuid(), ackId));
-				}
-				else
-				{
-					world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveLandWalk, std::placeholders::_1, m_target.getGuid(), ackId));
-				}
-			}
-		}
-
+		const bool hasAura = m_target.getAuras().hasAura(game::aura_type::WaterWalk);
+		
+		if (apply || !hasAura)
+			m_target.setPendingMovementFlag(MovementChangeType::WaterWalk, apply);
 	}
 
 	void AuraEffect::handleFeatherFall(bool apply)
 	{
-		auto *world = m_target.getWorldInstance();
-		if (world)
-		{
-			const UInt32 ackId = m_target.generateAckId();
-			if (m_target.isGameCharacter())
-			{
-				PendingMovementChange change;
-				change.counter = ackId;
-				change.changeType = MovementChangeType::FeatherFall;
-				m_target.pushPendingMovementChange(change);
-			}
+		const bool hasAura = m_target.getAuras().hasAura(game::aura_type::FeatherFall);
 
-			if (apply)
-			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveFeatherFall, std::placeholders::_1, m_target.getGuid(), ackId));
-			}
-			else
-			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveNormalFall, std::placeholders::_1, m_target.getGuid(), ackId));
-			}
-		}
+		if (apply || !hasAura)
+			m_target.setPendingMovementFlag(MovementChangeType::FeatherFall, apply);
 	}
 
 	void AuraEffect::handleHover(bool apply)
 	{
-		auto *world = m_target.getWorldInstance();
-		if (world)
-		{
-			const UInt32 ackId = m_target.generateAckId();
-			if (m_target.isGameCharacter())
-			{
-				PendingMovementChange change;
-				change.counter = ackId;
-				change.changeType = MovementChangeType::Hover;
-				m_target.pushPendingMovementChange(change);
-			}
+		const bool hasAura = m_target.getAuras().hasAura(game::aura_type::Hover);
 
-			if (apply)
-			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveSetHover, std::placeholders::_1, m_target.getGuid(), ackId));
-			}
-			else
-			{
-				world->sendPacketToNearbyPlayers(m_target, std::bind(game::server_write::moveUnsetHover, std::placeholders::_1, m_target.getGuid(), ackId));
-			}
-		}
+		if (apply || !hasAura)
+			m_target.setPendingMovementFlag(MovementChangeType::Hover, apply);
 	}
 
 	void AuraEffect::handleAddModifier(bool apply)

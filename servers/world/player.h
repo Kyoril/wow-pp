@@ -305,6 +305,11 @@ namespace wowpp
 	public:
 		// Begin INetUnitWatcher
 		void onSpeedChangeApplied(MovementType type, float speed, UInt32 ackId) override;
+		void onCanFlyChangeApplied(bool canFly, UInt32 ackId) override;
+		void onCanWaterWalkChangeApplied(bool canWaterWalk, UInt32 ackId) override;
+		void onHoverChangeApplied(bool hover, UInt32 ackId) override;
+		void onFeatherFallChangeApplied(bool featherFall, UInt32 ackId) override;
+		void onRootChangeApplied(bool rooted, UInt32 ackId) override;
 		// End INetUnitWatcher
 
 	private:

@@ -110,7 +110,7 @@ namespace wowpp
 					if (victim)
 					{
 						// Target flying / swimming?
-						if (victim->getMovementInfo().moveFlags & (game::movement_flags::Flying2 | game::movement_flags::Swimming))
+						if (victim->getMovementInfo().moveFlags & (game::movement_flags::Flying | game::movement_flags::Swimming))
 						{
 							// TODO: Check if controlled unit can swim
 

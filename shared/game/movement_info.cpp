@@ -64,7 +64,7 @@ namespace wowpp
 			        << io::write<NetUInt32>(info.transportTime);
 		}
 
-		if (info.moveFlags & (game::movement_flags::Swimming | game::movement_flags::Flying2))
+		if (info.moveFlags & (game::movement_flags::Swimming | game::movement_flags::Flying))
 		{
 			w
 			        << io::write<float>(info.pitch);
@@ -113,7 +113,7 @@ namespace wowpp
 			        >> io::read<NetUInt32>(info.transportTime);
 		}
 
-		if (info.moveFlags & (game::movement_flags::Swimming | game::movement_flags::Flying2))
+		if (info.moveFlags & (game::movement_flags::Swimming | game::movement_flags::Flying))
 		{
 			r
 			        >> io::read<float>(info.pitch);
