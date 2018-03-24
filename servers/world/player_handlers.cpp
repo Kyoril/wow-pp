@@ -1690,7 +1690,7 @@ namespace wowpp
 		// Ack needs to be for the controlled character
 		if (guid != m_character->getGuid())
 		{
-			WLOG("Received ack opcode from other character!");
+			WLOG("Received ack opcode from other character! OpCode: 0x" << std::hex << opCode << "; Index: " << std::dec << index);
 			kick();
 			return;
 		}
@@ -1785,6 +1785,27 @@ namespace wowpp
 				// the movement type that should be altered based on the change.
 				if (!validateSpeedAck(change, receivedSpeed, typeSent))
 				{
+					kick();
+					return;
+				}
+
+				// Used to validate if the opCode matches the determined move code
+				static UInt16 speedAckOpCodes[MovementType::Count] = {
+					game::client_packet::ForceWalkSpeedChangeAck,
+					game::client_packet::ForceRunSpeedChangeAck,
+					game::client_packet::ForceRunBackSpeedChangeAck,
+					game::client_packet::ForceSwimSpeedChangeAck,
+					game::client_packet::ForceSwimBackSpeedChangeAck,
+					game::client_packet::ForceTurnRateChangeAck,
+					game::client_packet::ForceFlightSpeedChangeAck,
+					game::client_packet::ForceFlightBackSpeedChangeAck
+				};
+
+				// Validate that the movement type has the expected value based on the opcode
+				if (typeSent >= MovementType::Count ||
+					opCode != speedAckOpCodes[typeSent])
+				{
+					WLOG("Wrong movement type in speed ack packet!");
 					kick();
 					return;
 				}

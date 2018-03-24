@@ -3263,7 +3263,6 @@ namespace wowpp
 			}
 		}
 
-		DLOG("Old bonus: " << oldBonus << "; New speed rate: " << speed << " (Type: " << type << ")");
 		if (oldBonus != speed)
 		{
 			if (isGameCharacter() && getWorldInstance())
