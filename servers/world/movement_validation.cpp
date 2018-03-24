@@ -58,11 +58,11 @@ namespace wowpp
 		{ Levitating,		{ None								, CanFly			, 0						, 0						} },
 		{ Root,				{ Moving							, None				, ForceMoveRootAck		, ForceMoveUnrootAck	} },
 		{ Falling,			{ Root | Flying 					, None				, 0						, 0						} },
-		{ FallingFar,		{ Root | Swimming | Flying			, None				, 0						, 0						} },
-		{ Swimming,			{ FallingFar						, None				, MoveStartSwim			, MoveStopSwim			} },
+		{ FallingFar,		{ Root | Swimming					, None				, 0						, 0						} },
+		{ Swimming,			{ FallingFar						, None				, MoveStartSwim			, 0						} },
 		{ Ascending,		{ Descending | Root					, Swimming | Flying , 0						, 0						} },
 		{ Descending,		{ Ascending | Root					, Swimming | Flying , 0						, 0						} },
-		{ CanFly,			{ Falling							, None				, MoveSetCanFlyAck		, MoveSetCanFlyAck		} },
+		{ CanFly,			{ None								, None				, MoveSetCanFlyAck		, MoveSetCanFlyAck		} },
 		{ Flying,			{ Falling							, CanFly			, 0						, 0						} },
 		{ SplineElevation,	{ None								, None				, 0						, 0						} },
 		{ SplineEnabled,	{ None								, None				, 0						, 0						} },
@@ -85,7 +85,7 @@ namespace wowpp
 					pair.second.transitionEnabledOpcode != opCode &&
 					(clientInfo.moveFlags & pair.first) && !(serverInfo.moveFlags & pair.first))
 				{
-					WLOG("MoveFlag enabled transition check failed for move flag " << pair.first 
+					WLOG("MoveFlag enabled transition check failed for move flag 0x" << std::hex << pair.first
 						<< ": flag enabled in opcode 0x" << std::hex << opCode);
 					return false;
 				}
@@ -95,7 +95,7 @@ namespace wowpp
 					pair.second.transitionDisabledOpcode != opCode &&
 					(serverInfo.moveFlags & pair.first) && !(clientInfo.moveFlags & pair.first))
 				{
-					WLOG("MoveFlag disabled transition check failed for move flag " << pair.first 
+					WLOG("MoveFlag disabled transition check failed for move flag 0x" << std::hex << pair.first
 						<< ": flag disabled in opcode 0x" << std::hex << opCode);
 					return false;
 				}
@@ -107,21 +107,21 @@ namespace wowpp
 				// Check for exclusive flags (forbidden move flag combinations)
 				if (pair.second.exclusive != None && (clientInfo.moveFlags & pair.second.exclusive))
 				{
-					WLOG("Exclusive move flag validation failed for move flag " << pair.first);
+					WLOG("Exclusive move flag validation failed for move flag 0x" << std::hex << pair.first << ": move flags sent: 0x" << clientInfo.moveFlags);
 					return false;
 				}
 
 				// Check for missing movement flags (required dependencies, like CanFly for Flying)
 				if (pair.second.inclusive != None && !(clientInfo.moveFlags & pair.second.inclusive))
 				{
-					WLOG("Inclusive move flag validation failed for move flag " << pair.first);
+					WLOG("Inclusive move flag validation failed for move flag 0x" << std::hex << pair.first << ": move flags sent: 0x" << clientInfo.moveFlags);
 					return false;
 				}
 			}
 		}
 
 		// Falling flags have to be removed in MoveFallLand
-		if ((opCode == MoveFallLand || opCode == MoveStartSwim || opCode == MoveSetFly) && 
+		if ((opCode == MoveFallLand || opCode == MoveStartSwim /*|| opCode == MoveSetFly*/) && 
 			(clientInfo.moveFlags & (Falling | FallingFar)))
 		{
 			WLOG("Falling flag detected which shouldn't be there");
@@ -133,6 +133,15 @@ namespace wowpp
 			!(clientInfo.moveFlags & Falling))
 		{
 			WLOG("Missing move flag Falling detected");
+			return false;
+		}
+
+		// FallingFar may not be set while Flying or Swimming is already applied
+		if ((serverInfo.moveFlags & (Swimming | Flying)) != 0 &&
+			!(serverInfo.moveFlags & FallingFar) &&
+			(clientInfo.moveFlags & FallingFar) != 0)
+		{
+			WLOG("FallingFar move flag set while flying was already active!");
 			return false;
 		}
 
