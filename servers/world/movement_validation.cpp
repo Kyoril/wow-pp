@@ -56,7 +56,7 @@ namespace wowpp
 		{ WalkMode,			{ None								, None				, 0						, 0						} },
 		{ OnTransport,		{ None								, None				, MoveChangeTransport	, MoveChangeTransport	} },
 		{ Levitating,		{ None								, CanFly			, 0						, 0						} },
-		{ Root,				{ Moving | PendingRoot				, None				, ForceMoveRootAck		, ForceMoveUnrootAck	} },
+		{ Root,				{ Moving | PendingRoot				, None				, 0			 		, ForceMoveUnrootAck	} },
 		{ PendingRoot,		{ Root								, Falling			, ForceMoveRootAck		, 0						} },
 		{ Falling,			{ Root | Flying 					, None				, 0						, 0						} },
 		{ FallingFar,		{ Root | Swimming					, None				, 0						, 0						} },
@@ -189,6 +189,16 @@ namespace wowpp
 			if (!(clientInfo.moveFlags & Root) && opCode != ForceMoveUnrootAck)
 			{
 				WLOG("Client tried to remove PendingRoot flag without setting rooted flag!");
+				return false;
+			}
+		}
+
+		// Client got rooted, this can only happen in ForceMoveRoot, MoveFallLand, MoveSetFly or MoveStartSwim
+		if ((clientInfo.moveFlags & Root) && !(serverInfo.moveFlags & Root))
+		{
+			if (opCode != ForceMoveRootAck && opCode != MoveFallLand && opCode != MoveSetFly && opCode != MoveStartSwim)
+			{
+				WLOG("Client tried to set rooted flag in wrong packet!");
 				return false;
 			}
 		}
