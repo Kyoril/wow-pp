@@ -3342,12 +3342,12 @@ namespace wowpp
 		return baseSpeed * m_speedBonus[type];
 	}
 
-	float GameUnit::getExpectedSpeed() const
+	float GameUnit::getExpectedSpeed(const MovementInfo& info) const
 	{
 		using namespace game::movement_flags;
 
 		const UInt32 horzMoveFlags = (Forward | Backward | StrafeLeft | StrafeRight);
-		const UInt32& moveFlags = m_movementInfo.moveFlags;
+		const UInt32& moveFlags = info.moveFlags;
 
 		// If not moving at all, we can't move at all. Theoretically, we could also
 		// return 0 if the root flag is set, however, anti cheat already ensures that
@@ -3360,7 +3360,7 @@ namespace wowpp
 		// If we are jumping / falling, this is the expected move speed
 		if (moveFlags & (Falling | FallingFar))
 		{
-			return m_movementInfo.jumpXYSpeed;
+			return info.jumpXYSpeed;
 		}
 
 		const bool isInWalkMode = (moveFlags & WalkMode);
