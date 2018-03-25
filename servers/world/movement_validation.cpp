@@ -130,7 +130,7 @@ namespace wowpp
 		// MoveFallReset is only valid if the player was already falling
 		if (opCode == MoveFallReset)
 		{
-			if (!(serverInfo.moveFlags & Falling)))
+			if (!(serverInfo.moveFlags & Falling))
 			{
 				WLOG("Client tried to reset a fall but wasn't falling!");
 				return false;
