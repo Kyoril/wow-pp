@@ -128,12 +128,6 @@ namespace wowpp
 				WLOG("Client sent FallReset or Jump without falling flag set!");
 				return false;
 			}
-
-			if (clientInfo.fallTime != 0)
-			{
-				WLOG("Client sent nonzero fall time in FallReset or Jump!");
-				return false;
-			}
 		}
 
 		// MoveFallReset is only valid if the player was already falling
@@ -162,6 +156,7 @@ namespace wowpp
 			}
 		}
 
+		// Player is falling. Do basic fall parameter validations.
 		if (clientInfo.moveFlags & Falling)
 		{
 			// FallLand or StartSwim can't occur with falling flag
@@ -226,6 +221,24 @@ namespace wowpp
 						return false;
 					}
 				}
+				else // FallReset packet always has to have a fall time of 0.
+				{
+					if (clientInfo.fallTime != 0)
+					{
+						WLOG("Client tried to send nonzero fall time in FallReset packet!");
+						return false;
+					}
+				}
+			}
+			else // If the player just started a fresh fall (wasn't falling before), then we need to check if his fall speed is valid
+			{
+				if (clientInfo.fallTime != 0)
+				{
+					WLOG("Client tried to send nonzero fall time in packet that just started a fresh fall!");
+					return false;
+				}
+
+				// TODO: Check here if jumpXYSpeed is > than currently allowed speed.
 			}
 		}
 
