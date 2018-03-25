@@ -555,7 +555,8 @@ namespace wowpp
 		MovementInfo info;
 		if (!game::client_read::moveHeartBeat(packet, info))
 		{
-			WLOG("Could not read packet data");
+			WLOG("Invalid movement packet received from client");
+			kick();
 			return;
 		}
 
@@ -1648,6 +1649,7 @@ namespace wowpp
 					kick();
 					return;
 				}
+
 				break;
 			case game::client_packet::ForceRunSpeedChangeAck:
 			case game::client_packet::ForceRunBackSpeedChangeAck:

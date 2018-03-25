@@ -293,9 +293,6 @@ namespace wowpp
 					if (serverInfo.time != 0 && serverInfo.fallTime + timeDiff != clientInfo.fallTime)
 					{
 						WLOG("Client tried to send invalid fall time during 2 subsequent fall packets!");
-						DLOG("\tserverInfo.fallTime = " << serverInfo.fallTime << "; timeDiff = " << timeDiff << "; clientInfo.fallTime = " << clientInfo.fallTime);
-						DLOG("\tclientInfo.time = " << clientInfo.time << "; serverInfo.time = " << serverInfo.time);
-						DLOG("\topCode: 0x" << std::hex << opCode);
 						return false;
 					}
 
@@ -335,6 +332,29 @@ namespace wowpp
 			{
 				WLOG("Client tried to send invalid transport time during 2 subsequent packets!");
 				return false;
+			}
+		}
+
+		// When root was applied...
+		if (opCode == game::client_packet::ForceMoveRootAck)
+		{
+			// Check if the player was falling. If so, he has to set PendingRoot
+			if ((clientInfo.moveFlags & (game::movement_flags::Falling | game::movement_flags::FallingFar)) != 0)
+			{
+				if (!(clientInfo.moveFlags & game::movement_flags::PendingRoot))
+				{
+					WLOG("PendingRoot flag required in root ack while falling is active!");
+					return false;
+				}
+			}
+			// Player wasn't falling, so he has to set Root
+			else
+			{
+				if (!(clientInfo.moveFlags & game::movement_flags::Root))
+				{
+					WLOG("Root flag required in root ack while falling is inactive!");
+					return false;
+				}
 			}
 		}
 
