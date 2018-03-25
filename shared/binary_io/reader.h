@@ -79,6 +79,42 @@ namespace io
 			m_success = (size == read);
 		}
 
+		void readPOD(float &pod)
+		{
+			if (!m_success)
+			{
+				return;
+			}
+
+			const size_t size = sizeof(pod);
+			const size_t read = m_source->read(
+				reinterpret_cast<char *>(&pod),
+				size);
+
+			if (std::isnan(pod) || !std::isfinite(pod))
+				m_success = false;
+			else
+				m_success = (size == read);
+		}
+
+		void readPOD(double &pod)
+		{
+			if (!m_success)
+			{
+				return;
+			}
+
+			const size_t size = sizeof(pod);
+			const size_t read = m_source->read(
+				reinterpret_cast<char *>(&pod),
+				size);
+
+			if (std::isnan(pod) || !std::isfinite(pod))
+				m_success = false;
+			else
+				m_success = (size == read);
+		}
+
 		operator bool () const
 		{
 			return m_success;

@@ -3342,6 +3342,63 @@ namespace wowpp
 		return baseSpeed * m_speedBonus[type];
 	}
 
+	float GameUnit::getExpectedSpeed(const MovementInfo& info) const
+	{
+		using namespace game::movement_flags;
+
+		const UInt32 horzMoveFlags = (Forward | Backward | StrafeLeft | StrafeRight);
+		const UInt32& moveFlags = info.moveFlags;
+
+		// If not moving at all, we can't move at all. Theoretically, we could also
+		// return 0 if the root flag is set, however, anti cheat already ensures that
+		// root isn't combined with move flags.
+		if (!(moveFlags & horzMoveFlags))
+		{
+			return 0.0f;
+		}
+
+		// If we are jumping / falling, this is the expected move speed
+		if (moveFlags & (Falling | FallingFar))
+		{
+			return info.jumpXYSpeed;
+		}
+
+		const bool isInWalkMode = (moveFlags & WalkMode);
+
+		// Return swim speed
+		MovementType moveStrafeType = isInWalkMode ? movement_type::Walk : movement_type::Run;
+		if (moveFlags & Flying)
+		{
+			moveStrafeType = movement_type::Flight;
+		}
+		else if (moveFlags & (Swimming))
+		{
+			moveStrafeType = movement_type::Swim;
+		}
+
+		// Run speed?
+		if (moveFlags & (Forward | StrafeLeft | StrafeRight))
+		{
+			return getSpeed(moveStrafeType);
+		}
+		else if (moveFlags & Backward)
+		{
+			// Get back speed of forward speed type
+			switch (moveStrafeType)
+			{
+				case movement_type::Swim:
+					return getSpeed(movement_type::SwimBackwards);
+				case movement_type::Flight:
+					return getSpeed(movement_type::FlightBackwards);
+				default:
+					return getSpeed(movement_type::Backwards);
+			}
+		}
+
+		// Unreachable...
+		return 0.0f;
+	}
+
 	float GameUnit::getBaseSpeed(MovementType type) const
 	{
 		switch (type)

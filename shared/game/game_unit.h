@@ -803,6 +803,12 @@ namespace wowpp
 		void applySpeedChange(MovementType type, float speed);
 		/// Gets the current (applied) movement speed in units per second.
 		float getSpeed(MovementType type) const;
+		/// Gets the current expected speed value based on movement informations. Mainly
+		/// used in anti cheat code to detect speed / teleport hacks.
+		/// @param info The movement info to use. This paramater is required because we might want to
+		///             calulate the speed based on client movement infos which haven't been applied to
+		///             this unit yet.
+		float getExpectedSpeed(const MovementInfo& info) const;
 		/// Gets the base movement speed in units per second.
 		virtual float getBaseSpeed(MovementType type) const;
 
