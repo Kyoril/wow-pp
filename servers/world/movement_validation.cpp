@@ -58,7 +58,7 @@ namespace wowpp
 		{ Levitating,		{ None								, CanFly			, 0						, 0						} },
 		{ Root,				{ Moving							, None				, ForceMoveRootAck		, ForceMoveUnrootAck	} },
 		{ Falling,			{ Root | Flying 					, None				, 0						, 0						} },
-		{ FallingFar,		{ Root | Swimming					, None				, 0						, 0						} },
+		{ FallingFar,		{ Root | Swimming					, Falling			, 0						, 0						} },
 		{ Swimming,			{ FallingFar						, None				, MoveStartSwim			, 0						} },
 		{ Ascending,		{ Descending | Root					, Swimming | Flying , 0						, 0						} },
 		{ Descending,		{ Ascending | Root					, Swimming | Flying , 0						, 0						} },
@@ -120,36 +120,132 @@ namespace wowpp
 			}
 		}
 
-		// Falling flags have to be removed in MoveFallLand
-		if ((opCode == MoveFallLand || opCode == MoveStartSwim /*|| opCode == MoveSetFly*/) && 
-			(clientInfo.moveFlags & (Falling | FallingFar)))
+		// MoveFallReset and MoveJump should start a fresh fall
+		if (opCode == MoveFallReset || opCode == MoveJump)
 		{
-			WLOG("Falling flag detected which shouldn't be there");
-			return false;
+			if (!(clientInfo.moveFlags & Falling))
+			{
+				WLOG("Client sent FallReset or Jump without falling flag set!");
+				return false;
+			}
+
+			if (clientInfo.fallTime != 0)
+			{
+				WLOG("Client sent nonzero fall time in FallReset or Jump!");
+				return false;
+			}
 		}
 
-		// Falling flag has to be set in MSG_MOVE_FALL_RESET and MSG_MOVE_JUMP
-		if ((opCode == MoveFallReset || opCode == MoveJump) && 
-			!(clientInfo.moveFlags & Falling))
+		// MoveFallReset is only valid if the player was already falling
+		if (opCode == MoveFallReset)
 		{
-			WLOG("Missing move flag Falling detected");
-			return false;
-		}
+			if (!(serverInfo.moveFlags & Falling)))
+			{
+				WLOG("Client tried to reset a fall but wasn't falling!");
+				return false;
+			}
 
-		// FallingFar may not be set while Flying or Swimming is already applied
-		if ((serverInfo.moveFlags & (Swimming | Flying)) != 0 &&
-			!(serverInfo.moveFlags & FallingFar) &&
-			(clientInfo.moveFlags & FallingFar) != 0)
-		{
-			WLOG("FallingFar move flag set while flying was already active!");
-			return false;
+			if (fabs(clientInfo.jumpVelocity) > FLT_EPSILON)
+			{
+				WLOG("Client tried to send nonzero fall velocity in FallReset!");
+				return false;
+			}
 		}
 
 		// If the player was already falling, he can't jump until he landed
-		if (opCode == MoveJump && (serverInfo.moveFlags & (Falling | FallingFar)))
+		if (opCode == MoveJump)
 		{
-			WLOG("Impossible MoveJump packet detected!");
-			return false;
+			if (serverInfo.moveFlags & Falling)
+			{
+				WLOG("Client tried to send jump packet but was already falling!");
+				return false;
+			}
+		}
+
+		if (clientInfo.moveFlags & Falling)
+		{
+			// FallLand or StartSwim can't occur with falling flag
+			if (opCode == MoveFallLand || opCode == MoveStartSwim)
+			{
+				WLOG("Client sent MoveFallLand or MoveStartSwim packet with falling flag!");
+				return false;
+			}
+
+			// JumpSpeed always has to be a positive value.
+			if (clientInfo.jumpXYSpeed < FLT_EPSILON)
+			{
+				WLOG("Client tried to send negative fall speed!");
+				return false;
+			}
+
+			// JumpVelocity always has to be a negative value. Usually it is -7.96.
+			if (clientInfo.jumpVelocity > FLT_EPSILON)
+			{
+				WLOG("Client tried to send impossible jump velocity!");
+				return false;
+			}
+
+			// If the player was already falling and is still falling, then his fall parameters should stay the same
+			if (serverInfo.moveFlags & Falling)
+			{
+				// Client is trying to increase his jump speed in the middle of falling
+				if (clientInfo.jumpXYSpeed > serverInfo.jumpXYSpeed + FLT_EPSILON)
+				{
+					// The speed can only be increased if the speed was previously zero.
+					if (serverInfo.jumpXYSpeed > FLT_EPSILON)
+					{
+						WLOG("Client tried to send different fall speed during 2 subsequent fall packets!");
+						return false;
+					}
+
+					// 2.5 is the maximum speed that a client can increase his speed by during a jump
+					// Example: Stand still and press spacebar, then during the fall you press forward.
+					// Your character will jump slightly forward and the maximum speed can not be greater than 2.5
+					if (clientInfo.jumpXYSpeed > 2.5f + FLT_EPSILON)
+					{
+						WLOG("Client tried to increase fall speed during 2 subsequent fall packets!");
+						return false;
+					}
+				}
+
+				// MoveFallReset is an exception as it can change the fall angles.
+				// This is the packet when you bang your head against something.
+				if (opCode != MoveFallReset)
+				{
+					UInt32 timeDiff = clientInfo.time - serverInfo.time;
+
+					if (serverInfo.fallTime + timeDiff != clientInfo.fallTime)
+					{
+						WLOG("Client tried to send invalid fall time during 2 subsequent fall packets!");
+						return false;
+					}
+
+					if (fabs(clientInfo.jumpVelocity - serverInfo.jumpVelocity) > FLT_EPSILON)
+					{
+						WLOG("Client tried to send invalid jump velocity during 2 subsequent fall packets!");
+						return false;
+					}
+				}
+			}
+		}
+
+		// Transport data should stay the same during 2 subsequent packets
+		if ((serverInfo.moveFlags & OnTransport) && (clientInfo.moveFlags & OnTransport) &&
+			opCode != MoveChangeTransport)
+		{
+			if (clientInfo.transportGuid != serverInfo.transportGuid)
+			{
+				WLOG("Client tried to send different transport GUID during 2 subsequent packets!");
+				return false;
+			}
+
+			UInt32 timeDiff = clientInfo.time - serverInfo.time;
+
+			if (serverInfo.transportTime + timeDiff != clientInfo.transportTime)
+			{
+				WLOG("Client tried to send invalid transport time during 2 subsequent packets!");
+				return false;
+			}
 		}
 
 		return true;
