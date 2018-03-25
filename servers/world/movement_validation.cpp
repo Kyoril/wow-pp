@@ -120,6 +120,13 @@ namespace wowpp
 			}
 		}
 
+		// Time only ever goes forward
+		if (clientInfo.time < serverInfo.time)
+		{
+			WLOG("Client sent invalid timestamp in movement packet.");
+			return false;
+		}
+
 		// MoveFallReset is only valid if the player was already falling
 		if (opCode == MoveFallReset)
 		{
