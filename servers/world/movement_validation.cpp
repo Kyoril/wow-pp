@@ -136,12 +136,6 @@ namespace wowpp
 				return false;
 			}
 
-			if (serverInfo.moveFlags & FallingFar)
-			{
-				WLOG("Client tried to reset a fall during deep fall!");
-				return false;
-			}
-
 			if (fabs(clientInfo.jumpVelocity) > FLT_EPSILON)
 			{
 				WLOG("Client tried to send nonzero fall velocity in FallReset!");
@@ -151,6 +145,12 @@ namespace wowpp
 			if (clientInfo.fallTime != 0)
 			{
 				WLOG("Client tried to send nonzero fall time in FallReset packet!");
+				return false;
+			}
+
+			if (serverInfo.fallTime > 500)
+			{
+				WLOG("Client tried to reset a that was already in deep-fall.");
 				return false;
 			}
 		}
@@ -230,13 +230,6 @@ namespace wowpp
 			if (clientInfo.jumpVelocity > 0.0f)
 			{
 				WLOG("Client tried to send impossible jump velocity!");
-				return false;
-			}
-
-			// Falling far was set, but isn't set anymore. This cannot happen in a normal fall
-			if ((serverInfo.moveFlags & FallingFar) && !(clientInfo.moveFlags & FallingFar))
-			{
-				WLOG("Client tried to remove FallingFar flag during a fall.");
 				return false;
 			}
 
