@@ -175,7 +175,7 @@ namespace wowpp
 		// MoveFallReset and MoveJump should start a fresh fall
 		if (opCode == MoveFallReset || opCode == MoveJump)
 		{
-			if (!(clientInfo.moveFlags & Falling))
+			if (!(clientInfo.moveFlags & (Falling | FallingFar)))
 			{
 				WLOG("Client sent FallReset or Jump without falling flag set!");
 				return false;
