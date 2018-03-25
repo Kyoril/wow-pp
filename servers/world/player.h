@@ -346,6 +346,7 @@ namespace wowpp
 		Countdown m_nextClientSync;
 		UInt32 m_timeSyncCounter;
 		GameTime m_lastTimeSync;
+		bool m_movementInitialized;
 
 		/*struct ClientAck
 		{

@@ -58,6 +58,7 @@ namespace wowpp
 		, m_clientSync(0)
 		, m_nextClientSync(instance.getUniverse().getTimers())
 		, m_timeSyncCounter(0)
+		, m_movementInitialized(false)
 	{
 		// Connect character signals
 		m_characterSignals.append({
@@ -596,6 +597,9 @@ namespace wowpp
 			m_character->setUInt32Value(unit_fields::Power1 + i,
 				std::min(m_character->getUInt32Value(unit_fields::MaxPower1 + i), power[i]));
 		}
+
+		// Reset movement initialized flag
+		m_movementInitialized = false;
 
 		// Notify realm about this for post-spawn packets
 		m_realmConnector.sendCharacterSpawnNotification(m_character->getGuid());

@@ -186,14 +186,14 @@ namespace wowpp
 			}
 
 			// JumpSpeed always has to be a positive value.
-			if (clientInfo.jumpXYSpeed < FLT_EPSILON)
+			if (clientInfo.jumpXYSpeed < 0.0f)
 			{
 				WLOG("Client tried to send negative fall speed!");
 				return false;
 			}
 
 			// JumpVelocity always has to be a negative value. Usually it is -7.96.
-			if (clientInfo.jumpVelocity > FLT_EPSILON)
+			if (clientInfo.jumpVelocity > 0.0f)
 			{
 				WLOG("Client tried to send impossible jump velocity!");
 				return false;
@@ -203,10 +203,10 @@ namespace wowpp
 			if (serverInfo.moveFlags & Falling)
 			{
 				// Client is trying to increase his jump speed in the middle of falling
-				if (clientInfo.jumpXYSpeed > serverInfo.jumpXYSpeed + FLT_EPSILON)
+				if (clientInfo.jumpXYSpeed > serverInfo.jumpXYSpeed)
 				{
 					// The speed can only be increased if the speed was previously zero.
-					if (serverInfo.jumpXYSpeed > FLT_EPSILON)
+					if (serverInfo.jumpXYSpeed > 0.0f)
 					{
 						WLOG("Client tried to send different fall speed during 2 subsequent fall packets!");
 						return false;
@@ -215,7 +215,7 @@ namespace wowpp
 					// 2.5 is the maximum speed that a client can increase his speed by during a jump
 					// Example: Stand still and press spacebar, then during the fall you press forward.
 					// Your character will jump slightly forward and the maximum speed can not be greater than 2.5
-					if (clientInfo.jumpXYSpeed > 2.5f + FLT_EPSILON)
+					if (clientInfo.jumpXYSpeed > 2.5f)
 					{
 						WLOG("Client tried to increase fall speed during 2 subsequent fall packets!");
 						return false;
@@ -231,6 +231,9 @@ namespace wowpp
 					if (serverInfo.fallTime + timeDiff != clientInfo.fallTime)
 					{
 						WLOG("Client tried to send invalid fall time during 2 subsequent fall packets!");
+						DLOG("\tserverInfo.fallTime = " << serverInfo.fallTime << "; timeDiff = " << timeDiff << "; clientInfo.fallTime = " << clientInfo.fallTime);
+						DLOG("\tclientInfo.time = " << clientInfo.time << "; serverInfo.time = " << serverInfo.time);
+						DLOG("\topCode: 0x" << std::hex << opCode);
 						return false;
 					}
 

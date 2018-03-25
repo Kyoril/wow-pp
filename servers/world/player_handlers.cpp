@@ -544,6 +544,10 @@ namespace wowpp
 
 	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
 	{
+		// Ignore all movement packets before the character landed
+		if (!m_movementInitialized && opCode != game::client_packet::MoveFallLand)
+			return;
+
 		// Can't receive player input when in one of these CC states
 		if (m_character->isFeared() || m_character->isConfused())
 			return;
@@ -592,7 +596,7 @@ namespace wowpp
 		m_character->setMovementInfo(info);
 
 		// Convert timestamp into server time
-		info.time = m_serverSync + (info.time - m_clientSync);
+		//info.time = m_serverSync + (info.time - m_clientSync);
 
 		// Transform into grid location
 		TileIndex2D gridIndex;
@@ -691,6 +695,13 @@ namespace wowpp
 
 		// Update position
 		m_character->relocate(math::Vector3(info.x, info.y, info.z), info.o, true);
+		
+		// Set movement initialized packet
+		if (opCode == game::client_packet::MoveFallLand)
+		{
+			DLOG("Player movement initialized!");
+			m_movementInitialized = true;
+		}
 
 		// On Heartbeat, check for taverns
 		if (opCode == game::client_packet::MoveHeartBeat)
