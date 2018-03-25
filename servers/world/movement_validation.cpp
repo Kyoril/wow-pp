@@ -344,12 +344,14 @@ namespace wowpp
 		// If apply is true, at least one of the possible flags needs to be set
 		if (apply && !(flags & possiblyAppliedFlags))
 		{
+			WLOG("Ack apply op code for movement flags (0x" << std::hex << flags << ") should have had one of 0x" << possiblyAppliedFlags);
 			return false;
 		}
 
 		// If apply is false, none of the possible flags may be set
 		if (!apply && (flags & possiblyAppliedFlags))
 		{
+			WLOG("Ack misapply op code for movement flags (0x" << std::hex << flags << ") should not have one of 0x" << possiblyAppliedFlags);
 			return false;
 		}
 

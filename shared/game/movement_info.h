@@ -68,6 +68,7 @@ namespace wowpp
 				Root = 0x00000800,
 				Falling = 0x00001000,
 				FallingFar = 0x00004000,
+				PendingRoot = 0x00100000,
 				Swimming = 0x00200000,
 				Ascending = 0x00400000,
 				Descending = 0x00800000,
