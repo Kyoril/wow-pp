@@ -58,7 +58,7 @@ namespace wowpp
 		{ Levitating,		{ None								, CanFly			, 0						, 0						} },
 		{ Root,				{ Moving							, None				, ForceMoveRootAck		, ForceMoveUnrootAck	} },
 		{ Falling,			{ Root | Flying 					, None				, 0						, 0						} },
-		{ FallingFar,		{ Root | Swimming					, Falling			, 0						, 0						} },
+		{ FallingFar,		{ Root | Swimming					, None				, 0						, 0						} },
 		{ Swimming,			{ FallingFar						, None				, MoveStartSwim			, 0						} },
 		{ Ascending,		{ Descending | Root					, Swimming | Flying , 0						, 0						} },
 		{ Descending,		{ Ascending | Root					, Swimming | Flying , 0						, 0						} },
