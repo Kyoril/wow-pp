@@ -150,7 +150,7 @@ namespace wowpp
 
 			if (serverInfo.fallTime > 500)
 			{
-				WLOG("Client tried to reset a that was already in deep-fall.");
+				WLOG("Client tried to reset a deep-fall.");
 				return false;
 			}
 		}
@@ -280,9 +280,9 @@ namespace wowpp
 			}
 			else // If the player just started a fresh fall (wasn't falling before), then we need to check if his fall speed is valid
 			{
-				if (clientInfo.fallTime != 0)
+				if (clientInfo.fallTime > 500)
 				{
-					WLOG("Client tried to send nonzero fall time in packet that just started a fresh fall!");
+					WLOG("Client tried to send big fall time in packet that just started a fresh fall!");
 					return false;
 				}
 
