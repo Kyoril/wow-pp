@@ -131,7 +131,7 @@ namespace wowpp
 		// MoveFallReset is only valid if the player was already falling
 		if (opCode == MoveFallReset)
 		{
-			if (!(serverInfo.moveFlags & Falling))
+			if (!(serverInfo.moveFlags & (Falling | FallingFar)))
 			{
 				WLOG("Client tried to reset a fall but wasn't falling!");
 				return false;
@@ -159,7 +159,7 @@ namespace wowpp
 		// If the player was already falling, he can't jump until he landed
 		if (opCode == MoveJump)
 		{
-			if (serverInfo.moveFlags & Falling)
+			if (serverInfo.moveFlags & (Falling | FallingFar))
 			{
 				WLOG("Client tried to send jump packet but was already falling!");
 				return false;
@@ -211,7 +211,7 @@ namespace wowpp
 		}
 
 		// We were falling, but aren't falling anymore. This can only happen in a FallLand, SetFly or StartSwim
-		if ((serverInfo.moveFlags & Falling) && !(clientInfo.moveFlags & Falling))
+		if ((serverInfo.moveFlags & (Falling | FallingFar)) && !(clientInfo.moveFlags & (Falling | FallingFar)))
 		{
 			if (opCode != MoveFallLand && opCode != MoveSetFly && opCode != MoveStartSwim)
 			{
@@ -238,7 +238,7 @@ namespace wowpp
 		}
 
 		// Player is falling. Do basic fall parameter validations.
-		if (clientInfo.moveFlags & Falling)
+		if (clientInfo.moveFlags & (Falling | FallingFar))
 		{
 			// FallLand or StartSwim can't occur with falling flag
 			if (opCode == MoveFallLand || opCode == MoveStartSwim)
@@ -262,7 +262,7 @@ namespace wowpp
 			}
 
 			// If the player was already falling and is still falling, then his fall parameters should stay the same
-			if (serverInfo.moveFlags & Falling)
+			if (serverInfo.moveFlags & (Falling | FallingFar))
 			{
 				// Client is trying to increase his jump speed in the middle of falling
 				if (clientInfo.jumpXYSpeed > serverInfo.jumpXYSpeed)
@@ -339,9 +339,9 @@ namespace wowpp
 		if (opCode == game::client_packet::ForceMoveRootAck)
 		{
 			// Check if the player was falling. If so, he has to set PendingRoot
-			if ((clientInfo.moveFlags & (game::movement_flags::Falling | game::movement_flags::FallingFar)) != 0)
+			if (clientInfo.moveFlags & (Falling | FallingFar))
 			{
-				if (!(clientInfo.moveFlags & game::movement_flags::PendingRoot))
+				if (!(clientInfo.moveFlags & PendingRoot))
 				{
 					WLOG("PendingRoot flag required in root ack while falling is active!");
 					return false;
@@ -350,7 +350,7 @@ namespace wowpp
 			// Player wasn't falling, so he has to set Root
 			else
 			{
-				if (!(clientInfo.moveFlags & game::movement_flags::Root))
+				if (!(clientInfo.moveFlags & Root))
 				{
 					WLOG("Root flag required in root ack while falling is inactive!");
 					return false;
