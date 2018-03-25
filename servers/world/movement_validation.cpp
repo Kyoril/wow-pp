@@ -199,7 +199,7 @@ namespace wowpp
 
 			UInt32 timeDiff = clientInfo.time - serverInfo.time;
 
-			if (serverInfo.fallTime + timeDiff != clientInfo.fallTime)
+			if (serverInfo.time != 0 && serverInfo.fallTime + timeDiff != clientInfo.fallTime)
 			{
 				WLOG("Client tried to stop a fall but sent invalid fall time in the stopping packet!");
 				DLOG("\tserverInfo.fallTime = " << serverInfo.fallTime << "; timeDiff = " << timeDiff << "; clientInfo.fallTime = " << clientInfo.fallTime);
@@ -269,7 +269,7 @@ namespace wowpp
 				{
 					UInt32 timeDiff = clientInfo.time - serverInfo.time;
 
-					if (serverInfo.fallTime + timeDiff != clientInfo.fallTime)
+					if (serverInfo.time != 0 && serverInfo.fallTime + timeDiff != clientInfo.fallTime)
 					{
 						WLOG("Client tried to send invalid fall time during 2 subsequent fall packets!");
 						DLOG("\tserverInfo.fallTime = " << serverInfo.fallTime << "; timeDiff = " << timeDiff << "; clientInfo.fallTime = " << clientInfo.fallTime);
@@ -310,7 +310,7 @@ namespace wowpp
 
 			UInt32 timeDiff = clientInfo.time - serverInfo.time;
 
-			if (serverInfo.transportTime + timeDiff != clientInfo.transportTime)
+			if (serverInfo.time != 0 && serverInfo.transportTime + timeDiff != clientInfo.transportTime)
 			{
 				WLOG("Client tried to send invalid transport time during 2 subsequent packets!");
 				return false;
