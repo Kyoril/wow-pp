@@ -697,7 +697,7 @@ namespace wowpp
 		m_character->relocate(math::Vector3(info.x, info.y, info.z), info.o, true);
 		
 		// Set movement initialized packet
-		if (opCode == game::client_packet::MoveFallLand)
+		if (!m_movementInitialized && opCode == game::client_packet::MoveFallLand)
 		{
 			DLOG("Player movement initialized!");
 			m_movementInitialized = true;

@@ -480,6 +480,7 @@ namespace wowpp
 			}
 
 			case game::session_status::LoggedIn:
+			case game::session_status::LoggedInIgnore:
 			{
 				if (!m_worldNode && verbose) WLOG("Packet " << name << " is only handled if the player entered a world!");
 				return (m_worldNode != nullptr);
@@ -522,8 +523,11 @@ namespace wowpp
 #define WOWPP_HANDLE_PACKET(name, sessionStatus) \
 			case wowpp::game::client_packet::name: \
 			{ \
-				if (!isSessionStatusValid(#name, sessionStatus, true)) \
-					return PacketParseResult::Disconnect; \
+				if (!isSessionStatusValid(#name, sessionStatus, (sessionStatus != game::session_status::LoggedInIgnore))) \
+				{ \
+					return (sessionStatus != game::session_status::LoggedInIgnore) ? \
+						PacketParseResult::Disconnect : PacketParseResult::Pass; \
+				} \
 				return handle##name(packet); \
 			}
 
@@ -549,7 +553,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(GroupSetLeader, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(LootMethod, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GroupDisband, game::session_status::LoggedIn)
-			WOWPP_HANDLE_PACKET(RequestPartyMemberStats, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(RequestPartyMemberStats, game::session_status::LoggedInIgnore)
 			WOWPP_HANDLE_PACKET(MoveWorldPortAck, game::session_status::TransferPending)
 			WOWPP_HANDLE_PACKET(SetActionButton, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GameObjectQuery, game::session_status::LoggedIn)
