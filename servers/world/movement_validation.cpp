@@ -56,7 +56,8 @@ namespace wowpp
 		{ WalkMode,			{ None								, None				, 0						, 0						} },
 		{ OnTransport,		{ None								, None				, MoveChangeTransport	, MoveChangeTransport	} },
 		{ Levitating,		{ None								, CanFly			, 0						, 0						} },
-		{ Root,				{ Moving							, None				, ForceMoveRootAck		, ForceMoveUnrootAck	} },
+		{ Root,				{ Moving | PendingRoot				, None				, ForceMoveRootAck		, ForceMoveUnrootAck	} },
+		{ PendingRoot,	  { Root								, None				, ForceMoveRootAck		, 0					 } },
 		{ Falling,			{ Root | Flying 					, None				, 0						, 0						} },
 		{ FallingFar,		{ Root | Swimming					, Falling			, 0						, 0						} },
 		{ Swimming,			{ FallingFar						, None				, MoveStartSwim			, 0						} },
@@ -181,6 +182,17 @@ namespace wowpp
 			}
 		}
 
+		// Client was about to get rooted, but he removed his pending root flag
+		if ((serverInfo.moveFlags & PendingRoot) && !(clientInfo.moveFlags & PendingRoot))
+		{
+			// If the client doesn't have a full root set in this case, he is cheating
+			if (!(clientInfo.moveFlags & Root) && opCode != ForceMoveUnrootAck)
+			{
+				WLOG("Client tried to remove PendingRoot flag without setting rooted flag!");
+				return false;
+			}
+		}
+
 		// MoveSetFly can only occur if the client has the CanFly flag
 		if (opCode == MoveSetFly && !(clientInfo.moveFlags & CanFly))
 		{
@@ -205,6 +217,12 @@ namespace wowpp
 				DLOG("\tserverInfo.fallTime = " << serverInfo.fallTime << "; timeDiff = " << timeDiff << "; clientInfo.fallTime = " << clientInfo.fallTime);
 				DLOG("\tclientInfo.time = " << clientInfo.time << "; serverInfo.time = " << serverInfo.time);
 				DLOG("\topCode: 0x" << std::hex << opCode);
+				return false;
+			}
+
+			if ((serverInfo.moveFlags & PendingRoot) && !(clientInfo.moveFlags & Root))
+			{
+				WLOG("Client sent a fall land packet while he had a pending root, but he didn't apply the full root.");
 				return false;
 			}
 		}
