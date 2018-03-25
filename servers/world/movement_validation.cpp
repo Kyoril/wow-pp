@@ -136,6 +136,12 @@ namespace wowpp
 				return false;
 			}
 
+			if (serverInfo.moveFlags & FallingFar)
+			{
+				WLOG("Client tried to reset a fall during deep fall!");
+				return false;
+			}
+
 			if (fabs(clientInfo.jumpVelocity) > FLT_EPSILON)
 			{
 				WLOG("Client tried to send nonzero fall velocity in FallReset!");
@@ -175,33 +181,33 @@ namespace wowpp
 			}
 		}
 
-        // MoveSetFly can only occur if the client has the CanFly flag
-        if (opCode == MoveSetFly && !(clientInfo.moveFlags & CanFly))
-        {
-            WLOG("Client sent MoveSetFly opcode but he cannot fly.");
-            return false;
-        }
+		// MoveSetFly can only occur if the client has the CanFly flag
+		if (opCode == MoveSetFly && !(clientInfo.moveFlags & CanFly))
+		{
+			WLOG("Client sent MoveSetFly opcode but he cannot fly.");
+			return false;
+		}
 
-        // We were falling, but aren't falling anymore. This can only happen in a FallLand, SetFly or StartSwim
-        if ((serverInfo.moveFlags & Falling) && !(clientInfo.moveFlags & Falling))
-        {
-            if (opCode != MoveFallLand && opCode != MoveSetFly && opCode != MoveStartSwim)
-            {
-                WLOG("Client tried to stop falling with a packet that cannot stop a fall.");
-                return false;
-            }
+		// We were falling, but aren't falling anymore. This can only happen in a FallLand, SetFly or StartSwim
+		if ((serverInfo.moveFlags & Falling) && !(clientInfo.moveFlags & Falling))
+		{
+			if (opCode != MoveFallLand && opCode != MoveSetFly && opCode != MoveStartSwim)
+			{
+				WLOG("Client tried to stop falling with a packet that cannot stop a fall.");
+				return false;
+			}
 
-            UInt32 timeDiff = clientInfo.time - serverInfo.time;
+			UInt32 timeDiff = clientInfo.time - serverInfo.time;
 
-            if (serverInfo.fallTime + timeDiff != clientInfo.fallTime)
-            {
-                WLOG("Client tried to stop a fall but sent invalid fall time in the stopping packet!");
-                DLOG("\tserverInfo.fallTime = " << serverInfo.fallTime << "; timeDiff = " << timeDiff << "; clientInfo.fallTime = " << clientInfo.fallTime);
-                DLOG("\tclientInfo.time = " << clientInfo.time << "; serverInfo.time = " << serverInfo.time);
-                DLOG("\topCode: 0x" << std::hex << opCode);
-                return false;
-            }
-        }
+			if (serverInfo.fallTime + timeDiff != clientInfo.fallTime)
+			{
+				WLOG("Client tried to stop a fall but sent invalid fall time in the stopping packet!");
+				DLOG("\tserverInfo.fallTime = " << serverInfo.fallTime << "; timeDiff = " << timeDiff << "; clientInfo.fallTime = " << clientInfo.fallTime);
+				DLOG("\tclientInfo.time = " << clientInfo.time << "; serverInfo.time = " << serverInfo.time);
+				DLOG("\topCode: 0x" << std::hex << opCode);
+				return false;
+			}
+		}
 
 		// Player is falling. Do basic fall parameter validations.
 		if (clientInfo.moveFlags & Falling)
@@ -224,6 +230,13 @@ namespace wowpp
 			if (clientInfo.jumpVelocity > 0.0f)
 			{
 				WLOG("Client tried to send impossible jump velocity!");
+				return false;
+			}
+
+			// Falling far was set, but isn't set anymore. This cannot happen in a normal fall
+			if ((serverInfo.moveFlags & FallingFar) && !(clientInfo.moveFlags & FallingFar))
+			{
+				WLOG("Client tried to remove FallingFar flag during a fall.");
 				return false;
 			}
 
