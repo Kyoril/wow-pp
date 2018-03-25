@@ -92,7 +92,10 @@ namespace wowpp
 				/// Process this packet only if there is a pending transfer
 				TransferPending = 0x05,
 				/// Process this packet only if the player is authenticated but hasn't entered a world.
-				NotLoggedIn = 0x06
+				NotLoggedIn = 0x06,
+
+				/// Process this packet if the player entered a world. On errors, don't kick but ignore the packet.
+				LoggedInIgnore = 0x07,
 			};
 		}
 

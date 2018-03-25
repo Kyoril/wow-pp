@@ -59,7 +59,7 @@ namespace wowpp
 		{ Root,				{ Moving | PendingRoot				, None				, ForceMoveRootAck		, ForceMoveUnrootAck	} },
 		{ PendingRoot,	  { Root								, None				, ForceMoveRootAck		, 0					 } },
 		{ Falling,			{ Root | Flying 					, None				, 0						, 0						} },
-		{ FallingFar,		{ Root | Swimming					, Falling			, 0						, 0						} },
+		{ FallingFar,		{ Root | Swimming					, None				, 0						, 0						} },
 		{ Swimming,			{ FallingFar						, None				, MoveStartSwim			, 0						} },
 		{ Ascending,		{ Descending | Root					, Swimming | Flying , 0						, 0						} },
 		{ Descending,		{ Ascending | Root					, Swimming | Flying , 0						, 0						} },
@@ -362,12 +362,14 @@ namespace wowpp
 		// If apply is true, at least one of the possible flags needs to be set
 		if (apply && !(flags & possiblyAppliedFlags))
 		{
+			WLOG("Ack apply op code for movement flags (0x" << std::hex << flags << ") should have had one of 0x" << possiblyAppliedFlags);
 			return false;
 		}
 
 		// If apply is false, none of the possible flags may be set
 		if (!apply && (flags & possiblyAppliedFlags))
 		{
+			WLOG("Ack misapply op code for movement flags (0x" << std::hex << flags << ") should not have one of 0x" << possiblyAppliedFlags);
 			return false;
 		}
 

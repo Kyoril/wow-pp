@@ -697,7 +697,7 @@ namespace wowpp
 		m_character->relocate(math::Vector3(info.x, info.y, info.z), info.o, true);
 		
 		// Set movement initialized packet
-		if (opCode == game::client_packet::MoveFallLand)
+		if (!m_movementInitialized && opCode == game::client_packet::MoveFallLand)
 		{
 			DLOG("Player movement initialized!");
 			m_movementInitialized = true;
@@ -1616,6 +1616,7 @@ namespace wowpp
 				if (change.changeType != MovementChangeType::Hover ||
 					!validateMoveFlagsOnApply(change.apply, info.moveFlags, game::movement_flags::Hover))
 				{
+					WLOG("Invalid hover ack received! Expected change type was " << static_cast<UInt32>(change.changeType));
 					kick();
 					return;
 				}
@@ -1624,6 +1625,7 @@ namespace wowpp
 				if (change.changeType != MovementChangeType::FeatherFall ||
 					!validateMoveFlagsOnApply(change.apply, info.moveFlags, game::movement_flags::SafeFall))
 				{
+					WLOG("Invalid feather fall ack received! Expected change type was " << static_cast<UInt32>(change.changeType));
 					kick();
 					return;
 				}
@@ -1632,6 +1634,7 @@ namespace wowpp
 				if (change.changeType != MovementChangeType::WaterWalk ||
 					!validateMoveFlagsOnApply(change.apply, info.moveFlags, game::movement_flags::WaterWalking))
 				{
+					WLOG("Invalid water walk ack received! Expected change type was " << static_cast<UInt32>(change.changeType));
 					kick();
 					return;
 				}
@@ -1639,8 +1642,9 @@ namespace wowpp
 			case game::client_packet::ForceMoveRootAck:
 			case game::client_packet::ForceMoveUnrootAck:
 				if (change.changeType != MovementChangeType::Root ||
-					!validateMoveFlagsOnApply(change.apply, info.moveFlags, game::movement_flags::Root))
+					!validateMoveFlagsOnApply(change.apply, info.moveFlags, (game::movement_flags::Root | game::movement_flags::PendingRoot)))
 				{
+					WLOG("Invalid root ack received! Expected change type was " << static_cast<UInt32>(change.changeType));
 					kick();
 					return;
 				}
