@@ -121,6 +121,8 @@ namespace wowpp
 			}
 		}
 
+        UInt32 timeDiff = clientInfo.time - serverInfo.time;
+
 		// Time only ever goes forward
 		if (clientInfo.time < serverInfo.time)
 		{
@@ -226,8 +228,6 @@ namespace wowpp
 				return false;
 			}
 
-			UInt32 timeDiff = clientInfo.time - serverInfo.time;
-
 			if (serverInfo.time != 0 && serverInfo.fallTime + timeDiff != clientInfo.fallTime)
 			{
 				WLOG("Client tried to stop a fall but sent invalid fall time in the stopping packet!");
@@ -295,8 +295,6 @@ namespace wowpp
 				// This is the packet when you bang your head against something.
 				if (opCode != MoveFallReset)
 				{
-					UInt32 timeDiff = clientInfo.time - serverInfo.time;
-
 					if (serverInfo.time != 0 && serverInfo.fallTime + timeDiff != clientInfo.fallTime)
 					{
 						WLOG("Client tried to send invalid fall time during 2 subsequent fall packets!");
@@ -312,9 +310,9 @@ namespace wowpp
 			}
 			else // If the player just started a fresh fall (wasn't falling before), then we need to check if his fall speed is valid
 			{
-				if (serverInfo.time != 0 && clientInfo.fallTime > (clientInfo.time - serverInfo.time))
+				if ((serverInfo.time != 0 && clientInfo.fallTime > timeDiff) || clientInfo.fallTime > 500)
 				{
-					WLOG("Client tried to send big fall time in packet that just started a fresh fall!");
+					WLOG("Client tried to send too large fall time in packet that just started a fresh fall!");
 					return false;
 				}
 
@@ -333,8 +331,6 @@ namespace wowpp
 				return false;
 			}
 
-			UInt32 timeDiff = clientInfo.time - serverInfo.time;
-
 			if (serverInfo.time != 0 && serverInfo.transportTime + timeDiff != clientInfo.transportTime)
 			{
 				WLOG("Client tried to send invalid transport time during 2 subsequent packets!");
@@ -343,7 +339,7 @@ namespace wowpp
 		}
 
 		// When root was applied...
-		if (opCode == game::client_packet::ForceMoveRootAck)
+		if (opCode == ForceMoveRootAck)
 		{
 			// Check if the player was falling. If so, he has to set PendingRoot
 			if (clientInfo.moveFlags & (Falling | FallingFar))
