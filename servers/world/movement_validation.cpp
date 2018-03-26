@@ -128,6 +128,13 @@ namespace wowpp
 			return false;
 		}
 
+		// TODO: Server needs to handle MoveTimeSkipped opcode and add the time value to serverInfo.time to make this work
+		if ((serverInfo.moveFlags & Moving) && (clientInfo.time - serverInfo.time) > 500)
+		{
+			WLOG("Client sent too large timestamp in movement packet.");
+			return false;
+		}
+
 		// MoveFallReset is only valid if the player was already falling
 		if (opCode == MoveFallReset)
 		{
@@ -305,7 +312,7 @@ namespace wowpp
 			}
 			else // If the player just started a fresh fall (wasn't falling before), then we need to check if his fall speed is valid
 			{
-				if (clientInfo.fallTime > 500)
+				if (serverInfo.time != 0 && clientInfo.fallTime > (clientInfo.time - serverInfo.time))
 				{
 					WLOG("Client tried to send big fall time in packet that just started a fresh fall!");
 					return false;
