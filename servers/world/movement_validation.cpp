@@ -129,7 +129,7 @@ namespace wowpp
 		}
 
 		// TODO: Server needs to handle MoveTimeSkipped opcode and add the time value to serverInfo.time to make this work
-		if ((serverInfo.moveFlags & Moving) && (clientInfo.time - serverInfo.time) > 500)
+		if (serverInfo.time != 0 && (serverInfo.moveFlags & Moving) && (clientInfo.time - serverInfo.time) > 500)
 		{
 			WLOG("Client sent too large timestamp in movement packet.");
 			return false;
