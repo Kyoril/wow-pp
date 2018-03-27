@@ -380,6 +380,17 @@ namespace wowpp
 		KnockBack
 	};
 
+	/// Bundles informations which are only used for knock back acks.
+	struct KnockBackInfo
+	{
+		float vcos = 0.0f;
+		float vsin = 0.0f;
+		/// 2d speed value
+		float speedXY = 0.0f;
+		/// z axis speed value
+		float speedZ = 0.0f;
+	};
+		
 	/// Contains infos about a pending movement change which first needs to
 	/// be acknowledged by the client before it's effects can be applied.
 	struct PendingMovementChange final
@@ -402,16 +413,7 @@ namespace wowpp
 			/// only used for Hover / FeatherFall etc., and ignored for speed changes.
 			bool apply;
 
-			/// Bundles informations which are only used for knock back acks.
-			struct KnockBackInfo
-			{
-				float vcos = 0.0f;
-				float vsin = 0.0f;
-				/// 2d speed value
-				float speedXY = 0.0f;
-				/// z axis speed value
-				float speedZ = 0.0f;
-			} knockBackInfo;
+			KnockBackInfo knockBackInfo;
 		};
 
 		/// Default constructor clears all variables
