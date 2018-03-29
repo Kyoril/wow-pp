@@ -1735,7 +1735,9 @@ namespace wowpp
 			const float distSq = (position - pt).squared_length();
 			const float tolerated = entry.radius() + delta;
 			if (distSq > tolerated * tolerated)
+			{
 				return false;
+			}
 		}
 		else
 		{
@@ -3481,6 +3483,12 @@ namespace wowpp
 		{
 			object.setUInt32Value(unit_fields::Power1 + i, power[i]);
 		}
+
+		// Update movement info
+		object.m_movementInfo.x = object.m_position.x;
+		object.m_movementInfo.y = object.m_position.y;
+		object.m_movementInfo.z = object.m_position.z;
+		object.m_movementInfo.o = object.m_o;
 
 		return r;
 	}

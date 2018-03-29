@@ -517,6 +517,12 @@ namespace wowpp
 		// Relocate the object
 		GameObject::relocate(position, o, fire);
 
+		// Apply position in movement info
+		m_movementInfo.x = position.x;
+		m_movementInfo.y = position.y;
+		m_movementInfo.z = position.z;
+		m_movementInfo.o = o;
+
 		if (fire)
 		{
 			// Stop spell casts that need to be stopped on movement
@@ -3353,6 +3359,12 @@ namespace wowpp
 		// return 0 if the root flag is set, however, anti cheat already ensures that
 		// root isn't combined with move flags.
 		if (!(moveFlags & horzMoveFlags))
+		{
+			return 0.0f;
+		}
+
+		// If there is a root or a pending root applied, the unit can't move at all.
+		if (moveFlags & (Root | PendingRoot))
 		{
 			return 0.0f;
 		}

@@ -70,7 +70,7 @@ namespace wowpp
 				StartStrafeLeft					= 0x0B8,
 				StartStrafeRight				= 0x0B9,
 				StopStrafe						= 0x0BA,
-				MoveJump							= 0x0BB,
+				MoveJump						= 0x0BB,
 				StartTurnLeft					= 0x0BC,
 				StartTurnRight					= 0x0BD,
 				StopTurn						= 0x0BE,

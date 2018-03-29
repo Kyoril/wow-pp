@@ -131,11 +131,13 @@ namespace wowpp
 		}
 
 		// TODO: Server needs to handle MoveTimeSkipped opcode and add the time value to serverInfo.time to make this work
-		if (serverInfo.time != 0 && (serverInfo.moveFlags & Moving) && (clientInfo.time - serverInfo.time) > 500)
+		/*if (serverInfo.time != 0 && (serverInfo.moveFlags & Moving) && (clientInfo.time - serverInfo.time) > 500)
 		{
 			WLOG("Client sent too large timestamp in movement packet.");
+			DLOG("serverInfo.time: " << serverInfo.time << "; clientInfo.time: " << clientInfo.time);
+			DLOG("opCode: 0x" << std::hex << opCode);
 			return false;
-		}
+		}*/
 
 		// MoveFallReset is only valid if the player was already falling
 		if (opCode == MoveFallReset)
@@ -228,14 +230,15 @@ namespace wowpp
 				return false;
 			}
 
-			if (serverInfo.time != 0 && serverInfo.fallTime + timeDiff != clientInfo.fallTime)
+			// TODO: This produces wrong results right now
+			/*if (serverInfo.time != 0 && serverInfo.fallTime + timeDiff != clientInfo.fallTime)
 			{
 				WLOG("Client tried to stop a fall but sent invalid fall time in the stopping packet!");
 				DLOG("\tserverInfo.fallTime = " << serverInfo.fallTime << "; timeDiff = " << timeDiff << "; clientInfo.fallTime = " << clientInfo.fallTime);
 				DLOG("\tclientInfo.time = " << clientInfo.time << "; serverInfo.time = " << serverInfo.time);
 				DLOG("\topCode: 0x" << std::hex << opCode);
 				return false;
-			}
+			}*/
 
 			if ((serverInfo.moveFlags & PendingRoot) && !(clientInfo.moveFlags & Root))
 			{
@@ -403,6 +406,23 @@ namespace wowpp
 		if (!apply && (flags & possiblyAppliedFlags))
 		{
 			WLOG("Ack misapply op code for movement flags (0x" << std::hex << flags << ") should not have one of 0x" << possiblyAppliedFlags);
+			return false;
+		}
+
+		return true;
+	}
+
+	bool validateMovementSpeed(float expectedSpeed, const MovementInfo & clientInfo, const MovementInfo & serverInfo)
+	{
+		math::Vector3 lastPos(serverInfo.x, serverInfo.y, 0.0f);
+		math::Vector3 newPos(clientInfo.x, clientInfo.y, 0.0f);
+
+		const float distanceSq = (lastPos - newPos).squared_length();
+		const float maxDist = static_cast<float>(clientInfo.time - serverInfo.time) / 1000.0f * expectedSpeed;
+
+		if (distanceSq > ::powf(maxDist + 0.01f, 2.0f))
+		{
+			WLOG("Distance was too much! Max dist: " << maxDist << ", distance was " << (lastPos - newPos).length());
 			return false;
 		}
 

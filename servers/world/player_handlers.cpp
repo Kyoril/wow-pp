@@ -574,6 +574,15 @@ namespace wowpp
 			kick();
 			return;
 		}
+
+		// Validate movement speed
+		float expectedSpeed = m_character->getExpectedSpeed(m_character->getMovementInfo());
+		if (!validateMovementSpeed(expectedSpeed, info, m_character->getMovementInfo()))
+		{
+			WLOG("Invalid movement speed");
+			kick();
+			return;
+		}
 		
 		// Sender guid
 		auto guid = m_character->getGuid();
@@ -1249,18 +1258,15 @@ namespace wowpp
 		if (Int32(timeSkipped) < 0)
 		{
 			WLOG("PLAYER " << m_character->getName() << " POSSIBLY HACKING");
-
-			// Kick that player!
-			m_instance.removeGameObject(*m_character);
-			m_character.reset();
-
-			// Notify the realm
-			m_realmConnector.notifyWorldInstanceLeft(m_characterId, pp::world_realm::world_left_reason::Disconnect);
-
-			// Destroy player instance
-			m_manager.playerDisconnected(*this);
+			kick();
 			return;
 		}
+
+		DLOG("Move time skipped received with time value " << timeSkipped);
+
+		auto moveInfo = m_character->getMovementInfo();
+		moveInfo.time += timeSkipped;
+		m_character->setMovementInfo(moveInfo);
 
 		// TODO: Do something with the time diff
 	}
