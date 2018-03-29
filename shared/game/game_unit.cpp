@@ -3363,8 +3363,8 @@ namespace wowpp
 			return 0.0f;
 		}
 
-		// If there is a root or a pending root applied, the unit can't move at all.
-		if (moveFlags & (Root | PendingRoot))
+		// If there is a root applied, the unit can't move at all.
+		if (moveFlags & Root)
 		{
 			return 0.0f;
 		}
