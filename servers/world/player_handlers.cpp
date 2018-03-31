@@ -544,20 +544,38 @@ namespace wowpp
 
 	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
 	{
-		// Ignore all movement packets before the character landed
-		if (!m_movementInitialized && opCode != game::client_packet::MoveFallLand)
+		// Ignore all movement packets before the character landed. Starting to swim
+		// counts as landing, thus we accept this packet as the first packet as well.
+		// Also, if the player starts flying, we allow this as the first movement packet
+		// as well.
+		if (!m_movementInitialized &&
+			opCode != game::client_packet::MoveFallLand &&
+			opCode != game::client_packet::MoveStartSwim &&
+			opCode != game::client_packet::MoveSetFly)
 			return;
 
-		// Can't receive player input when in one of these CC states
-		if (m_character->isFeared() || m_character->isConfused())
+		// Ignore movement packets from the client if the controlled unit is currently
+		// moved by the server.
+		if (m_character->getMover().isMoving())
 			return;
 
+		// Read the movement info from the movement packet
 		MovementInfo info;
-		if (!game::client_read::moveHeartBeat(packet, info))
+		if (!(packet >> info))
 		{
 			WLOG("Invalid movement packet received from client");
 			kick();
 			return;
+		}
+
+		// If movement hasn't been initialized yet, this is the first packet that is used.
+		// Because of that, we apply the time values that the client sent here.
+		if (!m_movementInitialized)
+		{
+			auto serverInfo = m_character->getMovementInfo();
+			serverInfo.time = info.time;
+			serverInfo.fallTime = info.fallTime;
+			m_character->setMovementInfo(serverInfo);
 		}
 
 		// Make sure that there is no timed out pending movement change (lag tolerance)
@@ -579,7 +597,7 @@ namespace wowpp
 		float expectedSpeed = m_character->getExpectedSpeed(m_character->getMovementInfo());
 		if (!validateMovementSpeed(expectedSpeed, info, m_character->getMovementInfo()))
 		{
-			WLOG("Invalid movement speed");
+			WLOG("Invalid movement speed for packet 0x" << std::hex << opCode);
 			kick();
 			return;
 		}
@@ -590,7 +608,7 @@ namespace wowpp
 		// Get object location
 		const math::Vector3 &location = m_character->getLocation();
 
-		// Player started swimming
+		// Remove auras on swimming transitions
 		if ((info.moveFlags & game::movement_flags::Swimming) != 0 &&
 			(m_character->getMovementInfo().moveFlags & game::movement_flags::Swimming) == 0)
 		{
@@ -602,11 +620,8 @@ namespace wowpp
 			m_character->getAuras().removeAllAurasDueToInterrupt(game::spell_aura_interrupt_flags::NotUnderWater);
 		}
 
-		// Store movement information
+		// Now that the movement info has been validated, we store it at the server.
 		m_character->setMovementInfo(info);
-
-		// Convert timestamp into server time
-		//info.time = m_serverSync + (info.time - m_clientSync);
 
 		// Transform into grid location
 		TileIndex2D gridIndex;
@@ -707,9 +722,8 @@ namespace wowpp
 		m_character->relocate(math::Vector3(info.x, info.y, info.z), info.o, true);
 		
 		// Set movement initialized packet
-		if (!m_movementInitialized && opCode == game::client_packet::MoveFallLand)
+		if (!m_movementInitialized)
 		{
-			DLOG("Player movement initialized!");
 			m_movementInitialized = true;
 		}
 

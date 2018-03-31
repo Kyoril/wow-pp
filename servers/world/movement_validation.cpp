@@ -130,14 +130,12 @@ namespace wowpp
 			return false;
 		}
 
-		// TODO: Server needs to handle MoveTimeSkipped opcode and add the time value to serverInfo.time to make this work
-		/*if (serverInfo.time != 0 && (serverInfo.moveFlags & Moving) && (clientInfo.time - serverInfo.time) > 500)
+		// While moving, heart beats can't be sent with more than 500ms timestamp difference from the client
+		if (serverInfo.time != 0 && (serverInfo.moveFlags & Moving) && (clientInfo.time - serverInfo.time) > 500)
 		{
 			WLOG("Client sent too large timestamp in movement packet.");
-			DLOG("serverInfo.time: " << serverInfo.time << "; clientInfo.time: " << clientInfo.time);
-			DLOG("opCode: 0x" << std::hex << opCode);
 			return false;
-		}*/
+		}
 
 		// MoveFallReset is only valid if the player was already falling
 		if (opCode == MoveFallReset)
@@ -230,15 +228,11 @@ namespace wowpp
 				return false;
 			}
 
-			// TODO: This produces wrong results right now
-			/*if (serverInfo.time != 0 && serverInfo.fallTime + timeDiff != clientInfo.fallTime)
+			if (serverInfo.time != 0 && serverInfo.fallTime + timeDiff != clientInfo.fallTime)
 			{
 				WLOG("Client tried to stop a fall but sent invalid fall time in the stopping packet!");
-				DLOG("\tserverInfo.fallTime = " << serverInfo.fallTime << "; timeDiff = " << timeDiff << "; clientInfo.fallTime = " << clientInfo.fallTime);
-				DLOG("\tclientInfo.time = " << clientInfo.time << "; serverInfo.time = " << serverInfo.time);
-				DLOG("\topCode: 0x" << std::hex << opCode);
 				return false;
-			}*/
+			}
 
 			if ((serverInfo.moveFlags & PendingRoot) && !(clientInfo.moveFlags & Root))
 			{
