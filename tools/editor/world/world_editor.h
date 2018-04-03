@@ -97,7 +97,7 @@ namespace wowpp
 			boost::asio::io_service m_dispatcher;
 			boost::asio::io_service m_workQueue;
 			std::unique_ptr<boost::asio::io_service::work> m_work;
-			boost::thread m_worker;
+			std::thread m_worker;
 			std::unique_ptr<paging::LoadedPageSection> m_visibleSection;
 			std::unique_ptr<WorldPageLoader> m_pageLoader;
 			std::unique_ptr<paging::PagePOVPartitioner> m_memoryPointOfView;

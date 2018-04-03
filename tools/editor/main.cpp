@@ -48,7 +48,7 @@ namespace
 	{
 		try
 		{
-			std::this_thread::sleep_for(boost::chrono::seconds(1));
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 			ILOG("REMOVING OLD FILE... " << previousExecutableToBeRemoved);
 			boost::filesystem::remove(previousExecutableToBeRemoved);
 		}

@@ -3355,6 +3355,12 @@ namespace wowpp
 		const UInt32 horzMoveFlags = (Forward | Backward | StrafeLeft | StrafeRight);
 		const UInt32& moveFlags = info.moveFlags;
 
+		// If we are jumping / falling, this is the expected move speed
+		if (moveFlags & (Falling | FallingFar))
+		{
+			return std::max(info.jumpXYSpeed, getSpeed(movement_type::Run));
+		}
+
 		// If not moving at all, we can't move at all. Theoretically, we could also
 		// return 0 if the root flag is set, however, anti cheat already ensures that
 		// root isn't combined with move flags.
@@ -3367,12 +3373,6 @@ namespace wowpp
 		if (moveFlags & Root)
 		{
 			return 0.0f;
-		}
-
-		// If we are jumping / falling, this is the expected move speed
-		if (moveFlags & (Falling | FallingFar))
-		{
-			return info.jumpXYSpeed;
 		}
 
 		const bool isInWalkMode = (moveFlags & WalkMode);
@@ -3389,9 +3389,10 @@ namespace wowpp
 		}
 
 		// Run speed?
+		float returnedSpeed = 0.0f;
 		if (moveFlags & (Forward | StrafeLeft | StrafeRight))
 		{
-			return getSpeed(moveStrafeType);
+			returnedSpeed = getSpeed(moveStrafeType);
 		}
 		else if (moveFlags & Backward)
 		{
@@ -3399,16 +3400,18 @@ namespace wowpp
 			switch (moveStrafeType)
 			{
 				case movement_type::Swim:
-					return getSpeed(movement_type::SwimBackwards);
+					returnedSpeed = getSpeed(movement_type::SwimBackwards);
+					break;
 				case movement_type::Flight:
-					return getSpeed(movement_type::FlightBackwards);
+					returnedSpeed = getSpeed(movement_type::FlightBackwards);
+					break;
 				default:
-					return getSpeed(movement_type::Backwards);
+					returnedSpeed = getSpeed(movement_type::Backwards);
+					break;
 			}
 		}
 
-		// Unreachable...
-		return 0.0f;
+		return returnedSpeed;
 	}
 
 	float GameUnit::getBaseSpeed(MovementType type) const

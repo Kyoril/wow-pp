@@ -406,17 +406,23 @@ namespace wowpp
 		return true;
 	}
 
-	bool validateMovementSpeed(float expectedSpeed, const MovementInfo & clientInfo, const MovementInfo & serverInfo)
+	bool validateMovementSpeed(float expectedSpeed, const MovementInfo & clientInfo, const MovementInfo & serverInfo, bool isFirstMove)
 	{
 		math::Vector3 lastPos(serverInfo.x, serverInfo.y, 0.0f);
 		math::Vector3 newPos(clientInfo.x, clientInfo.y, 0.0f);
 
 		const float distanceSq = (lastPos - newPos).squared_length();
-		const float maxDist = static_cast<float>(clientInfo.time - serverInfo.time) / 1000.0f * expectedSpeed;
-
-		if (distanceSq > ::powf(maxDist + 0.01f, 2.0f))
+		const UInt32 moveTime = (isFirstMove ? clientInfo.fallTime : clientInfo.time - serverInfo.time);
+		const float maxDist = 
+			static_cast<float>(moveTime) / 1000.0f * expectedSpeed;
+		
+		if (distanceSq > ::powf(maxDist + 0.138f, 2.0f))
 		{
 			WLOG("Distance was too much! Max dist: " << maxDist << ", distance was " << (lastPos - newPos).length());
+			DLOG("\tisFirstMove: " << isFirstMove);
+			DLOG("\tmoveTime: " << moveTime);
+			DLOG("\texpectedSpeed: " << expectedSpeed);
+			DLOG("\tisFalling: " << ((serverInfo.moveFlags & (Falling | FallingFar)) != 0));
 			return false;
 		}
 

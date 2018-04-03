@@ -64,7 +64,7 @@ namespace wowpp
 			disconnected();
 		}
 
-		void TeamConnector::connectionPacketReceived(pp::Protocol::IncomingPacket &packet)
+		PacketParseResult TeamConnector::connectionPacketReceived(pp::Protocol::IncomingPacket &packet)
 		{
 			const auto &packetId = packet.getId();
 
@@ -102,6 +102,8 @@ namespace wowpp
 					break;
 				}
 			}
+
+			return PacketParseResult::Pass;
 		}
 
 		bool TeamConnector::connectionEstablished(bool success)

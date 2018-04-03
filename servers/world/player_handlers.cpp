@@ -544,20 +544,13 @@ namespace wowpp
 
 	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
 	{
-		// Ignore all movement packets before the character landed. Starting to swim
-		// counts as landing, thus we accept this packet as the first packet as well.
-		// Also, if the player starts flying, we allow this as the first movement packet
-		// as well.
-		if (!m_movementInitialized &&
-			opCode != game::client_packet::MoveFallLand &&
-			opCode != game::client_packet::MoveStartSwim &&
-			opCode != game::client_packet::MoveSetFly)
-			return;
-
 		// Ignore movement packets from the client if the controlled unit is currently
 		// moved by the server.
 		if (m_character->getMover().isMoving())
+		{
+			WLOG("Ignoring move packet because controlled unit is currently moving!");
 			return;
+		}
 
 		// Read the movement info from the movement packet
 		MovementInfo info;
@@ -574,8 +567,16 @@ namespace wowpp
 		{
 			auto serverInfo = m_character->getMovementInfo();
 			serverInfo.time = info.time;
-			serverInfo.fallTime = info.fallTime;
-			m_character->setMovementInfo(serverInfo);
+
+			// Detect wrong fall time values
+			if (info.fallTime > 500)
+			{
+				WLOG("Fall time in first movement packet is too high!");
+				kick();
+				return;
+			}
+
+			m_character->setMovementInfo(info);
 		}
 
 		// Make sure that there is no timed out pending movement change (lag tolerance)
@@ -595,10 +596,10 @@ namespace wowpp
 
 		// Validate movement speed
 		float expectedSpeed = m_character->getExpectedSpeed(m_character->getMovementInfo());
-		if (!validateMovementSpeed(expectedSpeed, info, m_character->getMovementInfo()))
+		if (!validateMovementSpeed(expectedSpeed, info, m_character->getMovementInfo(), !m_movementInitialized))
 		{
 			WLOG("Invalid movement speed for packet 0x" << std::hex << opCode);
-			kick();
+			//kick();
 			return;
 		}
 		

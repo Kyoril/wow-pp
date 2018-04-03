@@ -91,7 +91,7 @@ namespace wowpp
 				Falling = 0x00001000,
 				/// Set while the player is falling and has passed the height value that he had while the Falling
 				/// flag was applied.
-				FallingFar = 0x00004000,
+				FallingFar = 0x00002000,
 
 				/// Set while the player is rooted but still falling. The current jump / fall will be continued
 				/// and the PendingRoot flag has to be transformed into a Root flag on landing.

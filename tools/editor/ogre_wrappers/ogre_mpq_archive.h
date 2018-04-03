@@ -43,29 +43,20 @@ namespace wowpp
 			void load() override;
 			/// @copydoc Ogre::Archive::unload()
 			void unload() override;
-#if (OGRE_VERSION_MAJOR >= 1 && OGRE_VERSION_MINOR == 10)
 			/// @copydoc Ogre::Archive::open()
-			Ogre::DataStreamPtr open(const Ogre::String &filename, bool readonly = true) override;
-#else 
-            Ogre::DataStreamPtr open(const Ogre::String &filename, bool readonly = true) const override;
-#endif
+			Ogre::DataStreamPtr open(const Ogre::String &filename, bool readonly = true) const override;
 			/// @copydoc Ogre::Archive::list()
-			Ogre::StringVectorPtr list(bool recursive = true, bool dirs = false) override;
+			Ogre::StringVectorPtr list(bool recursive = true, bool dirs = false) const override;
 			/// @copydoc Ogre::Archive::listFileInfo()
-			Ogre::FileInfoListPtr listFileInfo(bool recursive = true, bool dirs = false) override;
+			Ogre::FileInfoListPtr listFileInfo(bool recursive = true, bool dirs = false) const override;
 			/// @copydoc Ogre::Archive::find()
-			Ogre::StringVectorPtr find(const Ogre::String &pattern, bool recursive = true, bool dirs = false) override;
-#if (OGRE_VERSION_MAJOR >= 1 && OGRE_VERSION_MINOR == 10)
+			Ogre::StringVectorPtr find(const Ogre::String &pattern, bool recursive = true, bool dirs = false) const override;
 			/// @copydoc Ogre::Archive::findFileInfo()
-			Ogre::FileInfoListPtr findFileInfo(const Ogre::String &pattern, bool recursive = true, bool dirs = false) override;
-#else
-            /// @copydoc Ogre::Archive::findFileInfo()
-            Ogre::FileInfoListPtr findFileInfo(const Ogre::String &pattern, bool recursive = true, bool dirs = false) const override;
-#endif
+			Ogre::FileInfoListPtr findFileInfo(const Ogre::String &pattern, bool recursive = true, bool dirs = false) const override;
 			/// @copydoc Ogre::Archive::exists()
-			bool exists(const Ogre::String &filename) override;
+			bool exists(const Ogre::String &filename) const override;
 			/// @copydoc Ogre::Archive::getModifiedTime()
-			time_t getModifiedTime(const Ogre::String &filename) override;
+			time_t getModifiedTime(const Ogre::String &filename) const override;
 			/// @copydoc Ogre::Archive::isCaseSensitive()
 			bool isCaseSensitive() const override { return false; }
 
@@ -83,13 +74,8 @@ namespace wowpp
 
 			/// @copydoc Ogre::ArchiveFactory::getType()
 			const Ogre::String &getType() const override;
-#if (OGRE_VERSION_MAJOR > 1) || (OGRE_VERSION_MAJOR == 1 && OGRE_VERSION_MINOR > 7)
 			/// @copydoc Ogre::ArchiveFactory::createInstance()
 			Ogre::Archive *createInstance(const Ogre::String &name, bool readOnly) override;
-#else
-			/// @copydoc Ogre::ArchiveFactory::createInstance()
-			Ogre::Archive *createInstance(const Ogre::String &name) override;
-#endif
 			/// @copydoc Ogre::ArchiveFactory::destroyInstance()
 			void destroyInstance(Ogre::Archive *arch) override;
 		};

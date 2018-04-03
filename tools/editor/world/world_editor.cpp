@@ -59,7 +59,7 @@ namespace wowpp
 			// Create worker thread
 			boost::asio::io_service &workQueue = m_workQueue;
 			boost::asio::io_service &dispatcher = m_dispatcher;
-			m_worker = boost::thread([&workQueue]()
+			m_worker = std::thread([&workQueue]()
 			{
 				workQueue.run();
 			});

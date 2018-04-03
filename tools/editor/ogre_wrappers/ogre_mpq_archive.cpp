@@ -80,11 +80,7 @@ namespace wowpp
 			}
 		}
 
-#if (OGRE_VERSION_MAJOR >= 1 && OGRE_VERSION_MINOR == 10)
-		Ogre::DataStreamPtr MPQArchive::open(const Ogre::String &filename, bool readonly)
-#else
-        Ogre::DataStreamPtr MPQArchive::open(const Ogre::String &filename, bool readonly) const
-#endif
+		Ogre::DataStreamPtr MPQArchive::open(const Ogre::String &filename, bool readonly) const
 		{
 			// Open the file for reading
 			HANDLE hFile;
@@ -127,11 +123,11 @@ namespace wowpp
 			return Ogre::DataStreamPtr(OGRE_NEW Ogre::MemoryDataStream(buffer, fileSize, true, readonly));
 		}
 
-		Ogre::StringVectorPtr MPQArchive::list(bool recursive /*= true*/, bool dirs /*= false*/)
+		Ogre::StringVectorPtr MPQArchive::list(bool recursive /*= true*/, bool dirs /*= false*/) const
 		{
 			Ogre::StringVectorPtr ret = Ogre::StringVectorPtr(OGRE_NEW_T(Ogre::StringVector, Ogre::MEMCATEGORY_GENERAL)(), Ogre::SPFM_DELETE_T);
 
-			Ogre::FileInfoList::iterator i, iend;
+			Ogre::FileInfoList::const_iterator i, iend;
 			iend = m_fileList.end();
 
 			for (i = m_fileList.begin(); i != iend; ++i)
@@ -146,7 +142,7 @@ namespace wowpp
 			return ret;
 		}
 
-		Ogre::FileInfoListPtr MPQArchive::listFileInfo(bool recursive /*= true*/, bool dirs /*= false*/)
+		Ogre::FileInfoListPtr MPQArchive::listFileInfo(bool recursive /*= true*/, bool dirs /*= false*/) const
 		{
 			Ogre::FileInfoList *fil = OGRE_NEW_T(Ogre::FileInfoList, Ogre::MEMCATEGORY_GENERAL)();
 			Ogre::FileInfoList::const_iterator i, iend;
@@ -163,7 +159,7 @@ namespace wowpp
 			return Ogre::FileInfoListPtr(fil, Ogre::SPFM_DELETE_T);
 		}
 
-		Ogre::StringVectorPtr MPQArchive::find(const Ogre::String &pattern, bool recursive /*= true*/, bool dirs /*= false*/)
+		Ogre::StringVectorPtr MPQArchive::find(const Ogre::String &pattern, bool recursive /*= true*/, bool dirs /*= false*/) const
 		{
 			Ogre::StringVectorPtr ret = Ogre::StringVectorPtr(OGRE_NEW_T(Ogre::StringVector, Ogre::MEMCATEGORY_GENERAL)(), Ogre::SPFM_DELETE_T);
 
@@ -171,7 +167,7 @@ namespace wowpp
 			//	bool full_match = (pattern.find ('/') != Ogre::String::npos) ||
 			//					  (pattern.find ('\\') != Ogre::String::npos);
 
-			Ogre::FileInfoList::iterator i, iend;
+			Ogre::FileInfoList::const_iterator i, iend;
 			iend = m_fileList.end();
 			for (i = m_fileList.begin(); i != iend; ++i)
 			{
@@ -202,11 +198,7 @@ namespace wowpp
 			return ret;
 		}
 
-#if (OGRE_VERSION_MAJOR >= 1 && OGRE_VERSION_MINOR == 10)
-		Ogre::FileInfoListPtr MPQArchive::findFileInfo(const Ogre::String &pattern, bool recursive /*= true*/, bool dirs /*= false*/)
-#else 
-        Ogre::FileInfoListPtr MPQArchive::findFileInfo(const Ogre::String &pattern, bool recursive /*= true*/, bool dirs /*= false*/) const
-#endif
+		Ogre::FileInfoListPtr MPQArchive::findFileInfo(const Ogre::String &pattern, bool recursive /*= true*/, bool dirs /*= false*/) const
 		{
 			Ogre::FileInfoListPtr ret = Ogre::FileInfoListPtr(OGRE_NEW_T(Ogre::FileInfoList, Ogre::MEMCATEGORY_GENERAL)(), Ogre::SPFM_DELETE_T);
 
@@ -226,9 +218,9 @@ namespace wowpp
 			return ret;
 		}
 
-		bool MPQArchive::exists(const Ogre::String &filename)
+		bool MPQArchive::exists(const Ogre::String &filename) const
 		{
-			for (Ogre::FileInfoList::iterator i = m_fileList.begin(); i != m_fileList.end(); ++i)
+			for (Ogre::FileInfoList::const_iterator i = m_fileList.begin(); i != m_fileList.end(); ++i)
 			{
 				if (i->filename == filename || Ogre::StringUtil::match(i->filename, "*/" + filename, false))
 				{
@@ -239,13 +231,11 @@ namespace wowpp
 			return false;
 		}
 
-		time_t MPQArchive::getModifiedTime(const Ogre::String &filename)
+		time_t MPQArchive::getModifiedTime(const Ogre::String &filename) const
 		{
 			//TODO
 			return 0;
 		}
-
-
 
 		const Ogre::String & MPQArchiveFactory::getType() const
 		{
@@ -253,11 +243,7 @@ namespace wowpp
 			return type;
 		}
 
-#if (OGRE_VERSION_MAJOR > 1) || (OGRE_VERSION_MAJOR == 1 && OGRE_VERSION_MINOR > 7)
 		Ogre::Archive * MPQArchiveFactory::createInstance(const Ogre::String &name, bool readOnly)
-#else
-		Ogre::Archive * MPQArchiveFactory::createInstance(const Ogre::String &name)
-#endif
 		{
 			return new MPQArchive(name);
 		}
