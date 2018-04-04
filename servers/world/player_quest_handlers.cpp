@@ -394,6 +394,24 @@ namespace wowpp
 		});
 		if (result)
 		{
+			// If the quest should perform a spell cast on the players character, we will do so now
+			if (quest->rewardspellcast())
+			{
+				// Prepare the spell cast target map
+				SpellTargetMap targetMap;
+				targetMap.m_unitTarget = m_character->getGuid();
+				targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+
+				// Determine the unit which should cast the spell - if the quest rewarder is a unit, we make
+				// him cast the spell on the player. Otherwise, we make the player cast the spell on himself.
+				GameUnit* spellCaster = (object->isCreature() ? reinterpret_cast<GameUnit*>(object) : m_character.get());
+				ASSERT(spellCaster); 
+
+				// Finally, to the spell cast
+				spellCaster->castSpell(std::move(targetMap), quest->rewardspellcast(), { 0,0,0 }, 0, true);
+			}
+
+
 			// Try to find next quest and if there is one, send quest details
 			UInt32 nextQuestId = quest->nextchainquestid();
 			if (nextQuestId &&

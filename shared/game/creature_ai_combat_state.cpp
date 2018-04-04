@@ -486,7 +486,7 @@ namespace wowpp
 		// path.
 		currentLocation = mover.getTarget();//(mover.isMoving() ? mover.getTarget() : mover.getCurrentLocation());
 
-		math::Vector3 currentUnitLoc = target.getLocation();
+		math::Vector3 currentUnitLoc = target.getPredictedPosition(1.0f);
 		const float distance =
 		    (currentUnitLoc - currentLocation).squared_length();
 
