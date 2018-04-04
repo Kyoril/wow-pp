@@ -39,7 +39,7 @@ using namespace std;
 
 namespace wowpp
 {
-	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance, proto::Project &project)
+	Player::Player(PlayerManager &manager, RealmConnector &realmConnector, WorldInstanceManager &worldInstanceManager, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance, proto::Project &project, auth::AuthLocale locale)
 		: m_manager(manager)
 		, m_realmConnector(realmConnector)
 		, m_worldInstanceManager(worldInstanceManager)
@@ -59,6 +59,7 @@ namespace wowpp
 		, m_nextClientSync(instance.getUniverse().getTimers())
 		, m_timeSyncCounter(0)
 		, m_movementInitialized(false)
+		, m_locale(locale)
 	{
 		// Connect character signals
 		m_characterSignals.append({
@@ -1320,12 +1321,14 @@ namespace wowpp
 					const auto *quest = m_project.quests.getById(questid);
 					if (quest)
 					{
+						const String &questName = (quest->name_loc_size() >= m_locale) ? quest->name_loc(m_locale - 1) : quest->name();
+
 						game::QuestMenuItem item;
 						item.quest = quest;
 						item.menuIcon = (questStatus == game::quest_status::Incomplete ?
 							game::questgiver_status::Incomplete : game::questgiver_status::RewardRep);
 						item.questLevel = quest->questlevel();
-						item.title = quest->name();
+						item.title = questName.empty() ? quest->name() : questName;
 						questMenu.emplace_back(std::move(item));
 					}
 				}
@@ -1338,11 +1341,13 @@ namespace wowpp
 					const auto *quest = m_project.quests.getById(questid);
 					if (quest)
 					{
+						const String &questName = (quest->name_loc_size() >= m_locale) ? quest->name_loc(m_locale - 1) : quest->name();
+
 						game::QuestMenuItem item;
 						item.quest = quest;
 						item.menuIcon = game::questgiver_status::Chat;
 						item.questLevel = quest->questlevel();
-						item.title = quest->name();
+						item.title = questName.empty() ? quest->name() : questName;
 						questMenu.emplace_back(std::move(item));
 					}
 				}
@@ -1359,12 +1364,14 @@ namespace wowpp
 					const auto *quest = m_project.quests.getById(questid);
 					ASSERT(quest);
 
+					const String &questName = (quest->name_loc_size() >= m_locale) ? quest->name_loc(m_locale - 1) : quest->name();
+
 					game::QuestMenuItem item;
 					item.quest = quest;
 					item.menuIcon = questStatus == game::quest_status::Incomplete ?
 						game::questgiver_status::Incomplete : game::questgiver_status::Reward;
 					item.questLevel = quest->questlevel();
-					item.title = quest->name();
+					item.title = questName.empty() ? quest->name() : questName;
 					questMenu.emplace_back(std::move(item));
 				}
 			}
@@ -1376,11 +1383,13 @@ namespace wowpp
 					const auto *quest = m_project.quests.getById(questid);
 					ASSERT(quest);
 
+					const String &questName = (quest->name_loc_size() >= m_locale) ? quest->name_loc(m_locale - 1) : quest->name();
+
 					game::QuestMenuItem item;
 					item.quest = quest;
 					item.menuIcon = game::questgiver_status::Chat;
 					item.questLevel = quest->questlevel();
-					item.title = quest->name();
+					item.title = questName.empty() ? quest->name() : questName;
 					questMenu.emplace_back(std::move(item));
 				}
 			}
@@ -1399,20 +1408,20 @@ namespace wowpp
 				case game::questgiver_status::Chat:
 				case game::questgiver_status::Available:
 					sendProxyPacket(
-						std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, guid, std::cref(m_project.items), std::cref(*menuItem.quest)));
+						std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, m_locale, guid, std::cref(m_project.items), std::cref(*menuItem.quest)));
 					break;
 				case game::questgiver_status::Incomplete:
 					if (!menuItem.quest->requestitemstext().empty())
-						sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, guid, true, false, std::cref(m_project.items), std::cref(*menuItem.quest)));
+						sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, m_locale, guid, true, false, std::cref(m_project.items), std::cref(*menuItem.quest)));
 					else
-						sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, false, std::cref(m_project.items), std::cref(*menuItem.quest)));
+						sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, m_locale, guid, false, std::cref(m_project.items), std::cref(*menuItem.quest)));
 					break;
 				case game::questgiver_status::Reward:
 				case game::questgiver_status::RewardRep:
 					if (!menuItem.quest->requestitemstext().empty())
-						sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, guid, true, true, std::cref(m_project.items), std::cref(*menuItem.quest)));
+						sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, m_locale, guid, true, true, std::cref(m_project.items), std::cref(*menuItem.quest)));
 					else
-						sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, true, std::cref(m_project.items), std::cref(*menuItem.quest)));
+						sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, m_locale, guid, true, std::cref(m_project.items), std::cref(*menuItem.quest)));
 					break;
 				}
 				

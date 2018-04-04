@@ -213,13 +213,14 @@ namespace wowpp
 					out_packet.finish();
 				}
 
-				void characterLogIn(pp::OutgoingPacket &out_packet, DatabaseId characterRealmId, UInt32 instanceId, const GameCharacter &character)
+				void characterLogIn(pp::OutgoingPacket &out_packet, DatabaseId characterRealmId, UInt32 instanceId, const GameCharacter &character, auth::AuthLocale locale)
 				{
 					out_packet.start(realm_packet::CharacterLogIn);
 					out_packet
-					        << io::write<NetDatabaseId>(characterRealmId)
-					        << io::write<NetUInt32>(instanceId)
-					        << character;
+						<< io::write<NetDatabaseId>(characterRealmId)
+						<< io::write<NetUInt32>(instanceId)
+						<< character
+						<< io::write<NetUInt32>(locale);
 					out_packet.finish();
 				}
 
@@ -490,14 +491,15 @@ namespace wowpp
 					return true;
 				}
 
-				bool characterLogIn(io::Reader &packet, DatabaseId &out_characterRealmId, UInt32 &out_instanceId, GameCharacter *out_character)
+				bool characterLogIn(io::Reader &packet, DatabaseId &out_characterRealmId, UInt32 &out_instanceId, GameCharacter *out_character, auth::AuthLocale &out_locale)
 				{
 					assert(out_character);
 
 					return packet
 					       >> io::read<NetDatabaseId>(out_characterRealmId)
 					       >> io::read<NetUInt32>(out_instanceId)
-					       >> *out_character;
+					       >> *out_character
+							>> io::read<NetUInt32>(out_locale);
 				}
 
 				bool clientProxyPacket(io::Reader &packet, DatabaseId &out_characterId, UInt16 &out_opCode, UInt32 &out_size, std::vector<char> &out_packetBuffer)

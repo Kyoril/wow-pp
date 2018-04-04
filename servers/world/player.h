@@ -76,7 +76,8 @@ namespace wowpp
 						DatabaseId characterId,
 						std::shared_ptr<GameCharacter> character,
 						WorldInstance &instance,
-						proto::Project &project);
+						proto::Project &project,
+						auth::AuthLocale locale);
 
 		/// Gets the player manager which manages all connected players.
 		PlayerManager &getManager() const { return m_manager; }
@@ -347,6 +348,7 @@ namespace wowpp
 		UInt32 m_timeSyncCounter;
 		GameTime m_lastTimeSync;
 		bool m_movementInitialized;
+		auth::AuthLocale m_locale;
 
 		/*struct ClientAck
 		{

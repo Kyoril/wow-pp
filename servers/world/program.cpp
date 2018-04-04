@@ -162,7 +162,7 @@ namespace wowpp
 			realmConnectors.push_back(std::move(realmConnector));
 		}
 		
-		auto const createPlayer = [&PlayerManager, &worldInstanceManager, &project](RealmConnector &connector, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)
+		auto const createPlayer = [&PlayerManager, &worldInstanceManager, &project](RealmConnector &connector, auth::AuthLocale locale, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)
 		{
 			// Create the player instance
 			std::unique_ptr<wowpp::Player> player(
@@ -173,7 +173,8 @@ namespace wowpp
 					characterId, 
 					std::move(character),
 					instance,
-					project
+					project,
+					locale
 					)
 				);
 

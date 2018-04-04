@@ -525,7 +525,7 @@ namespace wowpp
 		});
 
 		// There should be an instance
-		worldNode->enterWorldInstance(charEntry->id, groupInstanceId, *m_gameCharacter);
+		worldNode->enterWorldInstance(charEntry->id, groupInstanceId, *m_gameCharacter, m_locale);
 		return PacketParseResult::Pass;
 	}
 
@@ -1445,7 +1445,7 @@ namespace wowpp
 
 		// There should be an instance
 		m_worldNode = world;
-		m_worldNode->enterWorldInstance(m_characterId, groupInstanceId, *m_gameCharacter);
+		m_worldNode->enterWorldInstance(m_characterId, groupInstanceId, *m_gameCharacter, m_locale);
 
 		// Reset transfer data
 		m_transferMap = 0;
@@ -1796,7 +1796,7 @@ namespace wowpp
 
 		// Send response
 		sendPacket(
-			std::bind(game::server_write::questQueryResponse, std::placeholders::_1, std::cref(*quest)));
+			std::bind(game::server_write::questQueryResponse, std::placeholders::_1, m_locale, std::cref(*quest)));
 		return PacketParseResult::Pass;
 	}
 

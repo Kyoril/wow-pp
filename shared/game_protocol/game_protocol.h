@@ -1915,13 +1915,15 @@ namespace wowpp
 
 			void questgiverQuestDetails(
 			    game::OutgoingPacket &out_packet,
+				Int32 localeIndex,
 			    UInt64 guid,
 			    const proto::ItemManager &items,
 			    const proto::QuestEntry &quest
 			);
 
 			void questQueryResponse(
-			    game::OutgoingPacket &out_packet,
+			    game::OutgoingPacket &out_packet, 
+				Int32 localeIndex,
 			    const proto::QuestEntry &quest
 			);
 
@@ -1936,6 +1938,7 @@ namespace wowpp
 
 			void questgiverRequestItems(
 			    game::OutgoingPacket &out_packet,
+				Int32 localeIndex,
 			    UInt64 guid,
 			    bool closeOnCancel,
 			    bool enableNext,
@@ -1945,6 +1948,7 @@ namespace wowpp
 
 			void questgiverOfferReward(
 			    game::OutgoingPacket &out_packet,
+				Int32 localeIndex,
 			    UInt64 guid,
 			    bool enableNext,
 			    const proto::ItemManager &items,

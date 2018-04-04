@@ -30,6 +30,7 @@
 #include "game/game_character.h"
 #include "common/timer_queue.h"
 #include "game/mail.h"
+#include "auth_protocol/auth_protocol.h"
 
 namespace wowpp
 {
@@ -55,7 +56,7 @@ namespace wowpp
 
 	public:
 
-		simple::signal<void (RealmConnector &connector, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)> worldInstanceEntered;
+		simple::signal<void (RealmConnector &connector, auth::AuthLocale locale, DatabaseId characterId, std::shared_ptr<GameCharacter> character, WorldInstance &instance)> worldInstanceEntered;
 
 	public:
 

@@ -94,7 +94,7 @@ namespace wowpp
 		const InstanceList &getInstanceList() const { return m_instances; }
 		
 		// Called by player
-		void enterWorldInstance(UInt64 characterDbId, UInt32 instanceId, const GameCharacter &character);
+		void enterWorldInstance(UInt64 characterDbId, UInt32 instanceId, const GameCharacter &character, auth::AuthLocale locale);
 		void leaveWorldInstance(UInt64 characterDbId, pp::world_realm::WorldLeftReason reason);
 		void sendProxyPacket(UInt64 characterGuid, UInt16 opCode, UInt32 size, const std::vector<char> &buffer);
 		void sendChatMessage(UInt64 characterGuid, game::ChatMsg type, game::Language lang, const String &receiver, const String &channel, const String &message);

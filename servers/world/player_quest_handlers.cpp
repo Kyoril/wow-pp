@@ -196,7 +196,7 @@ namespace wowpp
 		}
 
 		sendProxyPacket(
-			std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, guid, std::cref(m_project.items), std::cref(*quest)));
+			std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, m_locale, guid, std::cref(m_project.items), std::cref(*quest)));
 		//DLOG("CMSG_QUESTGIVER_QUERY_QUEST: 0x" << std::hex << std::setw(16) << std::setfill('0') << guid << "; Quest: " << std::dec << questId);
 	}
 
@@ -320,9 +320,9 @@ namespace wowpp
 
 		const bool hasCompleted = (m_character->getQuestStatus(questId) == game::quest_status::Complete);
 		if (!quest->requestitemstext().empty())
-			sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, guid, true, hasCompleted, std::cref(m_project.items), std::cref(*quest)));
+			sendProxyPacket(std::bind(game::server_write::questgiverRequestItems, std::placeholders::_1, m_locale, guid, true, hasCompleted, std::cref(m_project.items), std::cref(*quest)));
 		else
-			sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid, hasCompleted, std::cref(m_project.items), std::cref(*quest)));
+			sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, m_locale, guid, hasCompleted, std::cref(m_project.items), std::cref(*quest)));
 	}
 
 	void Player::handleQuestgiverRequestReward(game::Protocol::IncomingPacket & packet)
@@ -350,7 +350,7 @@ namespace wowpp
 
 		// Check quest state
 		auto state = m_character->getQuestStatus(questId);
-		sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, guid,
+		sendProxyPacket(std::bind(game::server_write::questgiverOfferReward, std::placeholders::_1, m_locale, guid,
 			(state == game::quest_status::Complete), std::cref(m_project.items), std::cref(*quest)));
 	}
 
@@ -404,7 +404,7 @@ namespace wowpp
 				if (nextQuestEntry)
 				{
 					sendProxyPacket(
-						std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, guid, std::cref(m_project.items), std::cref(*nextQuestEntry)));
+						std::bind(game::server_write::questgiverQuestDetails, std::placeholders::_1, m_locale, guid, std::cref(m_project.items), std::cref(*nextQuestEntry)));
 				}
 			}
 		}

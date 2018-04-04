@@ -28,6 +28,7 @@
 #include "game/game_character.h"
 #include "game/defines.h"
 #include "game/mail.h"
+#include "auth_protocol/auth_protocol.h"
  
 namespace wowpp
 {
@@ -35,7 +36,7 @@ namespace wowpp
 	{
 		namespace world_realm
 		{
-			static const UInt32 ProtocolVersion = 0x18;
+			static const UInt32 ProtocolVersion = 0x19;
 
 			namespace world_instance_error
 			{
@@ -307,7 +308,8 @@ namespace wowpp
 				    pp::OutgoingPacket &out_packet,
 				    DatabaseId characterRealmId,
 				    UInt32 instanceId,
-				    const GameCharacter &character
+				    const GameCharacter &character,
+					auth::AuthLocale locale
 				);
 
 				///
@@ -527,7 +529,8 @@ namespace wowpp
 				    io::Reader &packet,
 				    DatabaseId &out_characterRealmId,
 				    UInt32 &out_instanceId,
-				    GameCharacter *out_character
+				    GameCharacter *out_character,
+					auth::AuthLocale &out_locale
 				);
 
 				///

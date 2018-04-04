@@ -192,10 +192,10 @@ namespace wowpp
 			std::bind(realm_write::loginAnswer, std::placeholders::_1, login_result::Success, std::cref(m_realmName)));
 	}
 
-	void World::enterWorldInstance(UInt64 characterGuid, UInt32 instanceId, const GameCharacter &character)
+	void World::enterWorldInstance(UInt64 characterGuid, UInt32 instanceId, const GameCharacter &character, auth::AuthLocale locale)
 	{
 		m_connection->sendSinglePacket(
-			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterGuid, instanceId, std::cref(character)));
+			std::bind(pp::world_realm::realm_write::characterLogIn, std::placeholders::_1, characterGuid, instanceId, std::cref(character), locale));
 	}
 
 	void World::leaveWorldInstance(UInt64 characterGuid, pp::world_realm::WorldLeftReason reason)

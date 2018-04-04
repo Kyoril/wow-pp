@@ -2397,15 +2397,19 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void questgiverQuestDetails(game::OutgoingPacket &out_packet, UInt64 guid, const proto::ItemManager &items, const proto::QuestEntry &quest)
+			void questgiverQuestDetails(game::OutgoingPacket &out_packet, Int32 localeIndex, UInt64 guid, const proto::ItemManager &items, const proto::QuestEntry &quest)
 			{
+				const String &name = (quest.name_loc_size() >= localeIndex) ? quest.name_loc(localeIndex - 1) : quest.name();
+				const String &detailstext = (quest.detailstext_loc_size() >= localeIndex) ? quest.detailstext_loc(localeIndex - 1) : quest.detailstext();
+				const String &objectivestext = (quest.objectivestext_loc_size() >= localeIndex) ? quest.objectivestext_loc(localeIndex - 1) : quest.objectivestext();
+				
 				out_packet.start(game::server_packet::QuestgiverQuestDetails);
 				out_packet
 				        << io::write<NetUInt64>(guid)
 				        << io::write<NetUInt32>(quest.id())
-				        << io::write_range(quest.name()) << io::write<NetUInt8>(0)
-				        << io::write_range(quest.detailstext()) << io::write<NetUInt8>(0)
-				        << io::write_range(quest.objectivestext()) << io::write<NetUInt8>(0)
+				        << io::write_range(name.empty() ? quest.name() : name) << io::write<NetUInt8>(0)
+				        << io::write_range(detailstext.empty() ? quest.detailstext() : detailstext) << io::write<NetUInt8>(0)
+				        << io::write_range(objectivestext.empty() ? quest.objectivestext() : objectivestext) << io::write<NetUInt8>(0)
 				        << io::write<NetUInt32>(1)		// Activate accept button? (true)
 				        << io::write<NetUInt32>(quest.suggestedplayers());
 
@@ -2468,7 +2472,7 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void questQueryResponse(game::OutgoingPacket &out_packet, const proto::QuestEntry &quest)
+			void questQueryResponse(game::OutgoingPacket &out_packet, Int32 localeIndex, const proto::QuestEntry &quest)
 			{
 				out_packet.start(game::server_packet::QuestQueryResponse);
 				out_packet
@@ -2532,15 +2536,21 @@ namespace wowpp
 					}
 				}
 
+
+				const String &name = (quest.name_loc_size() >= localeIndex) ? quest.name_loc(localeIndex - 1) : quest.name();
+				const String &detailstext = (quest.detailstext_loc_size() >= localeIndex) ? quest.detailstext_loc(localeIndex - 1) : quest.detailstext();
+				const String &objectivestext = (quest.objectivestext_loc_size() >= localeIndex) ? quest.objectivestext_loc(localeIndex - 1) : quest.objectivestext();
+				const String &endtext = (quest.endtext_loc_size() >= localeIndex) ? quest.endtext_loc(localeIndex - 1) : quest.endtext();
+				
 				out_packet
 				        << io::write<NetUInt32>(quest.pointmapid())
 				        << io::write<float>(quest.pointx())
 				        << io::write<float>(quest.pointy())
 				        << io::write<NetUInt32>(quest.pointopt())
-				        << io::write_range(quest.name()) << io::write<NetUInt8>(0)
-				        << io::write_range(quest.detailstext()) << io::write<NetUInt8>(0)
-				        << io::write_range(quest.objectivestext()) << io::write<NetUInt8>(0)
-				        << io::write_range(quest.endtext()) << io::write<NetUInt8>(0);
+				        << io::write_range(name.empty() ? quest.name() : name) << io::write<NetUInt8>(0)
+				        << io::write_range(detailstext.empty() ? quest.detailstext() : detailstext) << io::write<NetUInt8>(0)
+				        << io::write_range(objectivestext.empty() ? quest.objectivestext() : objectivestext) << io::write<NetUInt8>(0)
+				        << io::write_range(endtext.empty() ? quest.endtext() : endtext) << io::write<NetUInt8>(0);
 				for (int i = 0; i < 4; ++i)
 				{
 					if (i < quest.requirements_size())
@@ -2601,14 +2611,17 @@ namespace wowpp
 				out_packet.finish();
 			}
 
-			void questgiverRequestItems(game::OutgoingPacket &out_packet, UInt64 guid, bool closeOnCancel, bool enableNext, const proto::ItemManager &items, const proto::QuestEntry &quest)
+			void questgiverRequestItems(game::OutgoingPacket &out_packet, Int32 localeIndex, UInt64 guid, bool closeOnCancel, bool enableNext, const proto::ItemManager &items, const proto::QuestEntry &quest)
 			{
+				const String &name = (quest.name_loc_size() >= localeIndex) ? quest.name_loc(localeIndex - 1) : quest.name();
+				const String &requesttext = (quest.requestitemstext_loc_size() >= localeIndex) ? quest.requestitemstext_loc(localeIndex - 1) : quest.requestitemstext();
+
 				out_packet.start(game::server_packet::QuestgiverRequestItems);
 				out_packet
 				        << io::write<NetUInt64>(guid)
 				        << io::write<NetUInt32>(quest.id())
-				        << io::write_range(quest.name()) << io::write<NetUInt8>(0)
-				        << io::write_range(quest.requestitemstext()) << io::write<NetUInt8>(0)
+				        << io::write_range(name.empty() ? quest.name() : name) << io::write<NetUInt8>(0)
+				        << io::write_range(requesttext.empty() ? quest.requestitemstext() : requesttext) << io::write<NetUInt8>(0)
 				        << io::write<NetUInt32>(0)		// Unknown
 				        << io::write<NetUInt32>(0)		// Emote
 				        << io::write<NetUInt32>(closeOnCancel ? 1 : 0)
@@ -2644,14 +2657,17 @@ namespace wowpp
 				        << io::write<NetUInt32>(0x10);				// Unknown
 				out_packet.finish();
 			}
-			void questgiverOfferReward(game::OutgoingPacket &out_packet, UInt64 guid, bool enableNext, const proto::ItemManager &items, const proto::QuestEntry &quest)
+			void questgiverOfferReward(game::OutgoingPacket &out_packet, Int32 localeIndex, UInt64 guid, bool enableNext, const proto::ItemManager &items, const proto::QuestEntry &quest)
 			{
+				const String &name = (quest.name_loc_size() >= localeIndex) ? quest.name_loc(localeIndex - 1) : quest.name();
+				const String &rewardtext = (quest.offerrewardtext_loc_size() >= localeIndex) ? quest.offerrewardtext_loc(localeIndex - 1) : quest.offerrewardtext();
+	
 				out_packet.start(game::server_packet::QuestgiverOfferReward);
 				out_packet
 				        << io::write<NetUInt64>(guid)
 				        << io::write<NetUInt32>(quest.id())
-				        << io::write_range(quest.name()) << io::write<NetUInt8>(0)
-				        << io::write_range(quest.offerrewardtext()) << io::write<NetUInt8>(0)
+				        << io::write_range(name.empty() ? quest.name() : name) << io::write<NetUInt8>(0)
+				        << io::write_range(rewardtext.empty() ? quest.offerrewardtext() : rewardtext) << io::write<NetUInt8>(0)
 				        << io::write<NetUInt32>(enableNext ? 1 : 0)
 				        << io::write<NetUInt32>(0)		// Unknown
 				        << io::write<NetUInt32>(0)		// Emote count

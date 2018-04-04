@@ -2693,9 +2693,31 @@ namespace wowpp
 			}
 		}
 
+		for (auto &quest : *project.quests.getTemplates().mutable_entry())
+		{
+			quest.clear_name_loc();
+			quest.clear_detailstext_loc();
+			quest.clear_objectivestext_loc();
+			quest.clear_offerrewardtext_loc();
+			quest.clear_requestitemstext_loc();
+			quest.clear_endtext_loc();
+
+			// Fill with default texts
+			for (int i = 0; i < 12; ++i)
+			{
+				quest.add_name_loc();
+				quest.add_detailstext_loc();
+				quest.add_objectivestext_loc();
+				quest.add_offerrewardtext_loc();
+				quest.add_requestitemstext_loc();
+				quest.add_endtext_loc();
+			}
+		}
+
 		if (!conn.execute("SET NAMES 'UTF8';"))
 		{
 			ELOG("Database error: " << conn.getErrorMessage());
+			return false;
 		}
 
 		{
@@ -2727,6 +2749,11 @@ namespace wowpp
 
 					row = row.next(select);
 				}
+			}
+			else
+			{
+				ELOG("Database error: " << conn.getErrorMessage());
+				return false;
 			}
 		}
 
@@ -2760,6 +2787,11 @@ namespace wowpp
 					row = row.next(select);
 				}
 			}
+			else
+			{
+				ELOG("Database error: " << conn.getErrorMessage());
+				return false;
+			}
 		}
 
 		{
@@ -2791,6 +2823,56 @@ namespace wowpp
 
 					row = row.next(select);
 				}
+			}
+			else
+			{
+				ELOG("Database error: " << conn.getErrorMessage());
+				return false;
+			}
+		}
+
+		{
+			wowpp::MySQL::Select select(conn, "SELECT `entry`, `Title_loc3`, `Details_loc3`, `Objectives_loc3`, `OfferRewardText_loc3`, `RequestItemsText_loc3`, `EndText_loc3` FROM `tbcdb`.`locales_quest` WHERE Title_loc3 IS NOT NULL AND TRIM(Title_loc3) <> '';");
+			if (select.success())
+			{
+				wowpp::MySQL::Row row(select);
+				while (row)
+				{
+					UInt32 entryId = 0;
+					String name_loc3, details_loc3, objectives_loc3, offerreward_loc3, requestitems_loc3, end_loc3;
+					row.getField(0, entryId);
+					row.getField(1, name_loc3);
+					row.getField(2, details_loc3);
+					row.getField(3, objectives_loc3);
+					row.getField(4, offerreward_loc3);
+					row.getField(5, requestitems_loc3);
+					row.getField(6, end_loc3);
+
+					do
+					{
+						// Find quest
+						auto *quest = project.quests.getById(entryId);
+						if (!quest)
+						{
+							WLOG("Unable to find quest " << entryId);
+							break;
+						}
+
+						if (!name_loc3.empty()) quest->set_name_loc(1, name_loc3);
+						if (!details_loc3.empty()) quest->set_detailstext_loc(1, details_loc3);
+						if (!objectives_loc3.empty()) quest->set_objectivestext_loc(1, objectives_loc3);
+						if (!offerreward_loc3.empty()) quest->set_offerrewardtext_loc(1, offerreward_loc3);
+						if (!requestitems_loc3.empty()) quest->set_requestitemstext_loc(1, requestitems_loc3);
+						if (!end_loc3.empty()) quest->set_endtext_loc(1, end_loc3);
+					} while (false);
+
+					row = row.next(select);
+				}
+			}
+			else
+			{
+				ELOG("Database error: " << conn.getErrorMessage());
+				return false;
 			}
 		}
 
@@ -3162,9 +3244,9 @@ int main(int argc, char* argv[])
 		ILOG("MySQL connection established!");
 	}
 	
-	if (!updateSpells(protoProject))
+	if (!importLocales(protoProject, connection))
 	{
-		WLOG("Couldn't update spells");
+		WLOG("Couldn't import locales!");
 		return 1;
 	}
 
@@ -3173,9 +3255,6 @@ int main(int argc, char* argv[])
 	{
 		return 1;
 	}
-
-	// Wait for user input to finish
-	std::cin.get();
 
 	// Shutdown protobuf and free all memory (optional)
 	google::protobuf::ShutdownProtobufLibrary();

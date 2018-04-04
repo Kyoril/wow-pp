@@ -250,12 +250,13 @@ namespace wowpp
 	void RealmConnector::handleCharacterLogin(pp::Protocol::IncomingPacket &packet)
 	{
 		// Read packet from the realm
+		auth::AuthLocale locale = auth::auth_locale::Unknown;
 		DatabaseId requesterDbId;
 		UInt32 instanceId;
 		std::shared_ptr<GameCharacter> character(new GameCharacter(
 			m_project,
 			m_worldInstanceManager.getUniverse().getTimers()));
-		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, instanceId, character.get())))
+		if (!(pp::world_realm::realm_read::characterLogIn(packet, requesterDbId, instanceId, character.get(), locale)))
 		{
 			// Error: could not read packet
 			return;
@@ -331,7 +332,7 @@ namespace wowpp
 		
 		// Fire signal which should create a player instance for us
 		character->setWorldInstance(instance);	// This is required for spell auras
-		worldInstanceEntered(*this, requesterDbId, character, *instance);
+		worldInstanceEntered(*this, locale, requesterDbId, character, *instance);
 
 		// Get character location
 		UInt32 mapId = map->id();
