@@ -23,11 +23,34 @@
 
 #include "simple_file_format/sff_write_table.h"
 #include "common/typedefs.h"
+#include "common/constants.h"
 
 namespace wowpp
 {
 	namespace editor
 	{
+		struct DataProject
+		{
+			/// The project name.
+			String name;
+			/// The export path of the data project.
+			String exportPath;
+			/// The database infos of this project.
+			struct DatabaseInfo
+			{
+				/// The port to be used for a mysql connection.
+				NetPort mysqlPort = constants::DefaultMySQLPort;
+				/// The mysql server host address (ip or dns).
+				String mysqlHost = "127.0.0.1";
+				/// The mysql user to be used.
+				String mysqlUser = "username";
+				/// The mysql user password to be used.
+				String mysqlPassword = "password";
+				/// The mysql database to be used.
+				String mysqlDatabase = "database";
+			} databaseInfo;
+		};
+
 		/// Manages the editor configuration.
 		struct Configuration
 		{
@@ -39,23 +62,13 @@ namespace wowpp
 			/// Path to WoW
 			String wowGamePath;
 
-
 			/// The port to be used by the team server for editors to log in.
 			NetPort teamPort;
 			/// IP/Domain of the team server.
 			String teamAddress;
 			
-
-			/// The port to be used for a mysql connection.
-			NetPort mysqlPort;
-			/// The mysql server host address (ip or dns).
-			String mysqlHost;
-			/// The mysql user to be used.
-			String mysqlUser;
-			/// The mysql user password to be used.
-			String mysqlPassword;
-			/// The mysql database to be used.
-			String mysqlDatabase;
+			/// A list of data projects.
+			std::vector<DataProject> projects;
 
 			/// Indicates whether or not file logging is enabled.
 			bool isLogActive;
@@ -64,7 +77,6 @@ namespace wowpp
 			/// If enabled, the log contents will be buffered before they are written to
 			/// the file, which could be more efficient..
 			bool isLogFileBuffering;
-
 
 			explicit Configuration();
 			bool load(const String &fileName);

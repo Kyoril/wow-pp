@@ -99,6 +99,8 @@ namespace wowpp
 			VariableListModel *getVariableListModel() { return m_variableListModel.get(); }
 			proto::Project &getProject() { return m_project; }
 			Configuration &getConfiguration() { return m_configuration; }
+			inline const DataProject& getActiveProject() const { return m_activeProject; }
+			inline void setActiveProject(DataProject project) { m_activeProject = std::move(project); }
 			Selection &getSelection() { return m_selection; }
 			const TransformTool &getTransformTool() const { return m_transformTool; }
 			void setTransformTool(TransformTool tool);
@@ -137,6 +139,7 @@ namespace wowpp
 			QTimer *m_pollTimer;
 			Selection m_selection;
 			Configuration m_configuration;
+			DataProject m_activeProject;
 			MainWindow *m_mainWindow;
 			ObjectEditor *m_objectEditor;
 			TriggerEditor *m_triggerEditor;

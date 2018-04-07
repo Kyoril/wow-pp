@@ -25,8 +25,8 @@
 #include "windows/object_editor.h"
 #include "windows/trigger_editor.h"
 #include "windows/variable_editor.h"
-#include "windows/login_dialog.h"
 #include "windows/update_dialog.h"
+#include "windows/project_dialog.h"
 #include "team_connector.h"
 #include "common/make_unique.h"
 #include <QApplication>
@@ -189,16 +189,15 @@ namespace wowpp
 			// Setup team connector
 			m_teamConnector = make_unique<TeamConnector>(m_ioService, m_configuration, m_project, m_timers);
 			
-			// Load login window
-			LoginDialog loginDialog(*this);
-			if (loginDialog.exec() != QDialog::Accepted)
+			// Setup project dialog
+			ProjectDialog projectDialog(*this);
+			if (projectDialog.exec() != QDialog::Accepted)
 			{
-				// Could not login - disconnect
 				return false;
 			}
 
-			// Load the project
-			if (!m_project.load(m_configuration.dataPath))
+			// Load the project from the database
+			if (!m_project.load(m_activeProject.exportPath))
 			{
 				// Display error message
 				QMessageBox::critical(
@@ -222,7 +221,7 @@ namespace wowpp
 
 			// Show the main window (will be deleted when this class is deleted by QT)
 			m_mainWindow = new MainWindow(*this);
-
+			
 			// Move this window to the center of the screen manually, since without this, there seems to be a crash
 			// in QtGui somewhere...
 			QRect screen = QApplication::desktop()->availableGeometry();
@@ -384,7 +383,7 @@ namespace wowpp
 		void EditorApplication::saveUnsavedChanges()
 		{
 			// Save data project
-			if (!m_project.save(m_configuration.dataPath))
+			if (!m_project.save(m_activeProject.exportPath))
 			{
 				// Display error message
 				QMessageBox::critical(

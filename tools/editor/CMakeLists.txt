@@ -124,7 +124,7 @@ cmake_minimum_required(VERSION 2.8.11)
 	add_precompiled_header(editor "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 	
 	# Link standard libraries
-	target_link_libraries(editor wowpp_protocol common virtual_directory log proto_data stormlib recast detour detour_crowd detour_tile_cache debug_utils game sql_wrapper mysql_wrapper math updater)
+	target_link_libraries(editor wowpp_protocol common virtual_directory log proto_data stormlib recast detour detour_crowd detour_tile_cache debug_utils game sql_wrapper mysql_wrapper math updater cppformat)
 	
 	# Link dependency libraries
 	target_link_libraries(editor ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENSSL_LIBRARIES} ${OGRE_LIBRARIES} ${PROTOBUF_LIBRARIES} ${MYSQL_LIBRARY})

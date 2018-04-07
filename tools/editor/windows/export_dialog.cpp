@@ -20,9 +20,10 @@
 // 
 
 #include "pch.h"
-#include "import_dialog.h"
-#include "ui_import_dialog.h"
+#include "export_dialog.h"
+#include "ui_export_dialog.h"
 #include "editor_application.h"
+#include "configuration.h"
 #include <qtconcurrentrun.h>
 #include <QMessageBox>
 
@@ -30,11 +31,10 @@ namespace wowpp
 {
 	namespace editor
 	{
-		ImportDialog::ImportDialog(EditorApplication &app, ImportTask task)
+		ExportDialog::ExportDialog(EditorApplication &app)
 			: QDialog()
-			, m_ui(new Ui::ImportDialog)
+			, m_ui(new Ui::ExportDialog)
 			, m_app(app)
-			, m_task(task)
 		{
 			// Setup auto generated ui
 			m_ui->setupUi(this);
@@ -43,34 +43,54 @@ namespace wowpp
 			connect(this, SIGNAL(progressTextChanged(QString)), this, SLOT(on_progressTextChanged(QString)));
 			connect(this, SIGNAL(progressValueChanged(int)), this, SLOT(on_progressValueChanged(int)));
 			connect(this, SIGNAL(calculationFinished()), this, SLOT(on_calculationFinished()));
-
-			// Run connection thread
-			const QFuture<void> future = QtConcurrent::run(this, &ImportDialog::importData);
-			m_watcher.setFuture(future);
 		}
 
-		void ImportDialog::on_progressRangeChanged(int minimum, int maximum)
+		int ExportDialog::exec()
+		{
+			// Run connection thread
+			const QFuture<void> future = QtConcurrent::run(this, &ExportDialog::exportData);
+			m_watcher.setFuture(future);
+
+			return QDialog::exec();
+		}
+
+		void ExportDialog::on_progressRangeChanged(int minimum, int maximum)
 		{
 			m_ui->progressBar->setMinimum(minimum);
 			m_ui->progressBar->setMaximum(maximum);
 		}
 
-		void ImportDialog::on_progressValueChanged(int value)
+		void ExportDialog::on_progressValueChanged(int value)
 		{
 			m_ui->progressBar->setValue(value);
 		}
 
-		void ImportDialog::on_progressTextChanged(QString text)
+		void ExportDialog::on_progressTextChanged(QString text)
 		{
 			m_ui->label->setText(text);
 		}
 
-		void ImportDialog::on_calculationFinished()
+		void ExportDialog::on_calculationFinished()
 		{
 			//m_app.markAsChanged();
 		}
 
-		void ImportDialog::importData()
+		void ExportDialog::reportError(const String & error)
+		{
+			emit progressTextChanged(QString("Error: %1").arg(error.c_str()));
+		}
+
+		void ExportDialog::reportProgressChange(float progress)
+		{
+			emit progressValueChanged(progress * 100.0);
+		}
+
+		void ExportDialog::addTask(TransferTask task)
+		{
+			m_tasks.emplace(std::move(task));
+		}
+		
+		void ExportDialog::exportData()
 		{
 			// Change progress range
 			emit progressRangeChanged(0, 0);
@@ -83,12 +103,11 @@ namespace wowpp
 
 			// Database connection
 			MySQL::DatabaseInfo connectionInfo(
-				dataProject.databaseInfo.mysqlHost,
-				dataProject.databaseInfo.mysqlPort,
-				dataProject.databaseInfo.mysqlUser,
-				dataProject.databaseInfo.mysqlPassword,
+				dataProject.databaseInfo.mysqlHost, 
+				dataProject.databaseInfo.mysqlPort, 
+				dataProject.databaseInfo.mysqlUser, 
+				dataProject.databaseInfo.mysqlPassword, 
 				dataProject.databaseInfo.mysqlDatabase);
-
 			MySQL::Connection connection;
 			if (!connection.connect(connectionInfo))
 			{
@@ -97,72 +116,54 @@ namespace wowpp
 				return;
 			}
 
-			UInt32 currentEntry = 0;
-			UInt32 entryCount = 0;
-
-			// Not collect data
-			emit progressRangeChanged(0, 100);
-			emit progressTextChanged("Collecting data...");
+			if (!connection.execute("SET NAMES 'UTF8';"))
 			{
-				wowpp::MySQL::Select select(connection, m_task.countQuery.toStdString());
-				if (select.success())
-				{
-					wowpp::MySQL::Row row(select);
-					while (row)
-					{
-						UInt32 count = 0;
-						row.getField(0, count);
-						entryCount += count;
-
-						row = row.next(select);
-					}
-				}
-				else
-				{
-					emit progressTextChanged(QString("Error: %1").arg(connection.getErrorMessage()));
-					return;
-				}
+				emit progressTextChanged(QString("Error: %1").arg(connection.getErrorMessage()));
+				return;
 			}
 
-			// Execute procedure before import (mostly cleanup work is done here)
-			if (m_task.beforeImport) m_task.beforeImport();
+			// Write lock all tables
+			connection.execute("FLUSH TABLES WITH WRITE LOCK;");
 
-			// Import items...
-			emit progressTextChanged(QString("Importing %1 entries...").arg(entryCount));
+			bool bShouldCommit = true;
 			{
-				wowpp::MySQL::Select select(connection, m_task.selectQuery.toStdString());
-				if (select.success())
-				{
-					wowpp::MySQL::Row row(select);
-					while (row)
-					{
-						// Increase counter
-						emit progressValueChanged(static_cast<int>(static_cast<double>(currentEntry) / static_cast<double>(entryCount) * 100.0));
-						currentEntry++;
+				// Start a new transaction
+				MySQL::Transaction transaction(connection);
 
-						if (m_task.onImport)
+				// Not collect data
+				emit progressRangeChanged(0, 100);
+
+				// Execute procedure before export (mostly cleanup work is done here)
+				while (!m_tasks.empty())
+				{
+					const auto& task = m_tasks.front();
+
+					if (task.beforeTransfer) task.beforeTransfer(connection);
+
+					// Export items...
+					emit progressTextChanged(task.taskName.c_str());
+					{
+						if (!task.doWork(connection, *this))
 						{
-							bool result = m_task.onImport(row);
-							if (!result)
-							{
-								// TODO: Handle import error
-							}
+							bShouldCommit = false;
+							break;
 						}
-
-						// Next row
-						row = row.next(select);
 					}
+
+					// Execute procedure after transfer
+					if (task.afterTransfer) task.afterTransfer();
+
+					m_tasks.pop();
 				}
-				else
-				{
-					emit progressTextChanged(QString("Error: %1").arg(connection.getErrorMessage()));
-					return;
-				}
+
+				// Commit transaction
+				if (bShouldCommit)
+					transaction.commit();
 			}
 
-			// Execute procedure after import
-			if (m_task.afterImport) m_task.afterImport();
-
+			// Release lock
+			connection.execute("UNLOCK TABLES;");
+			
 			emit progressValueChanged(100);
 			emit progressTextChanged("Finished");
 

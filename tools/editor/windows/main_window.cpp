@@ -29,10 +29,12 @@
 #include "ogre_wrappers/ogre_mpq_archive.h"
 #include "world/world_editor.h"
 #include "go_to_dialog.h"
+#include "export_dialog.h"
 #include <QCloseEvent>
 #include <QVBoxLayout>
 #include <QSettings>
 #include "game/map.h"
+#include "mysql_export.h"
 
 namespace wowpp
 {
@@ -120,6 +122,8 @@ namespace wowpp
 
 			m_objectFilter = new QSortFilterProxyModel;
 			m_objectFilter->setSourceModel(m_application.getObjectListModel());
+
+			setWindowTitle(QString("WoW++ Editor - [%1]").arg(m_application.getActiveProject().name.c_str()));
 		}
 
 		void MainWindow::readSettings()
@@ -228,6 +232,25 @@ namespace wowpp
 
 				camera->setPosition(x, y, z);
 			}
+		}
+
+		void MainWindow::on_actionExport_to_MySQL_triggered()
+		{
+			const proto::Project& project = m_application.getProject();
+
+			// Do export job
+			ExportDialog dialog(m_application);
+			dialog.addTask(std::move(exportAreaTriggers(project)));
+			dialog.addTask(std::move(exportEmotes(project)));
+			dialog.addTask(std::move(exportFactionTemplates(project)));
+			dialog.addTask(std::move(exportFactions(project)));
+			dialog.addTask(std::move(exportFishingLoot(project)));
+			dialog.addTask(std::move(exportUnits(project)));
+			dialog.addTask(std::move(exportUnitSpells(project)));
+			dialog.addTask(std::move(exportUnitQuests(project)));
+			dialog.addTask(std::move(exportUnitEndQuests(project)));
+			dialog.addTask(std::move(exportZones(project)));
+			dialog.exec();
 		}
 
 		void MainWindow::on_addLogEntry(const QString &string)

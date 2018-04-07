@@ -131,6 +131,8 @@
     <addaction name="separator"/>
     <addaction name="actionDisplayNavMesh"/>
     <addaction name="actionGoTo"/>
+    <addaction name="separator"/>
+    <addaction name="actionExport_to_MySQL"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="tearOffEnabled">
@@ -468,6 +470,11 @@
    </property>
    <property name="text">
     <string>Variables</string>
+   </property>
+  </action>
+  <action name="actionExport_to_MySQL">
+   <property name="text">
+    <string>Export to MySQL...</string>
    </property>
   </action>
   <actiongroup name="Movement">

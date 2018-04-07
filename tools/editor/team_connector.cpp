@@ -160,9 +160,10 @@ namespace wowpp
 			using namespace pp::editor_team;
 
 			// TODO
-
+			/* 
 			m_connection->sendSinglePacket(
-				std::bind(editor_write::entryUpdate, std::placeholders::_1, std::cref(changes), std::cref(m_project)));
+				std::bind(editor_write::entryUpdate, std::placeholders::_1, std::cref(changes), std::cref(m_project)));*/
+
 		}
 
 		void TeamConnector::tryConnect()

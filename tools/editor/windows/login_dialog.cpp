@@ -150,8 +150,10 @@ namespace wowpp
 			setLoginUiState(false);
 			m_ui->statusLabel->setText("Connecting...");
 
+			accept();
+
 			// Try to connect and send login request afterwards
-			connector->tryConnect();
+			//connector->tryConnect();
 		}
 
 		void LoginDialog::on_helpBtn_clicked()

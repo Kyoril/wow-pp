@@ -24,6 +24,7 @@
 #include "simple_file_format/sff_write.h"
 #include "simple_file_format/sff_read_tree.h"
 #include "simple_file_format/sff_load_file.h"
+#include "simple_file_format/sff_datatypes.h"
 #include "common/constants.h"
 #include "log/default_log_levels.h"
 
@@ -36,13 +37,8 @@ namespace wowpp
 		Configuration::Configuration()
 			: dataPath("")
 			, wowGamePath("C:\\Program Files (x86)\\World of Warcraft\\")
-			, teamAddress("wow-pp.eu")
+			, teamAddress("127.0.0.1")
 			, teamPort(constants::DefaultTeamEditorPort)
-			, mysqlPort(constants::DefaultMySQLPort)
-			, mysqlHost("127.0.0.1")
-			, mysqlUser("username")
-			, mysqlPassword("password")
-			, mysqlDatabase("database")
 			, isLogActive(true)
 			, logFileName("wowpp_editor.log")
 			, isLogFileBuffering(false)
@@ -103,19 +99,33 @@ namespace wowpp
 					isLogFileBuffering = log->getInteger("buffering", static_cast<unsigned>(isLogFileBuffering)) != 0;
 				}
 
-				if (const Table *const mysqlDatabaseTable = global.getTable("mysqlDatabase"))
-				{
-					mysqlPort = mysqlDatabaseTable->getInteger("port", mysqlPort);
-					mysqlHost = mysqlDatabaseTable->getString("host", mysqlHost);
-					mysqlUser = mysqlDatabaseTable->getString("user", mysqlUser);
-					mysqlPassword = mysqlDatabaseTable->getString("password", mysqlPassword);
-					mysqlDatabase = mysqlDatabaseTable->getString("database", mysqlDatabase);
-				}
+				projects.clear();
 
-				if (const Table *const teamConnector = global.getTable("teamConnector"))
+				// Read projects
+				if (const auto *const projectsArray = global.getArray("projects"))
 				{
-					teamAddress = teamConnector->getString("address", teamAddress);
-					teamPort = teamConnector->getInteger("port", teamPort);
+					projects.reserve(projectsArray->getSize());
+
+					for (size_t i = 0; i < projectsArray->getSize(); ++i)
+					{
+						const auto* projectTable = projectsArray->getTable(i);
+
+						DataProject project;
+						project.name = projectTable->getString("name", "Unnamed");
+						project.exportPath = projectTable->getString("export_path");
+						
+						const auto* mysqlDatabaseTable = projectTable->getTable("mysqlDatabase");
+						if (mysqlDatabaseTable)
+						{
+							project.databaseInfo.mysqlPort = mysqlDatabaseTable->getInteger("port", project.databaseInfo.mysqlPort);
+							project.databaseInfo.mysqlHost = mysqlDatabaseTable->getString("host", project.databaseInfo.mysqlHost);
+							project.databaseInfo.mysqlUser = mysqlDatabaseTable->getString("user", project.databaseInfo.mysqlUser);
+							project.databaseInfo.mysqlPassword = mysqlDatabaseTable->getString("password", project.databaseInfo.mysqlPassword);
+							project.databaseInfo.mysqlDatabase = mysqlDatabaseTable->getString("database", project.databaseInfo.mysqlDatabase);
+						}
+
+						projects.emplace_back(project);
+					}
 				}
 
 				if (const Table *const game = global.getTable("game"))
@@ -150,14 +160,26 @@ namespace wowpp
 			global.addKey("version", EditorConfigVersion);
 			global.writer.newLine();
 
+			// Add a sample project
 			{
-				sff::write::Table<Char> mysqlDatabaseTable(global, "mysqlDatabase", sff::write::MultiLine);
-				mysqlDatabaseTable.addKey("port", mysqlPort);
-				mysqlDatabaseTable.addKey("host", mysqlHost);
-				mysqlDatabaseTable.addKey("user", mysqlUser);
-				mysqlDatabaseTable.addKey("password", mysqlPassword);
-				mysqlDatabaseTable.addKey("database", mysqlDatabase);
-				mysqlDatabaseTable.finish();
+				sff::write::Array<Char> projectsArray(global, "projects", sff::write::MultiLine);
+				{
+					sff::write::Table<Char> projectTable(projectsArray, sff::write::Comma);
+					{
+						projectTable.addKey("name", "Sample project");
+						projectTable.addKey("export_path", "C:/wow-pp-data");
+						
+						sff::write::Table<Char> mysqlDatabaseTable(projectTable, "mysqlDatabase", sff::write::MultiLine);
+						mysqlDatabaseTable.addKey("port", constants::DefaultMySQLPort);
+						mysqlDatabaseTable.addKey("host", "127.0.0.1");
+						mysqlDatabaseTable.addKey("user", "username");
+						mysqlDatabaseTable.addKey("password", "password");
+						mysqlDatabaseTable.addKey("database", "database");
+						mysqlDatabaseTable.finish();
+					}
+					projectTable.finish();
+				}
+				projectsArray.finish();
 			}
 
 			global.writer.newLine();
@@ -168,15 +190,6 @@ namespace wowpp
 				log.addKey("fileName", logFileName);
 				log.addKey("buffering", isLogFileBuffering);
 				log.finish();
-			}
-
-			global.writer.newLine();
-
-			{
-				sff::write::Table<Char> teamConnector(global, "teamConnector", sff::write::MultiLine);
-				teamConnector.addKey("address", teamAddress);
-				teamConnector.addKey("port", teamPort);
-				teamConnector.finish();
 			}
 
 			global.writer.newLine();

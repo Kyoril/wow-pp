@@ -63,7 +63,7 @@ namespace wowpp
 			void on_actionOutput_Log_triggered();
 			void on_actionDisplayNavMesh_triggered();
 			void on_actionGoTo_triggered();
-
+			void on_actionExport_to_MySQL_triggered();
 			void on_addLogEntry(const QString &string);
 
 		protected:
