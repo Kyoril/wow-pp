@@ -314,7 +314,8 @@ namespace wowpp
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 2, 0);
 				setUInt32Value(character_fields::QuestLog1_1 + i * 4 + 3, questTimer);
 
-				bool updateQuestObjects = false;
+				// Event quests might require interacting with a quest object as well
+				bool updateQuestObjects = (questEntry->flags() && game::quest_flags::Exploration);
 
 				// Complete if no requirements
 				if (fulfillsQuestRequirements(*questEntry))
@@ -3176,10 +3177,21 @@ namespace wowpp
 			{
 				if (object->isWorldObject())
 				{
-					// We only need to check objects that have potential quest loot
 					auto loot = reinterpret_cast<WorldObject *>(object)->getObjectLoot();
-					if (loot &&
-					    !loot->isEmpty())
+					bool isPotentialQuestObject = (loot && !loot->isEmpty());
+
+					// Check if object has loot or is a potential quest object
+					if (!isPotentialQuestObject)
+					{
+						const auto& entry = reinterpret_cast<WorldObject *>(object)->getEntry();
+						if (entry.type() == world_object_type::Goober)
+						{
+							const UInt32 questData = entry.data_size() > 1 ? entry.data(1) : 0;
+							isPotentialQuestObject = (questData != 0);
+						}
+					}
+
+					if (isPotentialQuestObject)
 					{
 						// Force update of DynamicFlags field (TODO: This update only needs to be sent to OUR client,
 						// as every client will have a different DynamicFlags field)

@@ -67,6 +67,7 @@ namespace wowpp
 
 		void ExportDialog::on_progressTextChanged(QString text)
 		{
+			DLOG(text.toStdString());
 			m_ui->label->setText(text);
 		}
 

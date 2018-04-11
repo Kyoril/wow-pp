@@ -245,6 +245,15 @@ namespace wowpp
 			dialog.addTask(std::move(exportFactionTemplates(project)));
 			dialog.addTask(std::move(exportFactions(project)));
 			dialog.addTask(std::move(exportFishingLoot(project)));
+			dialog.addTask(std::move(exportSpells(project)));
+			dialog.addTask(std::move(exportTalents(project)));
+			dialog.addTask(std::move(exportTrainers(project)));
+			dialog.addTask(std::move(exportTrainerSpells(project)));
+			dialog.addTask(std::move(exportTriggers(project)));
+			dialog.addTask(std::move(exportTriggerEvents(project)));
+			dialog.addTask(std::move(exportTriggerActions(project)));
+			dialog.addTask(std::move(exportVendors(project)));
+			dialog.addTask(std::move(exportVendorItems(project)));
 			dialog.addTask(std::move(exportUnits(project)));
 			dialog.addTask(std::move(exportUnitSpells(project)));
 			dialog.addTask(std::move(exportUnitQuests(project)));

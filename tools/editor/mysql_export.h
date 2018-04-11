@@ -22,6 +22,20 @@ namespace wowpp
 		TransferTask exportFactions(const proto::Project& project);
 		/// Generates an export task for fishing loot.
 		TransferTask exportFishingLoot(const proto::Project& project);
+		/// Generates an export task for spells.
+		TransferTask exportSpells(const proto::Project& project);
+		/// Generates an export task for talents.
+		TransferTask exportTalents(const proto::Project& project);
+		/// Generates an export task for trainers.
+		TransferTask exportTrainers(const proto::Project& project);
+		/// Generates an export task for trainer spells.
+		TransferTask exportTrainerSpells(const proto::Project& project);
+		/// Generates an export task for triggers.
+		TransferTask exportTriggers(const proto::Project& project);
+		/// Generates an export task for trigger event data.
+		TransferTask exportTriggerEvents(const proto::Project& project);
+		/// Generates an export task for trigger event data.
+		TransferTask exportTriggerActions(const proto::Project& project);
 		/// Generates an export task for units.
 		TransferTask exportUnits(const proto::Project& project);
 		/// Generates an export task for unit spells.
@@ -30,6 +44,10 @@ namespace wowpp
 		TransferTask exportUnitQuests(const proto::Project& project);
 		/// Generates an export task for unit end quests.
 		TransferTask exportUnitEndQuests(const proto::Project& project);
+		/// Generates an export task for vendors.
+		TransferTask exportVendors(const proto::Project& project);
+		/// Generates an export task for vendor items.
+		TransferTask exportVendorItems(const proto::Project& project);
 		/// Generates an export task for zones.
 		TransferTask exportZones(const proto::Project& project);
 	}
