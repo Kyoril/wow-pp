@@ -22,6 +22,12 @@ namespace wowpp
 		TransferTask exportFactions(const proto::Project& project);
 		/// Generates an export task for fishing loot.
 		TransferTask exportFishingLoot(const proto::Project& project);
+		/// Generates an export task for maps.
+		TransferTask exportMaps(const proto::Project& project);
+		/// Generates an export task for map unit spawns.
+		TransferTask exportMapUnitSpawns(const proto::Project& project);
+		/// Generates an export task for map object spawns.
+		TransferTask exportMapObjectSpawns(const proto::Project& project);
 		/// Generates an export task for spells.
 		TransferTask exportSpells(const proto::Project& project);
 		/// Generates an export task for talents.

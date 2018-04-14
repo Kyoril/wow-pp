@@ -184,6 +184,106 @@ namespace wowpp
 			return std::move(task);
 		}
 
+		TransferTask exportMaps(const proto::Project & project)
+		{
+			TransferTask task;
+			task.taskName = "Exporting maps...";
+			task.beforeTransfer = [](wowpp::MySQL::Connection& conn) {
+				conn.execute("DELETE FROM `maps`;");
+				conn.execute("SET SESSION sql_mode='NO_AUTO_VALUE_ON_ZERO';");
+			};
+			task.doWork = [&project](wowpp::MySQL::Connection &conn, ITransferProgressWatcher& watcher) -> bool {
+				WOWPP_INIT_BATCH();
+
+				const auto& templates = project.maps.getTemplates();
+				for (const auto& entry : templates.entry())
+				{
+					WOWPP_PREPARE_BATCH_ENTRY("INSERT INTO `maps` (`id`,`name`,`directory`,`type`) VALUES ");
+					buffer << fmt::format("({0},'{1}','{2}',{3})"
+						, entry.id(), conn.escapeString(entry.name()), conn.escapeString(entry.directory()), entry.instancetype()
+					);
+					WOWPP_SUBMIT_BATCH(templates.entry_size());
+				}
+
+				return true;
+			};
+
+			return std::move(task);
+		}
+
+		TransferTask exportMapUnitSpawns(const proto::Project & project)
+		{
+			TransferTask task;
+			task.taskName = "Exporting map unit spawns...";
+			task.beforeTransfer = [](wowpp::MySQL::Connection& conn) {
+				conn.execute("DELETE FROM `map_unit_spawns`;");
+			};
+			task.doWork = [&project](wowpp::MySQL::Connection &conn, ITransferProgressWatcher& watcher) -> bool {
+				WOWPP_INIT_BATCH();
+
+				UInt32 maxCount = 0;
+
+				const auto& templates = project.maps.getTemplates();
+				for (const auto& map : templates.entry())
+				{
+					maxCount += map.unitspawns_size();
+					for (const auto& entry : map.unitspawns())
+					{
+						WOWPP_PREPARE_BATCH_ENTRY("INSERT INTO `map_unit_spawns` (`map_id`,`name`,`respawn`,`respawndelay`,`x`,`y`,`z`,`rotation`,`radius`,`maxcount`,`unitentry`,`defaultemote`,`isactive`,`movement`,`standstate`) VALUES ");
+						buffer << fmt::format("({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14})"
+							, map.id()
+							, entry.has_name() ? "'" + conn.escapeString(entry.name()) + "'" : "NULL"
+							, entry.respawn(), entry.respawndelay(), entry.positionx(), entry.positiony(), entry.positionz(), entry.rotation()
+							, entry.radius(), entry.maxcount(), entry.unitentry(), entry.defaultemote(), entry.isactive(), entry.movement()
+							, entry.standstate()
+						);
+						WOWPP_SUBMIT_BATCH(maxCount);
+					}
+				}
+
+				return true;
+			};
+
+			return std::move(task);
+		}
+
+		TransferTask exportMapObjectSpawns(const proto::Project & project)
+		{
+			TransferTask task;
+			task.taskName = "Exporting map object spawns...";
+			task.beforeTransfer = [](wowpp::MySQL::Connection& conn) {
+				conn.execute("DELETE FROM `map_object_spawns`;");
+			};
+			task.doWork = [&project](wowpp::MySQL::Connection &conn, ITransferProgressWatcher& watcher) -> bool {
+				WOWPP_INIT_BATCH();
+
+				UInt32 maxCount = 0;
+
+				const auto& templates = project.maps.getTemplates();
+				for (const auto& map : templates.entry())
+				{
+					maxCount += map.objectspawns_size();
+					for (const auto& entry : map.objectspawns())
+					{
+						WOWPP_PREPARE_BATCH_ENTRY("INSERT INTO `map_object_spawns` (`map_id`,`name`,`respawn`,`respawndelay`,`position_x`,`position_y`,`position_z`,`rotation_w`,`rotation_x`,`rotation_y`,`rotation_z`,`radius`,`anim_progress`,`state`,`maxcount`,`objectentry`,`isactive`,`orientation`) VALUES ");
+						buffer << fmt::format("({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17})"
+							, map.id()
+							, entry.has_name() ? "'" + conn.escapeString(entry.name()) + "'" : "NULL"
+							, entry.respawn(), entry.respawndelay(), entry.positionx(), entry.positiony(), entry.positionz()
+							, entry.rotationw(), entry.rotationx(), entry.rotationy(), entry.rotationz()
+							, entry.radius(), entry.animprogress(), entry.state(), entry.maxcount(), entry.objectentry()
+							, entry.isactive(), entry.orientation()
+						);
+						WOWPP_SUBMIT_BATCH(maxCount);
+					}
+				}
+
+				return true;
+			};
+
+			return std::move(task);
+		}
+
 		TransferTask exportSpells(const proto::Project & project)
 		{
 			TransferTask task;

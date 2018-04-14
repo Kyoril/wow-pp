@@ -238,8 +238,9 @@ namespace wowpp
 		{
 			const proto::Project& project = m_application.getProject();
 
-			// Do export job
+			// Do export jobs (The order is important due to foreign key checks in the database)
 			ExportDialog dialog(m_application);
+			dialog.addTask(std::move(exportMaps(project)));
 			dialog.addTask(std::move(exportAreaTriggers(project)));
 			dialog.addTask(std::move(exportEmotes(project)));
 			dialog.addTask(std::move(exportFactionTemplates(project)));
@@ -255,6 +256,8 @@ namespace wowpp
 			dialog.addTask(std::move(exportVendors(project)));
 			dialog.addTask(std::move(exportVendorItems(project)));
 			dialog.addTask(std::move(exportUnits(project)));
+			dialog.addTask(std::move(exportMapUnitSpawns(project)));
+			dialog.addTask(std::move(exportMapObjectSpawns(project)));
 			dialog.addTask(std::move(exportUnitSpells(project)));
 			dialog.addTask(std::move(exportUnitQuests(project)));
 			dialog.addTask(std::move(exportUnitEndQuests(project)));
