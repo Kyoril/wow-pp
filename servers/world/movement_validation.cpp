@@ -318,47 +318,47 @@ namespace wowpp
 			}
 		}
 
-		// Transport data should stay the same during 2 subsequent packets
-		if ((serverInfo.moveFlags & OnTransport) && (clientInfo.moveFlags & OnTransport) &&
-			opCode != MoveChangeTransport)
+// Transport data should stay the same during 2 subsequent packets
+if ((serverInfo.moveFlags & OnTransport) && (clientInfo.moveFlags & OnTransport) &&
+	opCode != MoveChangeTransport)
+{
+	if (clientInfo.transportGuid != serverInfo.transportGuid)
+	{
+		WLOG("Client tried to send different transport GUID during 2 subsequent packets!");
+		return false;
+	}
+
+	if (serverInfo.time != 0 && serverInfo.transportTime + timeDiff != clientInfo.transportTime)
+	{
+		WLOG("Client tried to send invalid transport time during 2 subsequent packets!");
+		return false;
+	}
+}
+
+// When root was applied...
+if (opCode == ForceMoveRootAck)
+{
+	// Check if the player was falling. If so, he has to set PendingRoot
+	if (clientInfo.moveFlags & (Falling | FallingFar))
+	{
+		if (!(clientInfo.moveFlags & PendingRoot))
 		{
-			if (clientInfo.transportGuid != serverInfo.transportGuid)
-			{
-				WLOG("Client tried to send different transport GUID during 2 subsequent packets!");
-				return false;
-			}
-
-			if (serverInfo.time != 0 && serverInfo.transportTime + timeDiff != clientInfo.transportTime)
-			{
-				WLOG("Client tried to send invalid transport time during 2 subsequent packets!");
-				return false;
-			}
+			WLOG("PendingRoot flag required in root ack while falling is active!");
+			return false;
 		}
-
-		// When root was applied...
-		if (opCode == ForceMoveRootAck)
+	}
+	// Player wasn't falling, so he has to set Root
+	else
+	{
+		if (!(clientInfo.moveFlags & Root))
 		{
-			// Check if the player was falling. If so, he has to set PendingRoot
-			if (clientInfo.moveFlags & (Falling | FallingFar))
-			{
-				if (!(clientInfo.moveFlags & PendingRoot))
-				{
-					WLOG("PendingRoot flag required in root ack while falling is active!");
-					return false;
-				}
-			}
-			// Player wasn't falling, so he has to set Root
-			else
-			{
-				if (!(clientInfo.moveFlags & Root))
-				{
-					WLOG("Root flag required in root ack while falling is inactive!");
-					return false;
-				}
-			}
+			WLOG("Root flag required in root ack while falling is inactive!");
+			return false;
 		}
+	}
+}
 
-		return true;
+return true;
 	}
 
 	bool validateSpeedAck(const PendingMovementChange& change, float receivedSpeed, MovementType& outMoveTypeSent)
@@ -413,9 +413,9 @@ namespace wowpp
 
 		const float distanceSq = (lastPos - newPos).squared_length();
 		const UInt32 moveTime = (isFirstMove ? clientInfo.fallTime : clientInfo.time - serverInfo.time);
-		const float maxDist = 
+		const float maxDist =
 			static_cast<float>(moveTime) / 1000.0f * expectedSpeed;
-		
+
 		if (distanceSq > ::powf(maxDist + 0.138f, 2.0f))
 		{
 			WLOG("Distance was too much! Max dist: " << maxDist << ", distance was " << (lastPos - newPos).length());

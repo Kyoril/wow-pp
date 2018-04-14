@@ -3358,7 +3358,11 @@ namespace wowpp
 		// If we are jumping / falling, this is the expected move speed
 		if (moveFlags & (Falling | FallingFar))
 		{
-			return std::max(info.jumpXYSpeed, getSpeed(movement_type::Run));
+			// MaxFallVelocity is calculated as 9.81 * tan(55.0f), where 55.0f is the maximum
+			// amount that the player should be able to walk on.
+			const float MaxFallVelocity = 14.0f;
+			return std::max(
+				std::max(info.jumpXYSpeed, getSpeed(movement_type::Run)), MaxFallVelocity);
 		}
 
 		// If not moving at all, we can't move at all. Theoretically, we could also
