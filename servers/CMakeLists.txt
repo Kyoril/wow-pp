@@ -22,4 +22,3 @@
 add_subdirectory(login)
 add_subdirectory(realm)
 add_subdirectory(world)
-add_subdirectory(team)

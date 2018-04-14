@@ -36,14 +36,10 @@ namespace wowpp
 		NetPort playerPort;
 		/// The port to be used by realms to log in.
 		NetPort realmPort;
-		/// The port to be used by team servers to log in.
-		NetPort teamPort;
 		/// Maximum number of player connections.
 		size_t maxPlayers;
 		/// Maximum number of realm connections.
 		size_t maxRealms;
-		/// Maximum number of team server connections.
-		size_t maxTeamServers;
 
 		/// The port to be used for a mysql connection.
 		NetPort mysqlPort;

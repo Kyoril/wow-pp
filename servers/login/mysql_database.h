@@ -66,8 +66,6 @@ namespace wowpp
 		bool getTutorialData(UInt32 id, std::array<UInt32, 8> &out_data) override;
 		bool setTutorialData(UInt32 id, const std::array<UInt32, 8> data) override;
 
-		pp::team_login::LoginResult teamServerLogIn(UInt32 &out_id, const String &name, const String &password) override;
-
 	private:
 
 		void printDatabaseError();

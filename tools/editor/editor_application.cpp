@@ -27,15 +27,14 @@
 #include "windows/variable_editor.h"
 #include "windows/update_dialog.h"
 #include "windows/project_dialog.h"
-#include "team_connector.h"
 #include "common/make_unique.h"
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QProgressBar>
-#include <cassert>
 #include "editor_config.h"
+#include "common/macros.h"
 
 namespace wowpp
 {
@@ -186,9 +185,6 @@ namespace wowpp
 			}
 #endif
 
-			// Setup team connector
-			m_teamConnector = make_unique<TeamConnector>(m_ioService, m_configuration, m_project, m_timers);
-			
 			// Setup project dialog
 			ProjectDialog projectDialog(*this);
 			if (projectDialog.exec() != QDialog::Accepted)
@@ -282,102 +278,12 @@ namespace wowpp
 
 		bool EditorApplication::shutdown()
 		{
-			// Check for unsaved changes
-			if (!m_changes.empty())
-			{
-				int result = QMessageBox::warning(
-					nullptr,
-					"You have unsaved changes",
-					"Do you want to save them now? If not, you will loose all changes!",
-					QMessageBox::Save, QMessageBox::No, QMessageBox::Cancel);
-				if (result == QMessageBox::Cancel)
-				{
-					// Cancelled by user
-					return false;
-				}
-				else if (result == QMessageBox::Save)
-				{
-					// Save project
-					if (!m_project.save(m_configuration.dataPath))
-					{
-						// Display error message
-						QMessageBox::critical(
-							nullptr,
-							"Could not save data project",
-							"There was an error saving the data project.\n\n"
-							"For more details, please open the editor log file (usually wowpp_editor.log).");
-
-						// Cancel shutdown since there was an error
-						return false;
-					}
-				}
-			}
+			// Save project
+			saveUnsavedChanges();
 			
 			// Shutdown the application
 			qApp->quit();
 			return true;
-		}
-
-		void EditorApplication::markAsChanged(UInt32 entry, pp::editor_team::DataEntryType type, pp::editor_team::DataEntryChangeType changeType)
-		{
-			// First get the changes by type
-			auto &typeMap = m_changes[type];
-
-			// Now check if we already have a change entry in there
-			auto it = typeMap.find(entry);
-			if (it == typeMap.end())
-			{
-				// No - insert a new one
-				typeMap[entry] = changeType;
-			}
-			else
-			{
-				// Remove counters added
-				if (it->second == pp::editor_team::data_entry_change_type::Added)
-				{
-					if (changeType == pp::editor_team::data_entry_change_type::Removed)
-					{
-						typeMap.erase(it);
-					}
-					
-					// Else do nothing, as modify should not override Added!
-				}
-				else
-				{
-					// If item was removed before but a new item was added now, convert this into a modify-packet
-					if (it->second == pp::editor_team::data_entry_change_type::Removed &&
-						changeType != pp::editor_team::data_entry_change_type::Removed)
-					{
-						typeMap[entry] = pp::editor_team::data_entry_change_type::Modified;
-					}
-					else
-					{
-						// Entry was either removed or modified. In both cases, we simply override...
-						typeMap[entry] = changeType;
-					}
-				}
-			}
-		}
-
-		static std::shared_ptr<QDialog> showUploadDialog(QWidget *parent)
-		{
-			// Create dialog via code as it is a minor dialog
-			auto dialog = std::make_shared<QDialog>(parent);
-			dialog->setWindowTitle("Uploading");
-
-			// Create label
-			QLabel *label = new QLabel("Uploading data...");
-
-			// Create progress bar
-			QProgressBar *progressBar = new QProgressBar(dialog.get());
-			progressBar->setRange(0, 0);
-
-			// Create dialog layout
-			QVBoxLayout *dialogLayout = new QVBoxLayout(dialog.get());
-			dialogLayout->addWidget(label);
-			dialogLayout->addWidget(progressBar);
-			dialog->setLayout(dialogLayout);
-			return dialog;
 		}
 
 		void EditorApplication::saveUnsavedChanges()
@@ -392,40 +298,6 @@ namespace wowpp
 					"There was an error saving the data project.\n\n"
 					"For more details, please open the editor log file (usually wowpp_editor.log).");
 				return;
-			}
-
-			// Eventually send changes to the server
-			if (!m_changes.empty())
-			{
-				// Display dialog
-				auto dialog = showUploadDialog(m_mainWindow);
-				dialog->setModal(true);
-				dialog->show();
-
-				// Send changes to the team server
-				if (m_teamConnector)
-				{
-					m_teamConnector->dataSent.connect([dialog](size_t) {
-						// Close dialog
-						dialog->close();
-
-						// Disconnect this connection slot
-						simple::current_connection().disconnect();
-					});
-
-					m_teamConnector->sendEntryChanges(m_changes);
-				}
-
-				// Clear changes
-				m_changes.clear();
-			}
-			else
-			{
-				// Notify
-				QMessageBox::information(
-					nullptr,
-					"Data project saved",
-					"The data project was successfully saved.");
 			}
 		}
 

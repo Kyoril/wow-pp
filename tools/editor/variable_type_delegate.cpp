@@ -50,7 +50,7 @@ void VariableTypeDelegate::updateEditorGeometry(QWidget *editor, const QStyleOpt
 
 void VariableTypeDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
-	QStyleOptionViewItemV4 myOption = option;
+	QStyleOptionViewItem myOption = option;
 	QString text = Items[index.row()].c_str();
 
 	myOption.text = text;

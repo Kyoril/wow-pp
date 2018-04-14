@@ -61,11 +61,6 @@ namespace wowpp
 			String dataPath;
 			/// Path to WoW
 			String wowGamePath;
-
-			/// The port to be used by the team server for editors to log in.
-			NetPort teamPort;
-			/// IP/Domain of the team server.
-			String teamAddress;
 			
 			/// A list of data projects.
 			std::vector<DataProject> projects;

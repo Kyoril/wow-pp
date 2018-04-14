@@ -253,7 +253,7 @@ namespace wowpp
 
 			if (applyPatch)
 			{
-				int processId = ::getpid();
+				int processId = _getpid();
 #ifdef _WIN32
 				const std::string process = "update_helper.exe";
 #else

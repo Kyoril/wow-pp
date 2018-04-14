@@ -29,7 +29,6 @@
 #include "configuration.h"
 #include "selection.h"
 #include "common/timer_queue.h"
-#include "wowpp_protocol/wowpp_editor_team.h"
 
 namespace wowpp
 {
@@ -52,7 +51,6 @@ namespace wowpp
 		class ObjectEditor;		// object_editor.h
 		class TriggerEditor;	// trigger_editor.h
 		class VariableEditor;	// variable_editor.h
-		class TeamConnector;
 
 		/// Manages and contains all major application objects.
 		class EditorApplication final : public QObject
@@ -104,7 +102,6 @@ namespace wowpp
 			Selection &getSelection() { return m_selection; }
 			const TransformTool &getTransformTool() const { return m_transformTool; }
 			void setTransformTool(TransformTool tool);
-			TeamConnector *getTeamConnector() { return m_teamConnector.get(); }
 
 		public slots:
 
@@ -114,8 +111,6 @@ namespace wowpp
 			void showVariableEditor();
 			/// 
 			void showTriggerEditor();
-			/// 
-			void markAsChanged(UInt32 entry, pp::editor_team::DataEntryType type, pp::editor_team::DataEntryChangeType changeType);
 			/// 
 			void saveUnsavedChanges();
 			/// 
@@ -130,9 +125,6 @@ namespace wowpp
 
 
 		private:
-
-			typedef std::map<UInt32, pp::editor_team::DataEntryChangeType> EntryChangeMap;
-			typedef std::map<pp::editor_team::DataEntryType, EntryChangeMap> EntryTypeChangeMap;
 
 			boost::asio::io_service &m_ioService;
 			TimerQueue &m_timers;
@@ -155,8 +147,6 @@ namespace wowpp
 			std::unique_ptr<ObjectListModel> m_objectListModel;
 			std::unique_ptr<VariableListModel> m_variableListModel;
 			TransformTool m_transformTool;
-			std::unique_ptr<TeamConnector> m_teamConnector;
-			EntryTypeChangeMap m_changes;
 		};
 	}
 }

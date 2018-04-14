@@ -37,8 +37,6 @@ namespace wowpp
 		Configuration::Configuration()
 			: dataPath("")
 			, wowGamePath("C:\\Program Files (x86)\\World of Warcraft\\")
-			, teamAddress("127.0.0.1")
-			, teamPort(constants::DefaultTeamEditorPort)
 			, isLogActive(true)
 			, logFileName("wowpp_editor.log")
 			, isLogFileBuffering(false)

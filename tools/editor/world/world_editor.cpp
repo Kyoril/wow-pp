@@ -768,7 +768,6 @@ namespace wowpp
 					std::unique_ptr<SelectedCreatureSpawn>(new SelectedCreatureSpawn(
 						m_map,
 						[this]() {
-							m_app.markAsChanged(m_map.id(), pp::editor_team::data_entry_type::Maps, pp::editor_team::data_entry_change_type::Modified);
 						},
 						*ent,
 						spawn))
@@ -823,19 +822,13 @@ namespace wowpp
 							{
 								auto *spawn = Ogre::any_cast<proto::UnitSpawnEntry*>(any);
 								auto dialog = make_unique<SpawnDialog>(m_app, *spawn);
-								if (dialog->exec())
-								{
-									m_app.markAsChanged(m_map.id(), pp::editor_team::data_entry_type::Maps, pp::editor_team::data_entry_change_type::Modified);
-								}
+								dialog->exec();
 							}
 							else if (any.getType() == typeid(proto::ObjectSpawnEntry*)) 
 							{
 								auto *objspawn = Ogre::any_cast<proto::ObjectSpawnEntry*>(any);
 								auto dialog = make_unique<SpawnDialog>(m_app, *objspawn);
-								if (dialog->exec())
-								{
-									m_app.markAsChanged(m_map.id(), pp::editor_team::data_entry_type::Maps, pp::editor_team::data_entry_change_type::Modified);
-								}
+								dialog->exec();
 							}
 
 							break;
@@ -860,7 +853,6 @@ namespace wowpp
 						std::unique_ptr<SelectedCreatureSpawn>(new SelectedCreatureSpawn(
 							m_map,
 							[this]() {
-								m_app.markAsChanged(m_map.id(), pp::editor_team::data_entry_type::Maps, pp::editor_team::data_entry_change_type::Modified);
 							},
 							entity,
 							*spawn)));
@@ -875,7 +867,6 @@ namespace wowpp
 							std::unique_ptr<SelectedObjectSpawn>(new SelectedObjectSpawn(
 								m_map,
 								[this]() {
-									m_app.markAsChanged(m_map.id(), pp::editor_team::data_entry_type::Maps, pp::editor_team::data_entry_change_type::Modified);
 								},
 								entity,
 								*objspawn)));

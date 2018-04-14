@@ -73,7 +73,6 @@ namespace wowpp
 
 		void ExportDialog::on_calculationFinished()
 		{
-			//m_app.markAsChanged();
 		}
 
 		void ExportDialog::reportError(const String & error)

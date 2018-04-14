@@ -55,9 +55,6 @@ namespace wowpp
 			{
 				// Refresh view as the variable has been added already
 				m_viewModel->layoutChanged();
-
-				// Mark as changed
-				m_application.markAsChanged(dlg.getAddedId(), pp::editor_team::data_entry_type::Variables, pp::editor_team::data_entry_change_type::Added);
 			}
 		}
 		void VariableEditor::on_removeVariableBtn_clicked()
@@ -123,7 +120,6 @@ namespace wowpp
 			for (auto &id : entriesToRemove)
 			{
 				m_application.getProject().variables.remove(id);
-				m_application.markAsChanged(id, pp::editor_team::data_entry_type::Variables, pp::editor_team::data_entry_change_type::Removed);
 			}
 
 			if (!entriesToRemove.empty())

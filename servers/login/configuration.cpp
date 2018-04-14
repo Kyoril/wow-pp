@@ -34,10 +34,8 @@ namespace wowpp
 	Configuration::Configuration()
 		: playerPort(wowpp::constants::DefaultLoginPlayerPort)
         , realmPort(wowpp::constants::DefaultLoginRealmPort)
-		, teamPort(wowpp::constants::DefaultLoginTeamPort)
 		, maxPlayers((std::numeric_limits<decltype(maxPlayers)>::max)())
 		, maxRealms((std::numeric_limits<decltype(maxRealms)>::max)())
-		, maxTeamServers((std::numeric_limits<decltype(maxTeamServers)>::max)())
 		, mysqlPort(wowpp::constants::DefaultMySQLPort)
 		, mysqlHost("127.0.0.1")
 		, mysqlUser("wow-pp")
@@ -129,12 +127,6 @@ namespace wowpp
 				maxRealms = realmManager->getInteger("maxCount", maxRealms);
 			}
 
-			if (const Table *const teamManager = global.getTable("teamManager"))
-			{
-				teamPort = teamManager->getInteger("port", teamPort);
-				maxTeamServers = teamManager->getInteger("maxCount", maxTeamServers);
-			}
-
 			if (const Table *const log = global.getTable("log"))
 			{
 				isLogActive = log->getInteger("active", static_cast<unsigned>(isLogActive)) != 0;
@@ -207,16 +199,7 @@ namespace wowpp
 			realmManager.addKey("maxCount", maxRealms);
 			realmManager.finish();
 		}
-
-		global.writer.newLine();
-
-		{
-			sff::write::Table<Char> teamManager(global, "teamManager", sff::write::MultiLine);
-			teamManager.addKey("port", teamPort);
-			teamManager.addKey("maxCount", maxTeamServers);
-			teamManager.finish();
-		}
-
+		
 		global.writer.newLine();
 
 		{

@@ -174,7 +174,6 @@ namespace wowpp
 			if (m_selectedTrigger->flags() != flagMask)
 			{
 				m_selectedTrigger->set_flags(flagMask);
-				m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
 			}
 		}
 
@@ -186,7 +185,6 @@ namespace wowpp
 			if (m_selectedTrigger->probability() != value)
 			{
 				m_selectedTrigger->set_probability(value);
-				m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
 			}
 		}
 
@@ -218,8 +216,6 @@ namespace wowpp
 			// Select our new trigger
 			QModelIndex last = m_application.getTriggerListModel()->index(proj.triggers.getTemplates().entry_size() - 1);
 			m_ui->triggerView->setCurrentIndex(last);
-
-			m_application.markAsChanged(newId, pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Added);
 		}
 
 		void TriggerEditor::updateSelection(bool enabled)
@@ -255,8 +251,6 @@ namespace wowpp
 						eventItem->addChild(item);
 					}
 				}
-
-				m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
 			}
 		}
 
@@ -284,8 +278,6 @@ namespace wowpp
 						actionItem->addChild(item);
 					}
 				}
-
-				m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
 			}
 		}
 
@@ -323,9 +315,6 @@ namespace wowpp
 					// Remove the selected event
 					m_selectedTrigger->mutable_newevents()->erase(
 						m_selectedTrigger->mutable_newevents()->begin() + index);
-
-					// Trigger changed
-					m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
 				}
 				else if (parent == rootItem->child(2))
 				{
@@ -336,9 +325,6 @@ namespace wowpp
 					// Remove the selected action
 					m_selectedTrigger->mutable_actions()->erase(
 						m_selectedTrigger->mutable_actions()->begin() + index);
-
-					// Trigger changed
-					m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
 				}
 				else
 				{
@@ -388,7 +374,6 @@ namespace wowpp
 
 				// This will update all views
 				emit m_application.getTriggerListModel()->layoutChanged();
-				m_application.markAsChanged(triggerId, pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Removed);
 
 				// Update UI
 				auto rows = m_ui->triggerView->selectionModel()->selectedRows();
@@ -414,7 +399,6 @@ namespace wowpp
 
 			// This will update all views
 			emit m_application.getTriggerListModel()->layoutChanged();
-			m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
 		}
 
 		void TriggerEditor::on_functionView_itemDoubleClicked(QTreeWidgetItem* item, int column)
@@ -446,7 +430,6 @@ namespace wowpp
 				{
 					m_selectedTrigger->mutable_newevents(index)->CopyFrom(dialog.getEvent());
 					item->setData(0, Qt::DisplayRole, getTriggerEventText(dialog.getEvent()));
-					m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
 				}
 			}
 			else if (parent == rootItem->child(2))
@@ -462,7 +445,6 @@ namespace wowpp
 				{
 					*m_selectedTrigger->mutable_actions()->Mutable(index) = dialog.getAction();
 					item->setData(0, Qt::DisplayRole, getTriggerActionText(m_application.getProject(), dialog.getAction()));
-					m_application.markAsChanged(m_selectedTrigger->id(), pp::editor_team::data_entry_type::Triggers, pp::editor_team::data_entry_change_type::Modified);
 				}
 			}
 		}

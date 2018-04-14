@@ -67,7 +67,6 @@ namespace wowpp
 
 		void ImportDialog::on_calculationFinished()
 		{
-			//m_app.markAsChanged();
 		}
 
 		void ImportDialog::importData()
