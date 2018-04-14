@@ -25,26 +25,19 @@ cmake_minimum_required(VERSION 3.1)
 # This is the main project which contains all subprojects
 project(WoW)
 
-	option(WOWPP_WITH_RELEASE_ASSERTS "Enables assertions in release builds." OFF)
+	# Include additional cmake modules
+	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+	
+	# Add Project options
+	include(Options)
+	
+	# Apply compiler settings
+	include(CompilerSettings)
+	
 	if (WOWPP_WITH_RELEASE_ASSERTS)
 		add_definitions("-DWOWPP_ALWAYS_ASSERT")
 	endif()
 
-	# Enable solution folders in msvc
-	if(MSVC)
-		set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-	endif(MSVC)
-
-	if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-		set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++14")
-		set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
-		set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++14 -stdlib=libc++")
-	endif()
-	
-	set(WOWPP_SUPPORTED_CLIENT "8606" CACHE STRING "This sets the supported client build. Currently, WoW++ supports build (2.0.12.)6546 and (2.4.3.)8606")
-	if (NOT WOWPP_SUPPORTED_CLIENT MATCHES "6546" AND NOT WOWPP_SUPPORTED_CLIENT MATCHES "8606")
-		message(FATAL_ERROR "Unsupported client build! WoW++ only supports build 6546 and 8606!")
-	endif()
 	add_definitions("-DSUPPORTED_CLIENT_BUILD=${WOWPP_SUPPORTED_CLIENT}")
 	add_definitions("-DDT_POLYREF64")
 	
@@ -86,42 +79,12 @@ project(WoW)
 			set(WOWPP_GIT_BRANCH "UNKNOWN")
 		endif(GIT_FOUND)
 	endif()
-	
-	# Editor option
-	option(WOWPP_EDITOR_WITH_PATCH_SUPPORT "If checked, the editor will be built with patch support (checks for patches on startup)" OFF)
 
 	include_directories(${PROJECT_BINARY_DIR})
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in ${PROJECT_BINARY_DIR}/version.h @ONLY)
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/editor_config.h.in ${PROJECT_BINARY_DIR}/editor_config.h @ONLY)
 	
 	include_directories (${CMAKE_BINARY_DIR})
-
-	# Enable C++14 if needed
-	if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-		list(APPEND CMAKE_CXX_FLAGS "-std=c++1y -stdlib=libc++")
-		#list(APPEND CMAKE_C_FLAGS "-std=c++14 -stdlib=libc++")
-		if(APPLE)
-			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++14")
-			set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
-		endif()
-	elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-		execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
-                OUTPUT_VARIABLE GCC_VERSION)
-		if (NOT (GCC_VERSION VERSION_GREATER 4.9 OR GCC_VERSION VERSION_EQUAL 4.9))
-			message(FATAL_ERROR "GCC 4.9 or newer is required in order to build WoW++. Please consider an update or switch over to clang.")
-		endif()
-	
-		set (CMAKE_CXX_STANDARD 14)
-		list(APPEND CMAKE_CXX_FLAGS "-std=c++14 -pthread")
-		
-		find_package(ZLIB REQUIRED)
-	endif()
-
-	# Include additional cmake modules
-	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-	
-	option(WOWPP_UNITY_BUILD "combine cpp files to accelerate compilation" OFF)
-	set(WOWPP_UNITY_FILES_PER_UNIT "50" CACHE STRING "Number of files per compilation unit in Unity build.")
 	include(Macros)
 	
 	# Find boost
@@ -141,21 +104,21 @@ project(WoW)
 	# Since boost 1.58 to make boost::variant::get<U>(...) happy
 	add_definitions("-DBOOST_VARIANT_USE_RELAXED_GET_BY_DEFAULT")
 
-	# Find OpenSSL
+	# Find OpenSSL and make sure Version 1.0.2 is used.
 	find_package(OpenSSL REQUIRED)
-	
-	# Add boost include directories
+	if (OPENSSL_FOUND)
+	if (NOT OPENSSL_VERSION MATCHES "1.0.2[a-z]")
+		message(FATAL_ERROR "OpenSSL 1.0.2 is required, but '${OPENSSL_VERSION}' was detected! This would lead to compile and/or security issues.")
+	endif()
+	endif()
 	include_directories(${OPENSSL_INCLUDE_DIR})
 	link_directories(${OPENSSL_LIBRARY_DIR})
 	
 	# Find MySQL
 	find_package(MYSQL REQUIRED)
-	
-	# Add mysql include directories
 	include_directories(${MYSQL_INCLUDE_DIR})
 	
 	# Build with developer commands
-	option(WOWPP_WITH_DEV_COMMANDS "If checked, developer commands will be available." OFF)
 	if(WOWPP_WITH_DEV_COMMANDS)
 		add_definitions("-DWOWPP_WITH_DEV_COMMANDS")
 	endif(WOWPP_WITH_DEV_COMMANDS)
@@ -169,16 +132,7 @@ project(WoW)
 	if(MSVC)
 		add_definitions("/D_CRT_SECURE_NO_WARNINGS /D_SCL_SECURE_NO_WARNINGS /wd4267 /wd4244 /wd4800 /MP /D_WINSOCK_DEPRECATED_NO_WARNINGS /bigobj /Gy")
 	endif(MSVC)
-	
-	# Editor option
-	option(WOWPP_BUILD_EDITOR "If checked, will try to build the editor. You will need to have QT 5 installed to build this." OFF)
-	
-	# Tools option
-	option(WOWPP_BUILD_TOOLS "If checked, will try to build tools." OFF)
-	
-	# Tests option
-	option(WOWPP_BUILD_TESTS "If checked, will try to test programs." OFF)
-	
+
 	# Add the shared-directory to the list of local include directories
 	include_directories(deps)
 	include_directories(shared)
