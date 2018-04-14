@@ -21,6 +21,11 @@
 
 # This file contains possible config options for the cmake project
 
+
+# ===============================================================================
+# OPTION DEFINITIONS
+# ===============================================================================
+
 # If enabled, assertions are enabled even in release builds
 option(WOWPP_WITH_RELEASE_ASSERTS "Enables assertions in release builds." OFF)
 
@@ -59,4 +64,21 @@ option(WOWPP_BUILD_TOOLS "If checked, will try to build tools." OFF)
 # If enabled, unit tests will be built.
 option(WOWPP_BUILD_TESTS "If checked, will try to test programs." ON)
 
+# TODO: Add more options here as you need
 
+
+# ===============================================================================
+# OPTION APPLICATION
+# ===============================================================================
+
+if(WOWPP_WITH_DEV_COMMANDS)
+	add_definitions("-DWOWPP_WITH_DEV_COMMANDS")
+endif(WOWPP_WITH_DEV_COMMANDS)
+
+if (WOWPP_WITH_RELEASE_ASSERTS)
+	add_definitions("-DWOWPP_ALWAYS_ASSERT")
+endif()
+
+add_definitions("-DSUPPORTED_CLIENT_BUILD=${WOWPP_SUPPORTED_CLIENT}")
+
+# TODO: Add more option-specific settings here as you need

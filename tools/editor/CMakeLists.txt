@@ -19,12 +19,12 @@
 # and lore are copyrighted by Blizzard Entertainment, Inc.
 # 
 
-# We want at least CMake 2.8.11 for QT automoc
-cmake_minimum_required(VERSION 2.8.11)
+# We want at least CMake 3.10 for QT automoc
+cmake_minimum_required(VERSION 3.10)
 
-	#if(POLICY CMP0043)
-	#	cmake_policy(SET CMP0043 OLD)
-	#endif()
+	if(POLICY CMP0043)
+		cmake_policy(SET CMP0043 NEW)
+	endif()
 	
 	find_package(OGRE REQUIRED)
 	include_directories(${OGRE_INCLUDE_DIRS})
