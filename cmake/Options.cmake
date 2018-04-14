@@ -31,6 +31,7 @@ option(WOWPP_WITH_RELEASE_ASSERTS "Enables assertions in release builds." OFF)
 
 # Change this to build WoW++ for a different client build. Currently, this option is not really used / supported.
 set(WOWPP_SUPPORTED_CLIENT "8606" CACHE STRING "This sets the supported client build. Currently, WoW++ supports build (2.0.12.)6546 and (2.4.3.)8606")
+mark_as_advanced(WOWPP_SUPPORTED_CLIENT)
 if (NOT WOWPP_SUPPORTED_CLIENT MATCHES "6546" AND NOT WOWPP_SUPPORTED_CLIENT MATCHES "8606")
 	message(FATAL_ERROR "Unsupported client build! WoW++ only supports build 6546 and 8606!")
 endif()
@@ -39,13 +40,16 @@ endif()
 # and check for editor updates there. This is turned OFF by default as it makes developing impossible and should only be turned ON
 # for distribution builds.
 option(WOWPP_EDITOR_WITH_PATCH_SUPPORT "If checked, the editor will be built with patch support (checks for patches on startup)" OFF)
+mark_as_advanced(WOWPP_EDITOR_WITH_PATCH_SUPPORT)
 
 # If enabled, multiple c++ files are batched together for building. This might reduce build times but should not be used for developing
 # but rather for distribution builds.
 option(WOWPP_UNITY_BUILD "combine cpp files to accelerate compilation" OFF)
+mark_as_advanced(WOWPP_UNITY_BUILD)
 
 # The number of c++ files to be batched together when unity build is enabled.
 set(WOWPP_UNITY_FILES_PER_UNIT "50" CACHE STRING "Number of files per compilation unit in Unity build.")
+mark_as_advanced(WOWPP_UNITY_FILES_PER_UNIT)
 
 # Whether developer commands will be available for the servers (things like create item for players, which you don't want
 # on a public server to avoid GM power abuse, but which you might need on development servers to test certain things quickly).

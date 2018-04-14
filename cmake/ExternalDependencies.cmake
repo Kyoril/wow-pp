@@ -28,7 +28,7 @@
 
 # Find boost static libraries
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.58.0 REQUIRED COMPONENTS system date_time iostreams filesystem regex chrono program_options unit_test_framework)
+find_package(Boost 1.58.0 REQUIRED QUIET COMPONENTS system date_time iostreams filesystem regex chrono program_options unit_test_framework)
 	
 # Add boost include directories
 include_directories(${Boost_INCLUDE_DIR})
@@ -44,7 +44,7 @@ add_definitions("-DBOOST_VARIANT_USE_RELAXED_GET_BY_DEFAULT")
 # ===============================================================================
 
 # Find google protobuffer
-find_package(Protobuf REQUIRED)
+find_package(Protobuf REQUIRED QUIET)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 
 
@@ -54,7 +54,7 @@ include_directories(${PROTOBUF_INCLUDE_DIRS})
 # ===============================================================================
 
 # Find OpenSSL
-find_package(OpenSSL)
+find_package(OpenSSL QUIET)
 if (NOT OPENSSL_FOUND)
 	message(FATAL_ERROR "Couldn't find OpenSSL libraries on your system. If you're on windows, please download and install Win64 OpenSSL v1.0.2o from this website: https://slproweb.com/products/Win32OpenSSL.html!")
 endif()

@@ -26,7 +26,7 @@ cmake_minimum_required(VERSION 3.10)
 		cmake_policy(SET CMP0043 NEW)
 	endif()
 	
-	find_package(OGRE REQUIRED)
+	find_package(OGRE REQUIRED QUIET)
 	include_directories(${OGRE_INCLUDE_DIRS})
 	
 	# Needed for debug usage
