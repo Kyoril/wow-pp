@@ -178,6 +178,7 @@ namespace wowpp
 			task.doWork = [&project](wowpp::MySQL::Connection &conn, ITransferProgressWatcher& watcher) -> bool {
 				// TODO
 
+
 				return true;
 			};
 
