@@ -244,7 +244,10 @@ namespace wowpp
 		if (clientInfo.moveFlags & FallingFar)
 		{
 			// TODO: Maybe we should not just check if z has decreased but also if it hasn't decreased too much or less based on gravity and fall time?
-			if (clientInfo.z >= serverInfo.z)
+
+			// NOTE: In the first movement packet, client fall time == server fall time, so we don't expect
+			// a z change there. Other than that, there has to be a decrease in z!
+			if (clientInfo.fallTime > serverInfo.fallTime && clientInfo.z >= serverInfo.z)
 			{
 				WLOG("Client didn't decrease z axis while FALLING_FAR flag is enabled!");
 				return false;
