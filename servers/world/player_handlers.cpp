@@ -595,11 +595,11 @@ namespace wowpp
 		}
 
 		// Validate movement speed
-		float expectedSpeed = m_character->getExpectedSpeed(m_character->getMovementInfo());
-		if (!validateMovementSpeed(expectedSpeed, info, m_character->getMovementInfo(), !m_movementInitialized))
+		float expectedSpeed = m_character->getExpectedSpeed(m_character->getMovementInfo(), (info.moveFlags & game::movement_flags::FallingFar) != 0);
+		if (!validateMovementSpeed(expectedSpeed, info, m_character->getMovementInfo()/*, !m_movementInitialized*/))
 		{
 			WLOG("Invalid movement speed for packet 0x" << std::hex << opCode);
-			//kick();
+			kick();
 			return;
 		}
 		

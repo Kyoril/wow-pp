@@ -810,7 +810,9 @@ namespace wowpp
 		/// @param info The movement info to use. This paramater is required because we might want to
 		///             calulate the speed based on client movement infos which haven't been applied to
 		///             this unit yet.
-		float getExpectedSpeed(const MovementInfo& info) const;
+		/// @param expectFallingFar If set to true, the movement info is handled as if far falling is activated.
+		///                         This is needed to accept higher xy changes for falling.
+		float getExpectedSpeed(const MovementInfo& info, bool expectFallingFar) const;
 		/// Gets the base movement speed in units per second.
 		virtual float getBaseSpeed(MovementType type) const;
 

@@ -219,9 +219,14 @@ namespace wowpp
 			return false;
 		}
 		
+		// TODO: Remove these as they are only used for debugging
 		if ((clientInfo.moveFlags & FallingFar) && !(serverInfo.moveFlags & FallingFar))
 		{
 			DLOG("FALLING_FAR flag activated!");
+		}
+		else if ((serverInfo.moveFlags & FallingFar) && !(clientInfo.moveFlags & FallingFar))
+		{
+			DLOG("FALLING_FAR flag deactivated!");
 		}
 
 		// If the client was falling before and is still falling...
@@ -231,6 +236,17 @@ namespace wowpp
 			if (!(clientInfo.moveFlags & FallingFar) && (serverInfo.moveFlags & FallingFar))
 			{
 				WLOG("Client tried to remove FallingFar while still falling!");
+				return false;
+			}
+		}
+
+		// When FallingFar is enabled, we expect the z value to decrease
+		if (clientInfo.moveFlags & FallingFar)
+		{
+			// TODO: Maybe we should not just check if z has decreased but also if it hasn't decreased too much or less based on gravity and fall time?
+			if (clientInfo.z >= serverInfo.z)
+			{
+				WLOG("Client didn't decrease z axis while FALLING_FAR flag is enabled!");
 				return false;
 			}
 		}
@@ -423,20 +439,20 @@ return true;
 		return true;
 	}
 
-	bool validateMovementSpeed(float expectedSpeed, const MovementInfo & clientInfo, const MovementInfo & serverInfo, bool isFirstMove)
+	bool validateMovementSpeed(float expectedSpeed, const MovementInfo & clientInfo, const MovementInfo & serverInfo/*, bool isFirstMove*/)
 	{
 		math::Vector3 lastPos(serverInfo.x, serverInfo.y, 0.0f);
 		math::Vector3 newPos(clientInfo.x, clientInfo.y, 0.0f);
 
 		const float distanceSq = (lastPos - newPos).squared_length();
-		const UInt32 moveTime = (isFirstMove ? clientInfo.fallTime : clientInfo.time - serverInfo.time);
+		const UInt32 moveTime = /*(isFirstMove ? clientInfo.fallTime : */clientInfo.time - serverInfo.time/*)*/;
 		const float maxDist =
 			static_cast<float>(moveTime) / 1000.0f * expectedSpeed;
 
 		if (distanceSq > ::powf(maxDist + 0.138f, 2.0f))
 		{
 			WLOG("Distance was too much! Max dist: " << maxDist << ", distance was " << (lastPos - newPos).length());
-			DLOG("\tisFirstMove: " << isFirstMove);
+			//DLOG("\tisFirstMove: " << isFirstMove);
 			DLOG("\tmoveTime: " << moveTime);
 			DLOG("\texpectedSpeed: " << expectedSpeed);
 			DLOG("\tisFalling: " << ((serverInfo.moveFlags & (Falling | FallingFar)) != 0));
