@@ -3368,7 +3368,7 @@ namespace wowpp
 			if ((moveFlags & FallingFar) || expectFallingFar)
 				return std::max(info.jumpXYSpeed, MaxFallVelocity);
 			else
-				return info.jumpXYSpeed;
+				return std::max(info.jumpXYSpeed, getSpeed(movement_type::Run));
 		}
 
 		// If not moving at all, we can't move at all. Theoretically, we could also
