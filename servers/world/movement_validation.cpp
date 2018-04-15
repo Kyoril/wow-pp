@@ -59,7 +59,7 @@ namespace wowpp
 		{ Root,				{ Moving | PendingRoot				, None				, 0			 		, ForceMoveUnrootAck	} },
 		{ PendingRoot,		{ Root								, Falling			, ForceMoveRootAck		, 0						} },
 		{ Falling,			{ Root | Flying 					, None				, 0						, 0						} },
-		{ FallingFar,		{ Root | Swimming					, None				, 0						, 0						} },
+		{ FallingFar,		{ Root | Swimming					, Falling			, 0						, 0						} },
 		{ Swimming,			{ FallingFar						, None				, MoveStartSwim			, 0						} },
 		{ Ascending,		{ Descending | Root					, Swimming | Flying , 0						, 0						} },
 		{ Descending,		{ Ascending | Root					, Swimming | Flying , 0						, 0						} },
@@ -218,6 +218,22 @@ namespace wowpp
 			WLOG("Client sent MoveSetFly opcode but he cannot fly.");
 			return false;
 		}
+		
+		if ((clientInfo.moveFlags & FallingFar) && !(serverInfo.moveFlags & FallingFar))
+		{
+			DLOG("FALLING_FAR flag activated!");
+		}
+
+		// If the client was falling before and is still falling...
+		if ((clientInfo.moveFlags & Falling) && (serverInfo.moveFlags & Falling))
+		{
+			// ... we check for removal of the FallingFar flag which shouldn't be possible without landing!
+			if (!(clientInfo.moveFlags & FallingFar) && (serverInfo.moveFlags & FallingFar))
+			{
+				WLOG("Client tried to remove FallingFar while still falling!");
+				return false;
+			}
+		}
 
 		// We were falling, but aren't falling anymore. This can only happen in a FallLand, SetFly or StartSwim
 		if ((serverInfo.moveFlags & (Falling | FallingFar)) && !(clientInfo.moveFlags & (Falling | FallingFar)))
@@ -312,8 +328,9 @@ namespace wowpp
 					WLOG("Client tried to send too large fall time in packet that just started a fresh fall!");
 					return false;
 				}
-
+				
 				// TODO: Check here if jumpXYSpeed is > than currently allowed speed.
+				DLOG("TODO: Verify jumpXYSpeed value (client sent value " << clientInfo.jumpXYSpeed << ")");
 				// TODO: Also check jumpVelocity value.
 			}
 		}

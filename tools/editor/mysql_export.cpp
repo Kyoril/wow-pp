@@ -31,6 +31,15 @@
 		return false; \
 	}
 
+#define WOWPP_ENTRY_OR_NULL(param) \
+	(param) ? std::to_string((param)) : "NULL"
+
+#define WOWPP_ARRAY_OR_NULL(index, param) \
+	entry.param##_size() > index ? std::to_string(entry.param(index)) : "NULL"
+
+#define WOWPP_ARRAY_ELEM_OR_NULL(index, param, elem) \
+	entry.param##_size() > index ? std::to_string(entry.param(index).elem()) : "NULL"
+
 
 namespace wowpp
 {
@@ -108,14 +117,8 @@ namespace wowpp
 					WOWPP_PREPARE_BATCH_ENTRY("INSERT INTO `faction_templates` (`id`,`flags`,`selfmask`,`friendmask`,`enemymask`,`faction`,`friend_1`,`friend_2`,`friend_3`,`friend_4`,`enemy_1`,`enemy_2`,`enemy_3`,`enemy_4`) VALUES ");
 					buffer << fmt::format("({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13})"
 						, entry.id(), entry.flags(), entry.selfmask(), entry.friendmask(), entry.enemymask(), entry.faction()
-						, entry.friends_size() >= 1 ? std::to_string(entry.friends(0)) : "NULL"
-						, entry.friends_size() >= 2 ? std::to_string(entry.friends(1)) : "NULL"
-						, entry.friends_size() >= 3 ? std::to_string(entry.friends(2)) : "NULL"
-						, entry.friends_size() >= 4 ? std::to_string(entry.friends(3)) : "NULL"
-						, entry.enemies_size() >= 1 ? std::to_string(entry.enemies(0)) : "NULL"
-						, entry.enemies_size() >= 2 ? std::to_string(entry.enemies(1)) : "NULL"
-						, entry.enemies_size() >= 3 ? std::to_string(entry.enemies(2)) : "NULL"
-						, entry.enemies_size() >= 4 ? std::to_string(entry.enemies(3)) : "NULL"
+						, WOWPP_ARRAY_OR_NULL(0, friends), WOWPP_ARRAY_OR_NULL(1, friends), WOWPP_ARRAY_OR_NULL(2, friends), WOWPP_ARRAY_OR_NULL(3, friends)
+						, WOWPP_ARRAY_OR_NULL(0, enemies), WOWPP_ARRAY_OR_NULL(1, enemies), WOWPP_ARRAY_OR_NULL(2, enemies), WOWPP_ARRAY_OR_NULL(3, enemies)
 					);
 					WOWPP_SUBMIT_BATCH(templates.entry_size());
 				}
@@ -142,22 +145,10 @@ namespace wowpp
 					WOWPP_PREPARE_BATCH_ENTRY("INSERT INTO `factions` (`id`,`name`,`replistid`,`racemask_1`,`classmask_1`,`value_1`,`flags_1`,`racemask_2`,`classmask_2`,`value_2`,`flags_2`,`racemask_3`,`classmask_3`,`value_3`,`flags_3`,`racemask_4`,`classmask_4`,`value_4`,`flags_4`) VALUES ");
 					buffer << fmt::format("({0},'{1}',{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18})"
 						, entry.id(), conn.escapeString(entry.name()), entry.replistid()
-						, entry.baserep_size() > 0 ? std::to_string(entry.baserep(0).racemask()) : "NULL"
-						, entry.baserep_size() > 0 ? std::to_string(entry.baserep(0).classmask()) : "NULL"
-						, entry.baserep_size() > 0 ? std::to_string(entry.baserep(0).value()) : "NULL"
-						, entry.baserep_size() > 0 ? std::to_string(entry.baserep(0).flags()) : "NULL"
-						, entry.baserep_size() > 1 ? std::to_string(entry.baserep(1).racemask()) : "NULL"
-						, entry.baserep_size() > 1 ? std::to_string(entry.baserep(1).classmask()) : "NULL"
-						, entry.baserep_size() > 1 ? std::to_string(entry.baserep(1).value()) : "NULL"
-						, entry.baserep_size() > 1 ? std::to_string(entry.baserep(1).flags()) : "NULL"
-						, entry.baserep_size() > 2 ? std::to_string(entry.baserep(2).racemask()) : "NULL"
-						, entry.baserep_size() > 2 ? std::to_string(entry.baserep(2).classmask()) : "NULL"
-						, entry.baserep_size() > 2 ? std::to_string(entry.baserep(2).value()) : "NULL"
-						, entry.baserep_size() > 2 ? std::to_string(entry.baserep(2).flags()) : "NULL"
-						, entry.baserep_size() > 3 ? std::to_string(entry.baserep(3).racemask()) : "NULL"
-						, entry.baserep_size() > 3 ? std::to_string(entry.baserep(3).classmask()) : "NULL"
-						, entry.baserep_size() > 3 ? std::to_string(entry.baserep(3).value()) : "NULL"
-						, entry.baserep_size() > 3 ? std::to_string(entry.baserep(3).flags()) : "NULL"
+						, WOWPP_ARRAY_ELEM_OR_NULL(0, baserep, racemask), WOWPP_ARRAY_ELEM_OR_NULL(0, baserep, classmask), WOWPP_ARRAY_ELEM_OR_NULL(0, baserep, value), WOWPP_ARRAY_ELEM_OR_NULL(0, baserep, flags)
+						, WOWPP_ARRAY_ELEM_OR_NULL(1, baserep, racemask), WOWPP_ARRAY_ELEM_OR_NULL(1, baserep, classmask), WOWPP_ARRAY_ELEM_OR_NULL(1, baserep, value), WOWPP_ARRAY_ELEM_OR_NULL(1, baserep, flags)
+						, WOWPP_ARRAY_ELEM_OR_NULL(2, baserep, racemask), WOWPP_ARRAY_ELEM_OR_NULL(2, baserep, classmask), WOWPP_ARRAY_ELEM_OR_NULL(2, baserep, value), WOWPP_ARRAY_ELEM_OR_NULL(2, baserep, flags)
+						, WOWPP_ARRAY_ELEM_OR_NULL(3, baserep, racemask), WOWPP_ARRAY_ELEM_OR_NULL(3, baserep, classmask), WOWPP_ARRAY_ELEM_OR_NULL(3, baserep, value), WOWPP_ARRAY_ELEM_OR_NULL(3, baserep, flags)
 					);
 					WOWPP_SUBMIT_BATCH(templates.entry_size());
 				}
@@ -330,71 +321,71 @@ namespace wowpp
 							, entry.id(), conn.escapeString(entry.name()), entry.attributes(0), entry.attributes(1), entry.attributes(2)
 							, entry.attributes(3), entry.attributes(4), entry.attributes(5), entry.attributes(6)
 							// Effect 0
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).type()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).basepoints()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).diesides()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).diceperlevel()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).pointsperlevel()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).mechanic()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).targeta()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).targetb()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).radius()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).aura()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).amplitude()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).multiplevalue()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).chaintarget()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).itemtype()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).miscvaluea()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).miscvalueb()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).triggerspell()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).summonunit()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).pointspercombopoint()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).affectmask()) : "NULL"
-							, entry.effects_size() > 0 ? std::to_string(entry.effects(0).dmgmultiplier()) : "NULL"
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, type)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, basepoints)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, diesides)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, diceperlevel)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, pointsperlevel)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, mechanic)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, targeta)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, targetb)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, radius)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, aura)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, amplitude)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, multiplevalue)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, chaintarget)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, itemtype)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, miscvaluea)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, miscvalueb)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, triggerspell)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, summonunit)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, pointspercombopoint)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, affectmask)
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, effects, dmgmultiplier)
 							// Effect 1
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).type()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).basepoints()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).diesides()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).diceperlevel()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).pointsperlevel()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).mechanic()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).targeta()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).targetb()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).radius()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).aura()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).amplitude()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).multiplevalue()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).chaintarget()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).itemtype()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).miscvaluea()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).miscvalueb()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).triggerspell()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).summonunit()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).pointspercombopoint()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).affectmask()) : "NULL"
-							, entry.effects_size() > 1 ? std::to_string(entry.effects(1).dmgmultiplier()) : "NULL"
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, type)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, basepoints)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, diesides)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, diceperlevel)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, pointsperlevel)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, mechanic)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, targeta)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, targetb)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, radius)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, aura)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, amplitude)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, multiplevalue)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, chaintarget)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, itemtype)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, miscvaluea)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, miscvalueb)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, triggerspell)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, summonunit)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, pointspercombopoint)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, affectmask)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, effects, dmgmultiplier)
 							// Effect 2
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).type()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).basepoints()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).diesides()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).diceperlevel()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).pointsperlevel()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).mechanic()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).targeta()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).targetb()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).radius()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).aura()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).amplitude()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).multiplevalue()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).chaintarget()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).itemtype()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).miscvaluea()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).miscvalueb()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).triggerspell()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).summonunit()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).pointspercombopoint()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).affectmask()) : "NULL"
-							, entry.effects_size() > 2 ? std::to_string(entry.effects(2).dmgmultiplier()) : "NULL"
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, type)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, basepoints)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, diesides)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, diceperlevel)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, pointsperlevel)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, mechanic)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, targeta)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, targetb)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, radius)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, aura)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, amplitude)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, multiplevalue)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, chaintarget)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, itemtype)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, miscvaluea)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, miscvalueb)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, triggerspell)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, summonunit)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, pointspercombopoint)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, affectmask)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, effects, dmgmultiplier)
 							// Other attributes
 							, entry.cooldown(), entry.casttime(), entry.powertype(), entry.cost(), entry.costpct()
 							, entry.maxlevel(), entry.baselevel(), entry.spelllevel(), entry.speed(), entry.schoolmask()
@@ -407,18 +398,13 @@ namespace wowpp
 							, entry.procfamilyflags(), entry.procexflags(), entry.procpermin(), entry.proccooldown(), entry.proccustomflags()
 							, entry.baseid(), entry.channelinterruptflags(), entry.stackamount(), entry.skill(), entry.trivialskilllow()
 							, entry.trivialskillhigh(), entry.racemask(), entry.classmask()
-							
-							, entry.reagents_size() > 0 ? std::to_string(entry.reagents(0).item()) : "NULL"
-							, entry.reagents_size() > 0 ? std::to_string(entry.reagents(0).count()) : "NULL"
-							, entry.reagents_size() > 1 ? std::to_string(entry.reagents(1).item()) : "NULL"
-							, entry.reagents_size() > 1 ? std::to_string(entry.reagents(1).count()) : "NULL"
-							, entry.reagents_size() > 2 ? std::to_string(entry.reagents(2).item()) : "NULL"
-							, entry.reagents_size() > 2 ? std::to_string(entry.reagents(2).count()) : "NULL"
-							, entry.reagents_size() > 3 ? std::to_string(entry.reagents(3).item()) : "NULL"
-							, entry.reagents_size() > 3 ? std::to_string(entry.reagents(3).count()) : "NULL"
-							, entry.reagents_size() > 4 ? std::to_string(entry.reagents(4).item()) : "NULL"
-							, entry.reagents_size() > 4 ? std::to_string(entry.reagents(4).count()) : "NULL"
-
+							// Regent array
+							, WOWPP_ARRAY_ELEM_OR_NULL(0, reagents, item), WOWPP_ARRAY_ELEM_OR_NULL(0, reagents, count)
+							, WOWPP_ARRAY_ELEM_OR_NULL(1, reagents, item), WOWPP_ARRAY_ELEM_OR_NULL(1, reagents, count)
+							, WOWPP_ARRAY_ELEM_OR_NULL(2, reagents, item), WOWPP_ARRAY_ELEM_OR_NULL(2, reagents, count)
+							, WOWPP_ARRAY_ELEM_OR_NULL(3, reagents, item), WOWPP_ARRAY_ELEM_OR_NULL(3, reagents, count)
+							, WOWPP_ARRAY_ELEM_OR_NULL(4, reagents, item), WOWPP_ARRAY_ELEM_OR_NULL(4, reagents, count)
+							// Other attributes
 							, entry.rank(), entry.prevspell(), entry.nextspell(), entry.positive()
 						);
 
@@ -452,11 +438,8 @@ namespace wowpp
 					WOWPP_PREPARE_BATCH_ENTRY("INSERT INTO `talents` (`id`,`tab`,`row`,`column`,`rank_1`,`rank_2`,`rank_3`,`rank_4`,`rank_5`,`dependson`,`dependsonrank`,`dependsonspell`) VALUES ");
 					buffer << fmt::format("({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11})"
 						, entry.id(), entry.tab(), entry.row(), entry.column()
-						, entry.ranks_size() > 0 ? std::to_string(entry.ranks(0)) : "NULL"
-						, entry.ranks_size() > 1 ? std::to_string(entry.ranks(1)) : "NULL"
-						, entry.ranks_size() > 2 ? std::to_string(entry.ranks(2)) : "NULL"
-						, entry.ranks_size() > 3 ? std::to_string(entry.ranks(3)) : "NULL"
-						, entry.ranks_size() > 4 ? std::to_string(entry.ranks(4)) : "NULL"
+						// Ranks array
+						, WOWPP_ARRAY_OR_NULL(0, ranks), WOWPP_ARRAY_OR_NULL(1, ranks), WOWPP_ARRAY_OR_NULL(2, ranks), WOWPP_ARRAY_OR_NULL(3, ranks), WOWPP_ARRAY_OR_NULL(4, ranks)
 						, entry.dependson(), entry.dependsonrank(), entry.dependsonspell()
 					);
 					WOWPP_SUBMIT_BATCH(templates.entry_size());
@@ -573,10 +556,8 @@ namespace wowpp
 						WOWPP_PREPARE_BATCH_ENTRY("INSERT INTO `trigger_events` (`trigger_id`,`type`,`data_1`,`data_2`,`data_3`,`data_4`) VALUES ");
 						buffer << fmt::format("({0},{1},{2},{3},{4},{5})"
 							, trigger.id(), entry.type()
-							, entry.data_size() > 0 ? std::to_string(entry.data(0)) : "NULL"
-							, entry.data_size() > 1 ? std::to_string(entry.data(1)) : "NULL"
-							, entry.data_size() > 2 ? std::to_string(entry.data(2)) : "NULL"
-							, entry.data_size() > 3 ? std::to_string(entry.data(3)) : "NULL"
+							// data array
+							, WOWPP_ARRAY_OR_NULL(0, data), WOWPP_ARRAY_OR_NULL(1, data), WOWPP_ARRAY_OR_NULL(2, data), WOWPP_ARRAY_OR_NULL(3, data)
 						);
 						WOWPP_SUBMIT_BATCH(maxCount);
 					}
@@ -610,14 +591,13 @@ namespace wowpp
 						buffer << fmt::format("({0},{1},{2},'{3}',{4},{5},{6},{7},{8},{9},{10},{11})"
 							, trigger.id(), entry.action(), entry.target()
 							, conn.escapeString(entry.targetname())
+							// Texts array
 							, entry.texts_size() > 0 ? "'" + conn.escapeString(entry.texts(0)) + "'" : "NULL"
 							, entry.texts_size() > 1 ? "'" + conn.escapeString(entry.texts(1)) + "'" : "NULL"
 							, entry.texts_size() > 2 ? "'" + conn.escapeString(entry.texts(2)) + "'" : "NULL"
 							, entry.texts_size() > 3 ? "'" + conn.escapeString(entry.texts(3)) + "'" : "NULL"
-							, entry.data_size() > 0 ? std::to_string(entry.data(0)) : "NULL"
-							, entry.data_size() > 1 ? std::to_string(entry.data(1)) : "NULL"
-							, entry.data_size() > 2 ? std::to_string(entry.data(2)) : "NULL"
-							, entry.data_size() > 3 ? std::to_string(entry.data(3)) : "NULL"
+							// Data array
+							, WOWPP_ARRAY_OR_NULL(0, data), WOWPP_ARRAY_OR_NULL(1, data), WOWPP_ARRAY_OR_NULL(2, data), WOWPP_ARRAY_OR_NULL(3, data)
 						);
 						WOWPP_SUBMIT_BATCH(maxCount);
 					}
@@ -730,8 +710,7 @@ namespace wowpp
 						for (const auto& questid : entry.quests())
 						{
 							WOWPP_PREPARE_BATCH_ENTRY("INSERT INTO `unit_quests` (`unit_id`,`quest_id`) VALUES ");
-							buffer << fmt::format("({0},{1})"
-								, entry.id(), questid);
+							buffer << fmt::format("({0},{1})", entry.id(), questid);
 							WOWPP_SUBMIT_BATCH(maxCount);
 						}
 					}
@@ -765,8 +744,7 @@ namespace wowpp
 						for (const auto& questid : entry.end_quests())
 						{
 							WOWPP_PREPARE_BATCH_ENTRY("INSERT INTO `unit_endquests` (`unit_id`,`quest_id`) VALUES ");
-							buffer << fmt::format("({0},{1})"
-								, entry.id(), questid);
+							buffer << fmt::format("({0},{1})", entry.id(), questid);
 							WOWPP_SUBMIT_BATCH(maxCount);
 						}
 					}
@@ -792,9 +770,7 @@ namespace wowpp
 				for (const auto& entry : templates.entry())
 				{
 					WOWPP_PREPARE_BATCH_ENTRY("INSERT INTO `vendors` (`id`) VALUES ");
-					buffer << fmt::format("({0})"
-						, entry.id()
-					);
+					buffer << fmt::format("({0})", entry.id());
 					WOWPP_SUBMIT_BATCH(templates.entry_size());
 				}
 
