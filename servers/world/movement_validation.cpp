@@ -74,7 +74,7 @@ namespace wowpp
 	};
 	
 
-	bool validateMovementInfo(UInt16 opCode, const MovementInfo& clientInfo, const MovementInfo& serverInfo)
+	bool validateMovementInfo(UInt16 opCode, const MovementInfo& clientInfo, const MovementInfo& serverInfo, float allowedMoveSpeed)
 	{
 		// Process move flag permission table
 		for (const auto& pair : moveFlagPermissions)
@@ -339,9 +339,21 @@ namespace wowpp
 					return false;
 				}
 				
-				// TODO: Check here if jumpXYSpeed is > than currently allowed speed.
-				DLOG("TODO: Verify jumpXYSpeed value (client sent value " << clientInfo.jumpXYSpeed << ")");
-				// TODO: Also check jumpVelocity value.
+				// Check here if jumpXYSpeed is > than currently allowed speed.
+				if (clientInfo.jumpXYSpeed > allowedMoveSpeed)
+				{
+					CLOG("Client sent a jumpXYSpeed value that is bigger than the allowed movement speed");
+					return false;
+				}
+
+				// TODO: Right now, two jumpVelocity values have been observed from a valid client, which are
+				// 0.0f in case of simply falling down and -7.95555f in case of a normal jump. I don't know if
+				// the client ever sends another value in here actually and need to investigate this further.
+				if (clientInfo.jumpVelocity > 0.0f || clientInfo.jumpVelocity < -7.95555f)
+				{
+					CLOG("Client sent unexpected or invalid jumpVelocity value (" << clientInfo.jumpVelocity << ")!");
+					return false;
+				}
 			}
 		}
 

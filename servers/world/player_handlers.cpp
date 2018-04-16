@@ -587,8 +587,12 @@ namespace wowpp
 			return;
 		}
 
+		// We need the allowed speed value for the new movement info in order to validate some values like the
+		// sent jumpXYspeed value.
+		const float allowedNewSpeed = m_character->getExpectedSpeed(info, (info.moveFlags & game::movement_flags::FallingFar) != 0);
+
 		// Validate that the client doesn't send fake data like wrong movement flags
-		if (!validateMovementInfo(opCode, info, m_character->getMovementInfo()))
+		if (!validateMovementInfo(opCode, info, m_character->getMovementInfo(), allowedNewSpeed))
 		{
 			WLOG("Invalid movement info received from client!");
 			kick();
@@ -1620,8 +1624,10 @@ namespace wowpp
 			return;
 		}
 
+		const float allowedSpeed = m_character->getExpectedSpeed(info, (info.moveFlags & game::movement_flags::FallingFar) != 0);
+
 		// Validate movement info
-		if (!validateMovementInfo(opCode, info, m_character->getMovementInfo()))
+		if (!validateMovementInfo(opCode, info, m_character->getMovementInfo(), allowedSpeed))
 		{
 			WLOG("Unexpected movement flags sent from client!");
 			kick();

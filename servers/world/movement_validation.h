@@ -29,7 +29,7 @@ namespace wowpp
 	class MovementInfo;
 	struct PendingMovementChange;
 
-	bool validateMovementInfo(UInt16 opCode, const MovementInfo& clientInfo, const MovementInfo& serverInfo);
+	bool validateMovementInfo(UInt16 opCode, const MovementInfo& clientInfo, const MovementInfo& serverInfo, float allowedMoveSpeed);
 	bool validateSpeedAck(const PendingMovementChange& change, float receivedSpeed, MovementType& outMoveTypeSent);
 	bool validateMoveFlagsOnApply(bool apply, UInt32 flags, UInt32 possiblyAppliedFlags);
 	bool validateMovementSpeed(float expectedSpeed, const MovementInfo& clientInfo, const MovementInfo& serverInfo/*, bool isFirstMove = false*/);
