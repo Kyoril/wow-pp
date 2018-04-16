@@ -553,10 +553,10 @@ namespace wowpp
 				out_character.setUInt32Value(character_fields::Coinage, gold);
 
 				//TODO: Explored zones
-				out_character.setUInt32Value(1123, 0x00000002);
+				/*out_character.setUInt32Value(1123, 0x00000002);
 				out_character.setUInt32Value(1125, 0x3f4ccccd);
 				out_character.setUInt32Value(1126, 0x3f4ccccd);
-				out_character.setUInt32Value(1130, 0x3f4ccccd);
+				out_character.setUInt32Value(1130, 0x3f4ccccd);*/
 
 				// Bytes
 				UInt32 bytes, bytes2;
@@ -988,6 +988,7 @@ namespace wowpp
 			if (skillId != 0)
 			{
 				skillIds.push_back(skillId);
+				DLOG("skill id " << i << ": " << skillId);
 			}
 		}
 
