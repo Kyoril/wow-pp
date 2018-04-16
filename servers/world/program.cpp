@@ -62,7 +62,7 @@ namespace wowpp
 				m_logFile.open(fileName.c_str(), std::ios::app);
 				if (m_logFile)
 				{
-					m_logConnections.append(simple::scoped_connection(g_DefaultLog.signal().connect(
+					m_logConnections.append(g_DefaultLog.signal().connect(
 						[&](const LogEntry & entry)
 					{
 						// Don't log anti cheat entries to the default log file
@@ -74,7 +74,7 @@ namespace wowpp
 								entry,
 								std::cref(logFileOptions)));
 						}
-					})));
+					}));
 				}
 				else
 				{
@@ -87,7 +87,7 @@ namespace wowpp
 				m_cheatLogFile.open(m_configuration.cheatLogFileName.c_str(), std::ios::app);
 				if (m_cheatLogFile)
 				{
-					m_logConnections.append(simple::scoped_connection(g_DefaultLog.signal().connect(
+					m_logConnections.append(g_DefaultLog.signal().connect(
 						[&](const LogEntry & entry)
 					{
 						// Only log anti cheat entries to the default log file
@@ -99,7 +99,7 @@ namespace wowpp
 								entry,
 								std::cref(logFileOptions)));
 						}
-					})));
+					}));
 				}
 				else
 				{
