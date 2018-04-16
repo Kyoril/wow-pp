@@ -28,7 +28,6 @@
 #include "player_manager.h"
 #include "player.h"
 #include "game/world_instance_manager.h"
-#include "common/background_worker.h"
 #include "log/log_std_stream.h"
 #include "log/log_entry.h"
 #include "log/default_log_levels.h"
@@ -40,6 +39,7 @@
 #include "common/id_generator.h"
 #include "common/make_unique.h"
 #include "common/crash_handler.h"
+#include "game/cheat_log.h"
 #include "version.h"
 
 namespace wowpp
@@ -47,6 +47,66 @@ namespace wowpp
 	Program::Program()
 		: m_shouldRestart(false)
 	{
+	}
+
+	void Program::setupLogFiles()
+	{
+		LogStreamOptions logFileOptions = g_DefaultFileLogOptions;
+		logFileOptions.alwaysFlush = !m_configuration.isLogFileBuffering;
+
+		if (m_configuration.isLogActive)
+		{
+			if (!m_logFile.is_open())
+			{
+				const String fileName = m_configuration.logFileName;
+				m_logFile.open(fileName.c_str(), std::ios::app);
+				if (m_logFile)
+				{
+					m_logConnections.append(simple::scoped_connection(g_DefaultLog.signal().connect(
+						[&](const LogEntry & entry)
+					{
+						// Don't log anti cheat entries to the default log file
+						if (entry.level != &g_CheatLevel)
+						{
+							m_backgroundLogger.addWork(std::bind(
+								printLogEntry,
+								std::ref(m_logFile),
+								entry,
+								std::cref(logFileOptions)));
+						}
+					})));
+				}
+				else
+				{
+					ELOG("Could not open log file '" << fileName << "'");
+				}
+			}
+			
+			if (!m_cheatLogFile.is_open())
+			{
+				m_cheatLogFile.open(m_configuration.cheatLogFileName.c_str(), std::ios::app);
+				if (m_cheatLogFile)
+				{
+					m_logConnections.append(simple::scoped_connection(g_DefaultLog.signal().connect(
+						[&](const LogEntry & entry)
+					{
+						// Only log anti cheat entries to the default log file
+						if (entry.level == &g_CheatLevel)
+						{
+							m_backgroundLogger.addWork(std::bind(
+								printLogEntry,
+								std::ref(m_cheatLogFile),
+								entry,
+								std::cref(logFileOptions)));
+						}
+					})));
+				}
+				else
+				{
+					ELOG("Could not open cheat log file '" << m_configuration.cheatLogFileName << "'");
+				}
+			}
+		}
 	}
 
 	bool Program::run(const String &configFileName)
@@ -81,33 +141,7 @@ namespace wowpp
 		Universe universe(m_ioService, timer);
 
 		// The log files are written to in a special background thread
-		std::ofstream logFile;
-		BackgroundWorker backgroundLogger;
-		LogStreamOptions logFileOptions = g_DefaultFileLogOptions;
-		logFileOptions.alwaysFlush = !m_configuration.isLogFileBuffering;
-
-		simple::scoped_connection genericLogConnection;
-		if (m_configuration.isLogActive)
-		{
-			const String fileName = m_configuration.logFileName;
-			logFile.open(fileName.c_str(), std::ios::app);
-			if (logFile)
-			{
-				genericLogConnection = g_DefaultLog.signal().connect(
-					[&logFile, &backgroundLogger, &logFileOptions](const LogEntry & entry)
-				{
-					backgroundLogger.addWork(std::bind(
-						printLogEntry,
-						std::ref(logFile),
-						entry,
-						std::cref(logFileOptions)));
-				});
-			}
-			else
-			{
-				ELOG("Could not open log file '" << fileName << "'");
-			}
-		}
+		setupLogFiles();
 
 		// Load project
 		proto::Project project;
@@ -191,8 +225,10 @@ namespace wowpp
 		//when the application terminates unexpectedly
 		const auto crashFlushConnection =
 			wowpp::CrashHandler::get().onCrash.connect(
-				[&PlayerManager, &logFile]()
+				[&]()
 		{
+			// TODO: Stop accepting incoming network packets and connections
+
 			ELOG("Application crashed - saving players");
 			const auto &players = PlayerManager->getPlayers();
 			for (auto &player : players)
@@ -200,8 +236,16 @@ namespace wowpp
 				player->saveCharacterData();
 			}
 
+			// TODO: Wait for outgoing packets to be sent
+
 			ILOG("Player character saved. Shutting down.");
-			if (logFile) logFile.flush();
+
+			// Flush background logger
+			m_backgroundLogger.flush();
+
+			// Flush log files
+			if (m_logFile) m_logFile.flush();
+			if (m_cheatLogFile) m_cheatLogFile.flush();
 		});
 
 

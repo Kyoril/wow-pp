@@ -23,6 +23,7 @@
 
 #include "configuration.h"
 #include "database.h"
+#include "common/background_worker.h"
 
 namespace wowpp
 {
@@ -35,10 +36,11 @@ namespace wowpp
 		Program &operator=(const Program &Other) = delete;
 
 	public:
-
 		/// Creates a new instance of the Program class.
 		explicit Program();
 
+		/// Setups log files.
+		void setupLogFiles();
 		/// Starts the server application.
 		/// @returns True if the application should be restarted.
 		bool run(const String &configFileName);
@@ -52,5 +54,9 @@ namespace wowpp
 		Configuration m_configuration;
 		std::unique_ptr<IDatabase> m_database;
 		bool m_shouldRestart;
+		std::ofstream m_logFile;
+		std::ofstream m_cheatLogFile;
+		BackgroundWorker m_backgroundLogger;
+		simple::scoped_connection_container m_logConnections;
 	};
 }

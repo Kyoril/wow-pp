@@ -67,6 +67,8 @@ namespace wowpp
 		bool isLogActive;
 		/// File name of the log file.
 		String logFileName;
+		/// File name of the anti cheat related log file.
+		String cheatLogFileName;
 		/// If enabled, the log contents will be buffered before they are written to
 		/// the file, which could be more efficient..
 		bool isLogFileBuffering;

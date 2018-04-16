@@ -23,6 +23,7 @@
 #include "movement_validation.h"
 #include "game/game_unit.h"
 #include "game_protocol/op_codes.h"
+#include "game/cheat_log.h"
 
 namespace wowpp
 {
@@ -86,7 +87,7 @@ namespace wowpp
 					pair.second.transitionEnabledOpcode != opCode &&
 					(clientInfo.moveFlags & pair.first) && !(serverInfo.moveFlags & pair.first))
 				{
-					WLOG("MoveFlag enabled transition check failed for move flag 0x" << std::hex << pair.first
+					CLOG("MoveFlag enabled transition check failed for move flag 0x" << std::hex << pair.first
 						<< ": flag enabled in opcode 0x" << std::hex << opCode);
 					return false;
 				}
@@ -96,7 +97,7 @@ namespace wowpp
 					pair.second.transitionDisabledOpcode != opCode &&
 					(serverInfo.moveFlags & pair.first) && !(clientInfo.moveFlags & pair.first))
 				{
-					WLOG("MoveFlag disabled transition check failed for move flag 0x" << std::hex << pair.first
+					CLOG("MoveFlag disabled transition check failed for move flag 0x" << std::hex << pair.first
 						<< ": flag disabled in opcode 0x" << std::hex << opCode);
 					return false;
 				}
@@ -108,14 +109,14 @@ namespace wowpp
 				// Check for exclusive flags (forbidden move flag combinations)
 				if (pair.second.exclusive != None && (clientInfo.moveFlags & pair.second.exclusive))
 				{
-					WLOG("Exclusive move flag validation failed for move flag 0x" << std::hex << pair.first << ": move flags sent: 0x" << clientInfo.moveFlags);
+					CLOG("Exclusive move flag validation failed for move flag 0x" << std::hex << pair.first << ": move flags sent: 0x" << clientInfo.moveFlags);
 					return false;
 				}
 
 				// Check for missing movement flags (required dependencies, like CanFly for Flying)
 				if (pair.second.inclusive != None && !(clientInfo.moveFlags & pair.second.inclusive))
 				{
-					WLOG("Inclusive move flag validation failed for move flag 0x" << std::hex << pair.first << ": move flags sent: 0x" << clientInfo.moveFlags);
+					CLOG("Inclusive move flag validation failed for move flag 0x" << std::hex << pair.first << ": move flags sent: 0x" << clientInfo.moveFlags);
 					return false;
 				}
 			}
@@ -126,14 +127,14 @@ namespace wowpp
 		// Time only ever goes forward
 		if (clientInfo.time < serverInfo.time)
 		{
-			WLOG("Client sent invalid timestamp in movement packet.");
+			CLOG("Client sent invalid timestamp in movement packet.");
 			return false;
 		}
 
 		// While moving, heart beats can't be sent with more than 500ms timestamp difference from the client
 		if (serverInfo.time != 0 && (serverInfo.moveFlags & Moving) && (clientInfo.time - serverInfo.time) > 500)
 		{
-			WLOG("Client sent too large timestamp in movement packet.");
+			CLOG("Client sent too large timestamp in movement packet.");
 			return false;
 		}
 
@@ -142,25 +143,25 @@ namespace wowpp
 		{
 			if (!(serverInfo.moveFlags & (Falling | FallingFar)))
 			{
-				WLOG("Client tried to reset a fall but wasn't falling!");
+				CLOG("Client tried to reset a fall but wasn't falling!");
 				return false;
 			}
 
 			if (fabs(clientInfo.jumpVelocity) > FLT_EPSILON)
 			{
-				WLOG("Client tried to send nonzero fall velocity in FallReset!");
+				CLOG("Client tried to send nonzero fall velocity in FallReset!");
 				return false;
 			}
 
 			if (clientInfo.fallTime != 0)
 			{
-				WLOG("Client tried to send nonzero fall time in FallReset packet!");
+				CLOG("Client tried to send nonzero fall time in FallReset packet!");
 				return false;
 			}
 
 			if (serverInfo.fallTime > 500)
 			{
-				WLOG("Client tried to reset a deep-fall.");
+				CLOG("Client tried to reset a deep-fall.");
 				return false;
 			}
 		}
@@ -170,13 +171,13 @@ namespace wowpp
 		{
 			if (serverInfo.moveFlags & (Falling | FallingFar))
 			{
-				WLOG("Client tried to send jump packet but was already falling!");
+				CLOG("Client tried to send jump packet but was already falling!");
 				return false;
 			}
 
 			if (clientInfo.fallTime != 0)
 			{
-				WLOG("Client tried to send nonzero fall time in MoveJump packet!");
+				CLOG("Client tried to send nonzero fall time in MoveJump packet!");
 				return false;
 			}
 		}
@@ -186,7 +187,7 @@ namespace wowpp
 		{
 			if (!(clientInfo.moveFlags & (Falling | FallingFar)))
 			{
-				WLOG("Client sent FallReset or Jump without falling flag set!");
+				CLOG("Client sent FallReset or Jump without falling flag set!");
 				return false;
 			}
 		}
@@ -197,7 +198,7 @@ namespace wowpp
 			// If the client doesn't have a full root set in this case, he is cheating
 			if (!(clientInfo.moveFlags & Root) && opCode != ForceMoveUnrootAck)
 			{
-				WLOG("Client tried to remove PendingRoot flag without setting rooted flag!");
+				CLOG("Client tried to remove PendingRoot flag without setting rooted flag!");
 				return false;
 			}
 		}
@@ -207,7 +208,7 @@ namespace wowpp
 		{
 			if (opCode != ForceMoveRootAck && opCode != MoveFallLand && opCode != MoveSetFly && opCode != MoveStartSwim)
 			{
-				WLOG("Client tried to set rooted flag in wrong packet!");
+				CLOG("Client tried to set rooted flag in wrong packet!");
 				return false;
 			}
 		}
@@ -215,27 +216,17 @@ namespace wowpp
 		// MoveSetFly can only occur if the client has the CanFly flag
 		if (opCode == MoveSetFly && !(clientInfo.moveFlags & CanFly))
 		{
-			WLOG("Client sent MoveSetFly opcode but he cannot fly.");
+			CLOG("Client sent MoveSetFly opcode but he cannot fly.");
 			return false;
 		}
 		
-		// TODO: Remove these as they are only used for debugging
-		if ((clientInfo.moveFlags & FallingFar) && !(serverInfo.moveFlags & FallingFar))
-		{
-			DLOG("FALLING_FAR flag activated!");
-		}
-		else if ((serverInfo.moveFlags & FallingFar) && !(clientInfo.moveFlags & FallingFar))
-		{
-			DLOG("FALLING_FAR flag deactivated!");
-		}
-
 		// If the client was falling before and is still falling...
 		if ((clientInfo.moveFlags & Falling) && (serverInfo.moveFlags & Falling))
 		{
 			// ... we check for removal of the FallingFar flag which shouldn't be possible without landing!
 			if (!(clientInfo.moveFlags & FallingFar) && (serverInfo.moveFlags & FallingFar))
 			{
-				WLOG("Client tried to remove FallingFar while still falling!");
+				CLOG("Client tried to remove FallingFar while still falling!");
 				return false;
 			}
 		}
@@ -249,7 +240,7 @@ namespace wowpp
 			// a z change there. Other than that, there has to be a decrease in z!
 			if (clientInfo.fallTime > serverInfo.fallTime && clientInfo.z >= serverInfo.z)
 			{
-				WLOG("Client didn't decrease z axis while FALLING_FAR flag is enabled!");
+				CLOG("Client didn't decrease z axis while FALLING_FAR flag is enabled!");
 				return false;
 			}
 		}
@@ -259,19 +250,19 @@ namespace wowpp
 		{
 			if (opCode != MoveFallLand && opCode != MoveSetFly && opCode != MoveStartSwim)
 			{
-				WLOG("Client tried to stop falling with a packet that cannot stop a fall.");
+				CLOG("Client tried to stop falling with a packet that cannot stop a fall.");
 				return false;
 			}
 
 			if (serverInfo.time != 0 && serverInfo.fallTime + timeDiff != clientInfo.fallTime)
 			{
-				WLOG("Client tried to stop a fall but sent invalid fall time in the stopping packet!");
+				CLOG("Client tried to stop a fall but sent invalid fall time in the stopping packet!");
 				return false;
 			}
 
 			if ((serverInfo.moveFlags & PendingRoot) && !(clientInfo.moveFlags & Root))
 			{
-				WLOG("Client sent a fall land packet while he had a pending root, but he didn't apply the full root.");
+				CLOG("Client sent a fall land packet while he had a pending root, but he didn't apply the full root.");
 				return false;
 			}
 		}
@@ -282,21 +273,21 @@ namespace wowpp
 			// FallLand or StartSwim can't occur with falling flag
 			if (opCode == MoveFallLand || opCode == MoveStartSwim)
 			{
-				WLOG("Client sent MoveFallLand or MoveStartSwim packet with falling flag!");
+				CLOG("Client sent MoveFallLand or MoveStartSwim packet with falling flag!");
 				return false;
 			}
 
 			// JumpSpeed always has to be a positive value.
 			if (clientInfo.jumpXYSpeed < 0.0f)
 			{
-				WLOG("Client tried to send negative fall speed!");
+				CLOG("Client tried to send negative fall speed!");
 				return false;
 			}
 
 			// JumpVelocity always has to be a negative value. Usually it is -7.96.
 			if (clientInfo.jumpVelocity > 0.0f)
 			{
-				WLOG("Client tried to send impossible jump velocity!");
+				CLOG("Client tried to send impossible jump velocity!");
 				return false;
 			}
 
@@ -309,7 +300,7 @@ namespace wowpp
 					// The speed can only be increased if the speed was previously zero.
 					if (serverInfo.jumpXYSpeed > 0.0f)
 					{
-						WLOG("Client tried to send different fall speed during 2 subsequent fall packets!");
+						CLOG("Client tried to send different fall speed during 2 subsequent fall packets!");
 						return false;
 					}
 
@@ -318,7 +309,7 @@ namespace wowpp
 					// Your character will jump slightly forward and the maximum speed can not be greater than 2.5
 					if (clientInfo.jumpXYSpeed > 2.5f)
 					{
-						WLOG("Client tried to increase fall speed during 2 subsequent fall packets!");
+						CLOG("Client tried to increase fall speed during 2 subsequent fall packets!");
 						return false;
 					}
 				}
@@ -329,13 +320,13 @@ namespace wowpp
 				{
 					if (serverInfo.time != 0 && serverInfo.fallTime + timeDiff != clientInfo.fallTime)
 					{
-						WLOG("Client tried to send invalid fall time during 2 subsequent fall packets!");
+						CLOG("Client tried to send invalid fall time during 2 subsequent fall packets!");
 						return false;
 					}
 
 					if (fabs(clientInfo.jumpVelocity - serverInfo.jumpVelocity) > FLT_EPSILON)
 					{
-						WLOG("Client tried to send invalid jump velocity during 2 subsequent fall packets!");
+						CLOG("Client tried to send invalid jump velocity during 2 subsequent fall packets!");
 						return false;
 					}
 				}
@@ -344,7 +335,7 @@ namespace wowpp
 			{
 				if ((serverInfo.time != 0 && clientInfo.fallTime > timeDiff) || clientInfo.fallTime > 500)
 				{
-					WLOG("Client tried to send too large fall time in packet that just started a fresh fall!");
+					CLOG("Client tried to send too large fall time in packet that just started a fresh fall!");
 					return false;
 				}
 				
@@ -360,13 +351,13 @@ if ((serverInfo.moveFlags & OnTransport) && (clientInfo.moveFlags & OnTransport)
 {
 	if (clientInfo.transportGuid != serverInfo.transportGuid)
 	{
-		WLOG("Client tried to send different transport GUID during 2 subsequent packets!");
+		CLOG("Client tried to send different transport GUID during 2 subsequent packets!");
 		return false;
 	}
 
 	if (serverInfo.time != 0 && serverInfo.transportTime + timeDiff != clientInfo.transportTime)
 	{
-		WLOG("Client tried to send invalid transport time during 2 subsequent packets!");
+		CLOG("Client tried to send invalid transport time during 2 subsequent packets!");
 		return false;
 	}
 }
@@ -379,7 +370,7 @@ if (opCode == ForceMoveRootAck)
 	{
 		if (!(clientInfo.moveFlags & PendingRoot))
 		{
-			WLOG("PendingRoot flag required in root ack while falling is active!");
+			CLOG("PendingRoot flag required in root ack while falling is active!");
 			return false;
 		}
 	}
@@ -388,7 +379,7 @@ if (opCode == ForceMoveRootAck)
 	{
 		if (!(clientInfo.moveFlags & Root))
 		{
-			WLOG("Root flag required in root ack while falling is inactive!");
+			CLOG("Root flag required in root ack while falling is inactive!");
 			return false;
 		}
 	}
@@ -410,13 +401,13 @@ return true;
 			case MovementChangeType::SpeedChangeFlightSpeed:		outMoveTypeSent = movement_type::Flight; break;
 			case MovementChangeType::SpeedChangeFlightBackSpeed:	outMoveTypeSent = movement_type::FlightBackwards; break;
 			default:
-				WLOG("Incorrect ack data for speed change ack");
+				CLOG("Incorrect ack data for speed change ack");
 				return false;
 		}
 
 		if (std::fabs(receivedSpeed - change.speed) > FLT_EPSILON)
 		{
-			WLOG("Incorrect speed value received in ack");
+			CLOG("Incorrect speed value received in ack");
 			return false;
 		}
 
@@ -428,37 +419,36 @@ return true;
 		// If apply is true, at least one of the possible flags needs to be set
 		if (apply && !(flags & possiblyAppliedFlags))
 		{
-			WLOG("Ack apply op code for movement flags (0x" << std::hex << flags << ") should have had one of 0x" << possiblyAppliedFlags);
+			CLOG("Ack apply op code for movement flags (0x" << std::hex << flags << ") should have had one of 0x" << possiblyAppliedFlags);
 			return false;
 		}
 
 		// If apply is false, none of the possible flags may be set
 		if (!apply && (flags & possiblyAppliedFlags))
 		{
-			WLOG("Ack misapply op code for movement flags (0x" << std::hex << flags << ") should not have one of 0x" << possiblyAppliedFlags);
+			CLOG("Ack misapply op code for movement flags (0x" << std::hex << flags << ") should not have one of 0x" << possiblyAppliedFlags);
 			return false;
 		}
 
 		return true;
 	}
 
-	bool validateMovementSpeed(float expectedSpeed, const MovementInfo & clientInfo, const MovementInfo & serverInfo/*, bool isFirstMove*/)
+	bool validateMovementSpeed(float expectedSpeed, const MovementInfo & clientInfo, const MovementInfo & serverInfo)
 	{
 		math::Vector3 lastPos(serverInfo.x, serverInfo.y, 0.0f);
 		math::Vector3 newPos(clientInfo.x, clientInfo.y, 0.0f);
 
 		const float distanceSq = (lastPos - newPos).squared_length();
-		const UInt32 moveTime = /*(isFirstMove ? clientInfo.fallTime : */clientInfo.time - serverInfo.time/*)*/;
+		const UInt32 moveTime = clientInfo.time - serverInfo.time;
 		const float maxDist =
 			static_cast<float>(moveTime) / 1000.0f * expectedSpeed;
 
 		if (distanceSq > ::powf(maxDist + 0.138f, 2.0f))
 		{
-			WLOG("Distance was too much! Max dist: " << maxDist << ", distance was " << (lastPos - newPos).length());
-			//DLOG("\tisFirstMove: " << isFirstMove);
-			DLOG("\tmoveTime: " << moveTime);
-			DLOG("\texpectedSpeed: " << expectedSpeed);
-			DLOG("\tisFalling: " << ((serverInfo.moveFlags & (Falling | FallingFar)) != 0));
+			CLOG("Distance was too much! Max dist: " << maxDist << ", distance was " << (lastPos - newPos).length() << "\n"
+				<< "\tmoveTime: " << moveTime << "\n"
+				<< "\texpectedSpeed: " << expectedSpeed << "\n"
+				<< "\tisFalling: " << ((serverInfo.moveFlags & (Falling | FallingFar)) != 0));
 			return false;
 		}
 

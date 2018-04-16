@@ -44,6 +44,7 @@ namespace wowpp
 		, mysqlDatabase("wowpp_world")
 		, isLogActive(true)
 		, logFileName("wowpp_world.log")
+		, cheatLogFileName("wowpp_anti_cheat.log")
 		, isLogFileBuffering(false)
 	{
 	}
@@ -141,6 +142,7 @@ namespace wowpp
 			{
 				isLogActive = log->getInteger("active", static_cast<unsigned>(isLogActive)) != 0;
 				logFileName = log->getString("fileName", logFileName);
+				logFileName = log->getString("cheatFileName", cheatLogFileName);
 				isLogFileBuffering = log->getInteger("buffering", static_cast<unsigned>(isLogFileBuffering)) != 0;
 			}
 
@@ -218,6 +220,7 @@ namespace wowpp
 			sff::write::Table<Char> log(global, "log", sff::write::MultiLine);
 			log.addKey("active", static_cast<unsigned>(isLogActive));
 			log.addKey("fileName", logFileName);
+			log.addKey("cheatFileName", cheatLogFileName);
 			log.addKey("buffering", isLogFileBuffering);
 			log.finish();
 		}

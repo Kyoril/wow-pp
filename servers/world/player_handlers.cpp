@@ -35,6 +35,7 @@
 #include "game/unit_mover.h"
 #include "game/mail.h"
 #include "movement_validation.h"
+#include "game/cheat_log.h"
 
 using namespace std;
 
@@ -571,7 +572,7 @@ namespace wowpp
 			// Detect wrong fall time values
 			if (info.fallTime > 500)
 			{
-				WLOG("Fall time in first movement packet is too high!");
+				CLOG("Fall time in first movement packet is too high!");
 				kick();
 				return;
 			}
