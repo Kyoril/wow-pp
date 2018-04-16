@@ -142,7 +142,7 @@ namespace wowpp
 			{
 				isLogActive = log->getInteger("active", static_cast<unsigned>(isLogActive)) != 0;
 				logFileName = log->getString("fileName", logFileName);
-				logFileName = log->getString("cheatFileName", cheatLogFileName);
+				cheatLogFileName = log->getString("cheatFileName", cheatLogFileName);
 				isLogFileBuffering = log->getInteger("buffering", static_cast<unsigned>(isLogFileBuffering)) != 0;
 			}
 
