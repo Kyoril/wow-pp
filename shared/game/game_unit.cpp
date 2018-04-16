@@ -480,14 +480,11 @@ namespace wowpp
 		PendingMovementChange change = m_pendingMoveChanges.front();
 		m_pendingMoveChanges.pop_front();
 
-		DLOG("Popped pending movement change " << (UInt32)change.changeType);
-
 		return change;
 	}
 
 	void GameUnit::pushPendingMovementChange(PendingMovementChange change)
 	{
-		DLOG("Pushed pending movement change " << (UInt32)change.changeType);
 		m_pendingMoveChanges.emplace_back(change);
 	}
 
