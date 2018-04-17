@@ -1270,25 +1270,22 @@ namespace wowpp
 
 		if (guid != m_character->getGuid())
 		{
-			WLOG("Received CMSG_MOVE_TIME_SKIPPED for different character...");
-			return;
-		}
-
-		// Anti hack check
-		if (Int32(timeSkipped) < 0)
-		{
-			WLOG("PLAYER " << m_character->getName() << " POSSIBLY HACKING");
+			CLOG("Received MSG_MOVE_TIME_SKIPPED for non-controlled unit");
 			kick();
 			return;
 		}
 
-		DLOG("Move time skipped received with time value " << timeSkipped);
+		// Time value mustn't be negative
+		if (Int32(timeSkipped) < 0)
+		{
+			CLOG("Received MSG_MOVE_TIME_SKIPPED with negative time value " << Int32(timeSkipped));
+			kick();
+			return;
+		}
 
 		auto moveInfo = m_character->getMovementInfo();
 		moveInfo.time += timeSkipped;
 		m_character->setMovementInfo(moveInfo);
-
-		// TODO: Do something with the time diff
 	}
 
 	void Player::handleSetActionBarToggles(game::Protocol::IncomingPacket & packet)

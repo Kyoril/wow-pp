@@ -988,7 +988,6 @@ namespace wowpp
 			if (skillId != 0)
 			{
 				skillIds.push_back(skillId);
-				DLOG("skill id " << i << ": " << skillId);
 			}
 		}
 

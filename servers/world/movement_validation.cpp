@@ -357,47 +357,47 @@ namespace wowpp
 			}
 		}
 
-// Transport data should stay the same during 2 subsequent packets
-if ((serverInfo.moveFlags & OnTransport) && (clientInfo.moveFlags & OnTransport) &&
-	opCode != MoveChangeTransport)
-{
-	if (clientInfo.transportGuid != serverInfo.transportGuid)
-	{
-		CLOG("Client tried to send different transport GUID during 2 subsequent packets!");
-		return false;
-	}
-
-	if (serverInfo.time != 0 && serverInfo.transportTime + timeDiff != clientInfo.transportTime)
-	{
-		CLOG("Client tried to send invalid transport time during 2 subsequent packets!");
-		return false;
-	}
-}
-
-// When root was applied...
-if (opCode == ForceMoveRootAck)
-{
-	// Check if the player was falling. If so, he has to set PendingRoot
-	if (clientInfo.moveFlags & (Falling | FallingFar))
-	{
-		if (!(clientInfo.moveFlags & PendingRoot))
+		// Transport data should stay the same during 2 subsequent packets
+		if ((serverInfo.moveFlags & OnTransport) && (clientInfo.moveFlags & OnTransport) &&
+			opCode != MoveChangeTransport)
 		{
-			CLOG("PendingRoot flag required in root ack while falling is active!");
-			return false;
-		}
-	}
-	// Player wasn't falling, so he has to set Root
-	else
-	{
-		if (!(clientInfo.moveFlags & Root))
-		{
-			CLOG("Root flag required in root ack while falling is inactive!");
-			return false;
-		}
-	}
-}
+			if (clientInfo.transportGuid != serverInfo.transportGuid)
+			{
+				CLOG("Client tried to send different transport GUID during 2 subsequent packets!");
+				return false;
+			}
 
-return true;
+			if (serverInfo.time != 0 && serverInfo.transportTime + timeDiff != clientInfo.transportTime)
+			{
+				CLOG("Client tried to send invalid transport time during 2 subsequent packets!");
+				return false;
+			}
+		}
+
+		// When root was applied...
+		if (opCode == ForceMoveRootAck)
+		{
+			// Check if the player was falling. If so, he has to set PendingRoot
+			if (clientInfo.moveFlags & (Falling | FallingFar))
+			{
+				if (!(clientInfo.moveFlags & PendingRoot))
+				{
+					CLOG("PendingRoot flag required in root ack while falling is active!");
+					return false;
+				}
+			}
+			// Player wasn't falling, so he has to set Root
+			else
+			{
+				if (!(clientInfo.moveFlags & Root))
+				{
+					CLOG("Root flag required in root ack while falling is inactive!");
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 
 	bool validateSpeedAck(const PendingMovementChange& change, float receivedSpeed, MovementType& outMoveTypeSent)
