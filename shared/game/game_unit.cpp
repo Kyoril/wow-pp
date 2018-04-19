@@ -3353,7 +3353,7 @@ namespace wowpp
 		const UInt32& moveFlags = info.moveFlags;
 
 		// If we are jumping / falling, this is the expected move speed
-		if (moveFlags & (Falling | FallingFar) || expectFallingFar)
+		if (moveFlags & (Falling | FallingFar) || expectFallingFar || info.jumpVelocity == 0.0f)
 		{
 			// TODO: This value might still be wrong, but is the highest fall speed xy velocity that has yet been
 			// seen by a legit client.
@@ -3362,7 +3362,7 @@ namespace wowpp
 			// Only if FallingFar is set, the MaxFallVelocity can be used because of ledges.
 			// This is so that the player can't simply set Falling and FallingFar to pretend that he is falling
 			// without changing it's z value (FallingFar checks that the z value is is decreased permanently).
-			if ((moveFlags & FallingFar) || expectFallingFar)
+			if ((moveFlags & FallingFar) || expectFallingFar || info.jumpVelocity == 0.0f)
 				return std::max(info.jumpXYSpeed, MaxFallVelocity);
 			else
 				return std::max(info.jumpXYSpeed, getSpeed(movement_type::Run));

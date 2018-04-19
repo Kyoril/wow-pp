@@ -223,10 +223,45 @@ namespace wowpp
 		// If the client was falling before and is still falling...
 		if ((clientInfo.moveFlags & Falling) && (serverInfo.moveFlags & Falling))
 		{
+			// The acceleration in fall time
+			const float Acceleration = 19.75f;
+
+			// Get the current fall time in seconds
+			const float FallTimeSec = (clientInfo.fallTime / 1000.0f);
+
+			// Determine the expected fall speed value based on fall time in seconds, and use the
+			// client cap of -60.149 units/seconds as max fall speed
+			const float ExpectedFallSpeed = std::min(60.149f, FallTimeSec * Acceleration);
+
+			// Calculate fall speed
+			const float FallSpeed = (clientInfo.z - serverInfo.z) / ((clientInfo.fallTime - serverInfo.fallTime) / 1000.0f);
+			if (-FallSpeed > ExpectedFallSpeed)
+			{
+				CLOG("Client fall speed higher than expected!");
+			}
+
 			// ... we check for removal of the FallingFar flag which shouldn't be possible without landing!
 			if (!(clientInfo.moveFlags & FallingFar) && (serverInfo.moveFlags & FallingFar))
 			{
 				CLOG("Client tried to remove FallingFar while still falling!");
+				return false;
+			}
+		}
+
+
+		// If the player is falling but didn't set FallingFar so far, we check if he should have
+		// set this flag by now
+		if (!(clientInfo.moveFlags & FallingFar) && (clientInfo.moveFlags & Falling))
+		{
+			if (clientInfo.z < clientInfo.jumpStartZ + clientInfo.jumpVelocity)
+			{
+				CLOG("Client didn't set FALLING_FAR flag after falling too far!");
+				return false;
+			}
+
+			if (clientInfo.z > clientInfo.jumpStartZ - clientInfo.jumpVelocity)
+			{
+				CLOG("Client jumped higher than possible with his current jumpVelocity value!");
 				return false;
 			}
 		}

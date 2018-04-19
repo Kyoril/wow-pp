@@ -145,26 +145,59 @@ namespace wowpp
 		explicit MovementInfo();
 
 	public:
-
 		// Character data
+
+		/// Movement flags which describe the current movement state.
 		game::MovementFlags moveFlags;
+		/// Unknown purpose right now...
 		UInt8 moveFlags2;
+		/// The movement timestamp at the client side.
 		UInt32 time;
+		/// Absolute location and rotation values.
 		float x, y, z, o;
+
 		// Transport data
+		
+		/// Transporter guid if any.
 		UInt64 transportGuid;
+		/// Location and rotation values relative to the transporters world location.
 		float tX, tY, tZ, tO;
+		/// The current transporter time value at the client side.
 		UInt32 transportTime;
+
 		// Swimming and flying data
+		
+		/// Pitch value.
 		float pitch;
-		// Last fall time
+		/// The amount of time that the player is falling in milliseconds.
 		UInt32 fallTime;
-		// Jumping data
+		/// Jump data only set when the player is jumping or is knocked back. Not set
+		/// if the player is simply falling down without jumping before (for example).
 		float jumpVelocity, jumpSinAngle, jumpCosAngle, jumpXYSpeed;
+		
 		// Taxi data
+
+		/// Unknown purpose right now.
 		float unknown1;
+
+	public:
+		// Data which isn't sent to the client but is used by the
+		// server for movement validation for example.
+
+		/// Z value as it was when the player started jumping.
+		float jumpStartZ;
 	};
 
 	io::Writer &operator << (io::Writer &w, MovementInfo const &info);
 	io::Reader &operator >> (io::Reader &r, MovementInfo &info);
+
+
+	/// Determines whether a unit started falling down based on two movement infos.
+	/// @param clientInfo The new movement info sent by the client.
+	/// @param serverInfo The old movement info known by the server from the last move packet or spawn.
+	/// @returns true if the unit started falling in this new movement packet.
+	inline bool unitStartsFalling(const MovementInfo& clientInfo, const MovementInfo& serverInfo)
+	{
+		return (clientInfo.moveFlags & game::movement_flags::Falling) && !(serverInfo.moveFlags & game::movement_flags::Falling);
+	}
 }

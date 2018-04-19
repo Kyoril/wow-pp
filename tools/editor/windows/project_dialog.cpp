@@ -40,7 +40,10 @@ namespace wowpp
 
 			for (const auto& project : app.getConfiguration().projects)
 			{
-				m_ui->listWidget->addItem(project.name.c_str());
+				const String& projectName = project.name;
+				DLOG("Found project " << projectName << "...");
+
+				m_ui->listWidget->addItem(projectName.c_str());
 			}
 		}
 

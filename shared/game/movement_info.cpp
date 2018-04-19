@@ -40,6 +40,7 @@ namespace wowpp
 		, jumpCosAngle(0.0f)
 		, jumpXYSpeed(0.0f)
 		, unknown1(0.0f)
+		, jumpStartZ(0.0f)
 	{
 	}
 

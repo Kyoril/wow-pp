@@ -122,7 +122,7 @@ namespace wowpp
 							project.databaseInfo.mysqlDatabase = mysqlDatabaseTable->getString("database", project.databaseInfo.mysqlDatabase);
 						}
 
-						projects.emplace_back(project);
+						projects.push_back(project);
 					}
 				}
 

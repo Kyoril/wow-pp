@@ -568,6 +568,7 @@ namespace wowpp
 		{
 			auto serverInfo = m_character->getMovementInfo();
 			serverInfo.time = info.time;
+			serverInfo.jumpStartZ = info.z;
 
 			// Detect wrong fall time values
 			if (info.fallTime > 500)
@@ -579,6 +580,10 @@ namespace wowpp
 
 			m_character->setMovementInfo(info);
 		}
+
+		// Player starts falling down
+		info.jumpStartZ = unitStartsFalling(info, m_character->getMovementInfo()) ? 
+			info.z : m_character->getMovementInfo().jumpStartZ;
 
 		// Make sure that there is no timed out pending movement change (lag tolerance)
 		if (m_character->hasTimedOutPendingMovementChange())
@@ -1620,6 +1625,10 @@ namespace wowpp
 			WLOG("Could not read movement info from ack packet 0x" << std::hex << opCode);
 			return;
 		}
+
+		// Player starts falling down
+		info.jumpStartZ = unitStartsFalling(info, m_character->getMovementInfo()) ? 
+			info.z : m_character->getMovementInfo().jumpStartZ;
 
 		const float allowedSpeed = m_character->getExpectedSpeed(info, (info.moveFlags & game::movement_flags::FallingFar) != 0);
 
