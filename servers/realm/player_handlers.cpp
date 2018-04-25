@@ -1757,7 +1757,8 @@ namespace wowpp
 		game::ResponseCode response = game::response_code::CharCreateError;
 		for (auto &entry : m_characters)
 		{
-			if (entry.id == characterId)
+			if (entry.id == characterId &&
+				(entry.atLogin & game::atlogin_flags::Rename) != 0)
 			{
 				// Capitalize the characters name
 				capitalize(newName);

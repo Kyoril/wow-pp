@@ -3468,6 +3468,36 @@ namespace wowpp
 		// Read play-time
 		r >> io::read_range(object.m_playedTime);
 
+		// Clear all auras
+		object.m_auraData.clear();
+
+		// Read aura count
+		UInt16 auraCount = 0;
+		r >> io::read<NetUInt16>(auraCount);
+		
+		// Resize array
+		object.m_auraData.resize(auraCount);
+		for (UInt16 i = 0; i < auraCount; ++i)
+		{
+			AuraData &auraData = object.m_auraData[i];
+			r
+				>> io::read<NetUInt64>(auraData.casterGuid)
+				>> io::read<NetUInt64>(auraData.itemGuid)
+				>> io::read<NetUInt32>(auraData.spell)
+				>> io::read<NetUInt32>(auraData.stackCount)
+				>> io::read<NetUInt32>(auraData.remainingCharges)
+				>> io::read_range(auraData.basePoints)
+				>> io::read_range(auraData.periodicTime)
+				>> io::read<NetUInt32>(auraData.maxDuration)
+				>> io::read<NetUInt32>(auraData.remainingTime)
+				>> io::read<NetUInt32>(auraData.effectIndexMask);
+
+		}
+
+		// =============================================================
+		// End of reading
+		// =============================================================
+
 		// Reset all auras
 		for (UInt32 i = 0; i < 56; ++i)
 		{
