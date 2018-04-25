@@ -1596,7 +1596,7 @@ namespace wowpp
 		// Ack needs to be for the controlled character
 		if (guid != m_character->getGuid())
 		{
-			WLOG("Received ack opcode from other character! OpCode: 0x" << std::hex << opCode << "; Index: " << std::dec << index);
+			CLOG("Received ack opcode from other character! OpCode: 0x" << std::hex << opCode << "; Index: " << std::dec << index);
 			kick();
 			return;
 		}
@@ -1604,7 +1604,7 @@ namespace wowpp
 		// Make sure that we have a pending movement change at all
 		if (!m_character->hasPendingMovementChange())
 		{
-			WLOG("Received client ack packet without expecting any!");
+			CLOG("Received client ack packet without expecting any!");
 			kick();
 			return;
 		}
@@ -1613,33 +1613,36 @@ namespace wowpp
 		PendingMovementChange change = m_character->popPendingMovementChange();
 		if (change.counter != index)
 		{
-			WLOG("Received client ack with wrong index (different index expected)");
+			CLOG("Received client ack with wrong index (different index expected)");
 			kick();
 			return;
 		}
 
 		// Read movement info
 		MovementInfo info;
-		if (!(packet >> info))
+		if (opCode != game::client_packet::MoveTeleportAck)
 		{
-			WLOG("Could not read movement info from ack packet 0x" << std::hex << opCode);
-			return;
+			if (!(packet >> info))
+			{
+				CLOG("Could not read movement info from ack packet 0x" << std::hex << opCode);
+				return;
+			}
+
+			// Player starts falling down
+			info.jumpStartZ = unitStartsFalling(info, m_character->getMovementInfo()) ?
+				info.z : m_character->getMovementInfo().jumpStartZ;
+
+			const float allowedSpeed = m_character->getExpectedSpeed(info, (info.moveFlags & game::movement_flags::FallingFar) != 0);
+
+			// Validate movement info
+			if (!validateMovementInfo(opCode, info, m_character->getMovementInfo(), allowedSpeed))
+			{
+				CLOG("Unexpected movement flags sent from client!");
+				kick();
+				return;
+			}
 		}
-
-		// Player starts falling down
-		info.jumpStartZ = unitStartsFalling(info, m_character->getMovementInfo()) ? 
-			info.z : m_character->getMovementInfo().jumpStartZ;
-
-		const float allowedSpeed = m_character->getExpectedSpeed(info, (info.moveFlags & game::movement_flags::FallingFar) != 0);
-
-		// Validate movement info
-		if (!validateMovementInfo(opCode, info, m_character->getMovementInfo(), allowedSpeed))
-		{
-			WLOG("Unexpected movement flags sent from client!");
-			kick();
-			return;
-		}
-
+		
 		// Used by speed change acks
 		MovementType typeSent = movement_type::Count;
 		float receivedSpeed = 0.0f;
@@ -1651,7 +1654,7 @@ namespace wowpp
 				if (change.changeType != MovementChangeType::Hover ||
 					!validateMoveFlagsOnApply(change.apply, info.moveFlags, game::movement_flags::Hover))
 				{
-					WLOG("Invalid hover ack received! Expected change type was " << static_cast<UInt32>(change.changeType));
+					CLOG("Invalid hover ack received! Expected change type was " << static_cast<UInt32>(change.changeType));
 					kick();
 					return;
 				}
@@ -1660,7 +1663,7 @@ namespace wowpp
 				if (change.changeType != MovementChangeType::FeatherFall ||
 					!validateMoveFlagsOnApply(change.apply, info.moveFlags, game::movement_flags::SafeFall))
 				{
-					WLOG("Invalid feather fall ack received! Expected change type was " << static_cast<UInt32>(change.changeType));
+					CLOG("Invalid feather fall ack received! Expected change type was " << static_cast<UInt32>(change.changeType));
 					kick();
 					return;
 				}
@@ -1669,7 +1672,7 @@ namespace wowpp
 				if (change.changeType != MovementChangeType::WaterWalk ||
 					!validateMoveFlagsOnApply(change.apply, info.moveFlags, game::movement_flags::WaterWalking))
 				{
-					WLOG("Invalid water walk ack received! Expected change type was " << static_cast<UInt32>(change.changeType));
+					CLOG("Invalid water walk ack received! Expected change type was " << static_cast<UInt32>(change.changeType));
 					kick();
 					return;
 				}
@@ -1679,7 +1682,7 @@ namespace wowpp
 				if (change.changeType != MovementChangeType::Root ||
 					!validateMoveFlagsOnApply(change.apply, info.moveFlags, (game::movement_flags::Root | game::movement_flags::PendingRoot)))
 				{
-					WLOG("Invalid root ack received! Expected change type was " << static_cast<UInt32>(change.changeType));
+					CLOG("Invalid root ack received! Expected change type was " << static_cast<UInt32>(change.changeType));
 					kick();
 					return;
 				}
@@ -1741,10 +1744,10 @@ namespace wowpp
 				break;
 			}
 			case game::client_packet::MoveKnockBackAck:
-			{
 				// Validate change type
 				if (change.changeType != MovementChangeType::KnockBack)
 				{
+					CLOG("Received wrong ack op-code for expected ack!");
 					kick();
 					return;
 				}
@@ -1755,16 +1758,27 @@ namespace wowpp
 					std::fabs(change.knockBackInfo.vcos - info.jumpCosAngle) > 0.01f ||
 					std::fabs(change.knockBackInfo.vsin - info.jumpSinAngle) > 0.01f)
 				{
+					CLOG("Received invalid knock back info in MSG_MOVE_KNOCK_BACK_ACK!");
 					kick();
 					return;
 				}
-			}
+
+				break;
+			case game::client_packet::MoveTeleportAck:
+				// Validate change type
+				if (change.changeType != MovementChangeType::Teleport)
+				{
+					CLOG("Received wrong ack op-code for expected ack!");
+					kick();
+					return;
+				}
+
+				DLOG("Received teleport ack towards " << change.teleportInfo.x << "," << change.teleportInfo.y << "," << change.teleportInfo.z);
+				break;
 			default:
 				break;
 		}
 		
-		// TODO: Validate movement (speed hack, position change while rooted etc.)
-
 		// Apply movement info
 		m_character->setMovementInfo(info);
 

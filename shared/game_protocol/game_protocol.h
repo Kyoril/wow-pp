@@ -1345,10 +1345,18 @@ namespace wowpp
 			    const MovementInfo &movement
 			);
 
+			void moveTeleport(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid,
+				const MovementInfo &movement,
+				UInt32 ackIndex
+			);
+
 			void moveTeleportAck(
 			    game::OutgoingPacket &out_packet,
 			    UInt64 guid,
-			    const MovementInfo &movement
+			    const MovementInfo &movement,
+				UInt32 ackIndex
 			);
 
 			void standStateUpdate(

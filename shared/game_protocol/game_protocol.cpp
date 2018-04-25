@@ -840,13 +840,22 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void moveTeleport(game::OutgoingPacket & out_packet, UInt64 guid, const MovementInfo & movement, UInt32 ackIndex)
+			{
+				out_packet.start(game::server_packet::MoveTeleport);
+				out_packet
+					<< io::write_packed_guid(guid)
+					<< io::write<NetUInt32>(ackIndex)
+					<< movement;
+				out_packet.finish();
+			}
 
-			void moveTeleportAck(game::OutgoingPacket &out_packet, UInt64 guid, const MovementInfo &movement)
+			void moveTeleportAck(game::OutgoingPacket &out_packet, UInt64 guid, const MovementInfo &movement, UInt32 ackId)
 			{
 				out_packet.start(game::server_packet::MoveTeleportAck);
 				out_packet
 						<< io::write_packed_guid(guid)
-				        << io::write<NetUInt32>(0)
+				        << io::write<NetUInt32>(ackId)
 				        << movement;
 				out_packet.finish();
 			}

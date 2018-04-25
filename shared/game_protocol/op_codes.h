@@ -245,6 +245,7 @@ namespace wowpp
 				MessageChat					= 0x096,
 				UpdateObject				= 0x0A9,
 				DestroyObject				= 0x0AA,
+				MoveTeleport				= 0x0C5,
 				MoveTeleportAck				= 0x0C7,
 				MoveSetRunSpeed				= 0x0CD,
 				MoveSetRunBackSpeed			= 0x0CF,

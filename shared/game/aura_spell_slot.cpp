@@ -349,10 +349,10 @@ namespace wowpp
 			for (Int32 i = 0; i < m_effects.size(); ++i)
 			{
 				if (!m_effects[i])
-					break;
+					continue;
 
 				ASSERT((m_effects[i] && aura.m_effects[i]) && "Both auras have to have the same amount of effects");
-				ASSERT((m_effects[i]->getEffect().aura() && aura.m_effects[i]->getEffect().aura()) && "Both effects have to match");
+				ASSERT((m_effects[i]->getEffect().aura() == aura.m_effects[i]->getEffect().aura()) && "Both effects have to match");
 
 				Int32 basePoints = m_stackCount * aura.m_effects[i]->getBasePoints();
 				m_effects[i]->setBasePoints(basePoints);
@@ -363,7 +363,7 @@ namespace wowpp
 			for (Int32 i = 0; i < m_effects.size(); ++i)
 			{
 				if (!m_effects[i])
-					break;
+					continue;
 
 				// Cause the effect to reset tick count etc.
 				m_effects[i]->setBasePoints(m_effects[i]->getBasePoints());

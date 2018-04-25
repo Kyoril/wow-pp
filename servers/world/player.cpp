@@ -943,18 +943,22 @@ namespace wowpp
 			// Apply character position
 			m_character->relocate(location, o);
 
-			// Reset movement info
-			MovementInfo info = m_character->getMovementInfo();
-			info.moveFlags = game::movement_flags::None;
-			info.x = location.x;
-			info.y = location.y;
-			info.z = location.z;
-			info.o = o;
-			sendProxyPacket(
-				std::bind(game::server_write::moveTeleportAck, std::placeholders::_1, m_character->getGuid(), std::cref(info)));
+			const UInt32 ackId = m_character->generateAckId();
 
-			// Update movement info
-			m_character->setMovementInfo(std::move(info));
+			// Push movement change
+			PendingMovementChange change;
+			change.changeType = MovementChangeType::Teleport;
+			change.timestamp = getCurrentTime();
+			change.counter = ackId;
+			change.teleportInfo.x = location.x;
+			change.teleportInfo.y = location.y;
+			change.teleportInfo.z = location.z;
+			change.teleportInfo.o = o;
+			m_character->pushPendingMovementChange(change);
+
+			// Send teleport packet
+			sendProxyPacket(
+				std::bind(game::server_write::moveTeleportAck, std::placeholders::_1, m_character->getGuid(), std::cref(m_character->getMovementInfo()), ackId));
 		}
 		else
 		{

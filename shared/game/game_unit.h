@@ -390,6 +390,14 @@ namespace wowpp
 		/// z axis speed value
 		float speedZ = 0.0f;
 	};
+
+	struct TeleportInfo
+	{
+		float x = 0.0f;
+		float y = 0.0f;
+		float z = 0.0f;
+		float o = 0.0f;
+	};
 		
 	/// Contains infos about a pending movement change which first needs to
 	/// be acknowledged by the client before it's effects can be applied.
@@ -414,6 +422,8 @@ namespace wowpp
 			bool apply;
 
 			KnockBackInfo knockBackInfo;
+
+			TeleportInfo teleportInfo;
 		};
 
 		/// Default constructor clears all variables
