@@ -1054,6 +1054,7 @@ namespace wowpp
 	public:
 
 		inline const std::vector<AuraData> &getAuraData() const { return m_auraData; }
+		inline std::vector<AuraData> &getAuraData() { return m_auraData; }
 
 	private:
 

@@ -406,6 +406,8 @@ namespace wowpp
 
 	bool AuraContainer::serializeAuraData(std::vector<AuraData>& out_data) const
 	{
+		out_data.clear();
+
 		for (const auto aura : m_auras)
 		{
 			// Skip passive auras
@@ -439,10 +441,7 @@ namespace wowpp
 
 	bool AuraContainer::restoreAuraData(const std::vector<AuraData>& data)
 	{
-		// Remove all auras first
-		removeAllAuras();
-
-		// Then apply every single aura from the container
+		// Apply every single aura from the container
 		for (const AuraData& auraData : data)
 		{
 			// Get spell entry

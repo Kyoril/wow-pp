@@ -810,6 +810,44 @@ namespace wowpp
 					}
 				}
 
+				out_character.getAuraData().clear();
+
+				// Load auras
+				wowpp::MySQL::Select auraSelect(m_connection, fmt::format(
+					//       0     
+					"SELECT `caster_guid`,`item_guid`,`spell`,`stack_count`,`remain_charges`,`basepoints_0`,`basepoints_1`,`basepoints_2`,`periodictime_0`,`periodictime_1`,`periodictime_2`,`max_duration`,`remain_time`,`eff_index_mask` FROM `character_auras` WHERE `guid`={0}"
+					, characterId));
+				if (auraSelect.success())
+				{
+					wowpp::MySQL::Row auraRow(auraSelect);
+					while (auraRow)
+					{
+						Int32 fieldIndex = 0;
+
+						// Load data
+						AuraData data;
+						auraRow.getField(fieldIndex++, data.casterGuid);
+						auraRow.getField(fieldIndex++, data.itemGuid);
+						auraRow.getField(fieldIndex++, data.spell);
+						auraRow.getField(fieldIndex++, data.stackCount);
+						auraRow.getField(fieldIndex++, data.remainingCharges);
+						auraRow.getField(fieldIndex++, data.basePoints[0]);
+						auraRow.getField(fieldIndex++, data.basePoints[1]);
+						auraRow.getField(fieldIndex++, data.basePoints[2]);
+						auraRow.getField(fieldIndex++, data.periodicTime[0]);
+						auraRow.getField(fieldIndex++, data.periodicTime[1]);
+						auraRow.getField(fieldIndex++, data.periodicTime[2]);
+						auraRow.getField(fieldIndex++, data.maxDuration);
+						auraRow.getField(fieldIndex++, data.remainingTime);
+						auraRow.getField(fieldIndex++, data.effectIndexMask);
+
+						// Add data
+						out_character.getAuraData().push_back(std::move(data));
+						
+						// Next row
+						auraRow = auraRow.next(auraSelect);
+					}
+				}
 
 				return true;
 			}
@@ -1037,12 +1075,10 @@ namespace wowpp
 
 		// Save character auras
 		const auto& auraData = character.getAuraData();
-		DLOG("Received " << auraData.size() << " auras for saving...");
-
 		if (!auraData.empty())
 		{
 			std::ostringstream strm;
-			strm << "INSERT INTO `character_auras` (`guid`, `caster_guid`, `item_guid`, `spell`, `stack_count`, `remain_charges`, `basepoints_0`, `basepoints_1`, `basepoints_2`, `periodictime_0`, `periodictime_1`, `periodictime_2`, `maxduration`, `remain_time`, `eff_index_mask`) VALUES ";
+			strm << "INSERT INTO `character_auras` (`guid`, `caster_guid`, `item_guid`, `spell`, `stack_count`, `remain_charges`, `basepoints_0`, `basepoints_1`, `basepoints_2`, `periodictime_0`, `periodictime_1`, `periodictime_2`, `max_duration`, `remain_time`, `eff_index_mask`) VALUES ";
 			bool isFirstItem = true;
 			for (const auto &data : auraData)
 			{

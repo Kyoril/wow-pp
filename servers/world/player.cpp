@@ -430,6 +430,7 @@ namespace wowpp
 	{
 		if (m_character)
 		{
+			m_character->getAuras().serializeAuraData(m_character->getAuraData());
 			m_realmConnector.sendCharacterData(*m_character);
 		}
 	}
@@ -464,6 +465,10 @@ namespace wowpp
 		// since we want the right values in the spawn packet and we don't want to send another update 
 		// packet for this right away
 		m_character->getInventory().addSpawnBlocks(blocks);
+
+		// Apply auras from aura data
+		DLOG("TODO: Apply aura data (we got " << m_character->getAuraData().size() << " auras from realm to apply)");
+		m_character->getAuras().restoreAuraData(m_character->getAuraData());
 
 		// Write create object block (This block will be made the first block even though it is created
 		// as the last block)
