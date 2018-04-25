@@ -406,21 +406,24 @@ namespace wowpp
 
 	bool AuraContainer::serializeAuraData(std::vector<AuraData>& out_data) const
 	{
-		auto it = m_auras.begin();
-		while (it != m_auras.end())
+		for (const auto aura : m_auras)
 		{
+			// Skip passive auras
+			if (aura->isPassive() || aura->isChanneled())
+				continue;
+
 			AuraData data;
-			data.spell = (*it)->getSpell().id();
-			if ((*it)->getCaster()) data.casterGuid = (*it)->getCaster()->getGuid();
-			data.itemGuid = (*it)->getItemGuid();
-			data.maxDuration = (*it)->getTotalDuration();
-			data.remainingTime = 0; //TODO
-			data.remainingCharges = 0; //TODO
-			data.stackCount = 0; // TODO
+			data.spell = aura->getSpell().id();
+			if (aura->getCaster()) data.casterGuid = aura->getCaster()->getGuid();
+			data.itemGuid = aura->getItemGuid();
+			data.maxDuration = aura->getTotalDuration();
+			data.remainingTime = aura->getRemainingTime();
+			data.remainingCharges = aura->getRemainingCharges();
+			data.stackCount = aura->getStackCount();
 
 			// Gather effect data
 			Int32 effectIndex = 0;
-			(*it)->forEachEffect([&effectIndex, &data](std::shared_ptr<AuraEffect> eff) -> bool {
+			aura->forEachEffect([&effectIndex, &data](std::shared_ptr<AuraEffect> eff) -> bool {
 				data.basePoints[effectIndex] = eff->getBasePoints();
 
 				effectIndex++;
@@ -429,7 +432,6 @@ namespace wowpp
 
 			// Add data to the vector
 			out_data.push_back(std::move(data));
-			it++;
 		}
 
 		return true;

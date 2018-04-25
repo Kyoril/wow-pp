@@ -1024,9 +1024,54 @@ namespace wowpp
 			}
 		}
 
+		// Delete character auras
+		if (!m_connection.execute(fmt::format(
+			"DELETE FROM `character_auras` WHERE `guid`={0};"
+			, lowerGuid					// 0
+		)))
+		{
+			// There was an error
+			printDatabaseError();
+			return false;
+		}
+
+		// Save character auras
+		const auto& auraData = character.getAuraData();
+		DLOG("Received " << auraData.size() << " auras for saving...");
+
+		if (!auraData.empty())
+		{
+			std::ostringstream strm;
+			strm << "INSERT INTO `character_auras` (`guid`, `caster_guid`, `item_guid`, `spell`, `stack_count`, `remain_charges`, `basepoints_0`, `basepoints_1`, `basepoints_2`, `periodictime_0`, `periodictime_1`, `periodictime_2`, `maxduration`, `remain_time`, `eff_index_mask`) VALUES ";
+			bool isFirstItem = true;
+			for (const auto &data : auraData)
+			{
+				if (!isFirstItem) strm << ",";
+				else
+				{
+					isFirstItem = false;
+				}
+
+				strm 
+					<< "(" 
+					<< lowerGuid << "," << data.casterGuid << "," << data.itemGuid << "," << data.spell << "," << data.stackCount << "," << data.remainingCharges << "," 
+					<< data.basePoints[0] << "," << data.basePoints[1] << "," << data.basePoints[2] << "," 
+					<< data.periodicTime[0] << "," << data.periodicTime[1] << "," << data.periodicTime[2] << "," 
+					<< data.maxDuration << "," << data.remainingTime << "," << data.effectIndexMask << ")";
+			}
+			strm << ";";
+
+			if (!m_connection.execute(strm.str()))
+			{
+				// There was an error
+				printDatabaseError();
+				return false;
+			}
+		}
 
 		transaction.commit();
 		GameTime end = getCurrentTime();
+
 		DLOG("Saved character data in " << (end - start) << " ms");
 		return true;
 	}

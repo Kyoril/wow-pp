@@ -1051,6 +1051,10 @@ namespace wowpp
 		/// Returns spell crit value from intellect
 		float getSpellCritFromIntellect();
 
+	public:
+
+		inline const std::vector<AuraData> &getAuraData() const { return m_auraData; }
+
 	private:
 
 		typedef std::array<Int16, combat_rating::End> CombatRatingsArray;

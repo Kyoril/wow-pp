@@ -53,10 +53,14 @@ namespace wowpp
 		/// signal.
 		void cancel();
 
+		GameTime getRemainingTime() const;
+
 	private:
 
 		struct Impl;
 
 		std::shared_ptr<Impl> m_impl;
+
+		GameTime m_end;
 	};
 }

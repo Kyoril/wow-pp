@@ -91,6 +91,7 @@ namespace wowpp
 	Countdown::Countdown(TimerQueue &timers)
 		: running(false)
 		, m_impl(std::make_shared<Impl>(timers, *this))
+		, m_end(0)
 	{
 	}
 
@@ -102,11 +103,20 @@ namespace wowpp
 
 	void Countdown::setEnd(GameTime endTime)
 	{
+		m_end = endTime;
 		m_impl->setEnd(endTime);
 	}
 
 	void Countdown::cancel()
 	{
+		m_end = getCurrentTime();
 		m_impl->cancel();
+	}
+
+	GameTime Countdown::getRemainingTime() const
+	{
+		const Int64 now = static_cast<Int64>(getCurrentTime());
+		const Int64 left = static_cast<Int64>(m_end) - now;
+		return std::max(left, 0LL);
 	}
 }

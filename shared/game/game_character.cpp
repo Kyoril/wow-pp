@@ -3353,20 +3353,21 @@ namespace wowpp
 		// Write aura data
 		std::vector<AuraData> auraData;
 		object.getAuras().serializeAuraData(auraData);
-		w << io::write<NetUInt16>(object.m_auraData.size());
-		for (const auto& auraData : object.m_auraData)
+
+		w << io::write<NetUInt16>(auraData.size());
+		for (const auto& data : auraData)
 		{
 			w
-				<< io::write<NetUInt64>(auraData.casterGuid)
-				<< io::write<NetUInt64>(auraData.itemGuid)
-				<< io::write<NetUInt32>(auraData.spell)
-				<< io::write<NetUInt32>(auraData.stackCount)
-				<< io::write<NetUInt32>(auraData.remainingCharges)
-				<< io::write_range(auraData.basePoints)
-				<< io::write_range(auraData.periodicTime)
-				<< io::write<NetUInt32>(auraData.maxDuration)
-				<< io::write<NetUInt32>(auraData.remainingTime)
-				<< io::write<NetUInt32>(auraData.effectIndexMask)
+				<< io::write<NetUInt64>(data.casterGuid)
+				<< io::write<NetUInt64>(data.itemGuid)
+				<< io::write<NetUInt32>(data.spell)
+				<< io::write<NetUInt32>(data.stackCount)
+				<< io::write<NetUInt32>(data.remainingCharges)
+				<< io::write_range(data.basePoints)
+				<< io::write_range(data.periodicTime)
+				<< io::write<NetUInt32>(data.maxDuration)
+				<< io::write<NetUInt32>(data.remainingTime)
+				<< io::write<NetUInt32>(data.effectIndexMask)
 				;
 		}
 
@@ -3417,7 +3418,8 @@ namespace wowpp
 		for (UInt16 i = 0; i < spellCount; ++i)
 		{
 			UInt32 spellId = 0;
-			r >> io::read<NetUInt32>(spellId);
+			if (!(r >> io::read<NetUInt32>(spellId)))
+				return r;
 
 			// Add character spell
 			const auto *spell = object.getProject().spells.getById(spellId);
@@ -3436,13 +3438,16 @@ namespace wowpp
 			UInt32 questId = 0;
 			r >> io::read<NetUInt32>(questId);
 			auto &questData = object.m_quests[questId];
-			r
-			        >> io::read<NetUInt8>(questData.status)
-			        >> io::read<NetUInt64>(questData.expiration)
-			        >> io::read<NetUInt8>(questData.explored)
-			        >> io::read_range(questData.creatures)
-			        >> io::read_range(questData.objects)
-			        >> io::read_range(questData.items);
+			if (!(r
+				>> io::read<NetUInt8>(questData.status)
+				>> io::read<NetUInt64>(questData.expiration)
+				>> io::read<NetUInt8>(questData.explored)
+				>> io::read_range(questData.creatures)
+				>> io::read_range(questData.objects)
+				>> io::read_range(questData.items)))
+			{
+				return r;
+			}
 
 			// Quest item cache update
 			if (questData.status == game::quest_status::Incomplete)
@@ -3480,7 +3485,7 @@ namespace wowpp
 		for (UInt16 i = 0; i < auraCount; ++i)
 		{
 			AuraData &auraData = object.m_auraData[i];
-			r
+			if (!(r
 				>> io::read<NetUInt64>(auraData.casterGuid)
 				>> io::read<NetUInt64>(auraData.itemGuid)
 				>> io::read<NetUInt32>(auraData.spell)
@@ -3490,8 +3495,10 @@ namespace wowpp
 				>> io::read_range(auraData.periodicTime)
 				>> io::read<NetUInt32>(auraData.maxDuration)
 				>> io::read<NetUInt32>(auraData.remainingTime)
-				>> io::read<NetUInt32>(auraData.effectIndexMask);
-
+				>> io::read<NetUInt32>(auraData.effectIndexMask)))
+			{
+				return r;
+			}
 		}
 
 		// =============================================================

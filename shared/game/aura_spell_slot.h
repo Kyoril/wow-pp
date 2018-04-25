@@ -78,29 +78,24 @@ namespace wowpp
 		/// provided).
 		void setOwner(std::shared_ptr<GameUnit> owner);
 		/// Gets the owner of this slot.
-		std::shared_ptr<GameUnit> getOwner() const {
-			return m_owner;
-		}
+		inline std::shared_ptr<GameUnit> getOwner() const { return m_owner; }
 		/// 
 		void setCaster(std::shared_ptr<GameUnit> caster);
 		/// 
 		GameUnit *getCaster() const;
 
 		/// Determines whether the aura effects have been applied.
-		bool hasBeenApplied() const {
-			return m_applied;
-		}
+		inline bool hasBeenApplied() const { return m_applied; }
 		/// Gets the spell entry whose cast created this slot.
-		const proto::SpellEntry &getSpell() const {
-			return m_spell;
-		}
+		inline const proto::SpellEntry &getSpell() const { return m_spell; }
 		/// Gets the guid of the item that was used to cast the spell which created 
 		/// this aura slot instance, or 0 if no item associated.
-		UInt64 getItemGuid() const {
-			return m_itemGuid;
-		}
+		inline UInt64 getItemGuid() const { return m_itemGuid; }
+
 		/// Determines whether the spell of this aura is a passive spell.
 		bool isPassive() const;
+		/// Determines whether the spell of this aura is a channeled spell.
+		bool isChanneled() const;
 		/// Determines whether this is a positive aura.
 		bool isPositive() const;
 		/// Determines whether this is a negative aura.
@@ -113,17 +108,17 @@ namespace wowpp
 		bool hasEffect(UInt32 auraType) const;
 
 		/// Gets the total duration of this aura in milliseconds.
-		UInt32 getTotalDuration() const {
-			return m_totalDuration;
-		}
+		UInt32 getTotalDuration() const { return m_totalDuration; }
+		/// Gets the remaining time of this aura in milliseconds.
+		UInt32 getRemainingTime() const { return static_cast<UInt32>(m_expireCountdown.getRemainingTime()); }
 		/// Determines whether the aura slot is valid.
-		bool hasValidSlot() const {
-			return m_slot != 0xFF;
-		}
+		inline bool hasValidSlot() const { return m_slot != 0xFF; }
 		/// Gets the aura's slot.
-		UInt8 getSlot() const {
-			return m_slot;
-		}
+		inline UInt8 getSlot() const { return m_slot; }
+		/// Gets the amount of stacks of this aura.
+		inline UInt32 getStackCount() const { return m_stackCount; }
+		/// Gets the amount of remaining charges.
+		inline UInt32 getRemainingCharges() const { return m_procCharges; }
 		/// Updates the aura's slot.
 		void setSlot(UInt8 slot);
 		/// Determines whether this aura should override another aura slot.

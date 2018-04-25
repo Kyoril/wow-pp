@@ -183,6 +183,10 @@ namespace wowpp
 	{
 		return (m_spell.attributes(0) & game::spell_attributes::Passive);
 	}
+	bool AuraSpellSlot::isChanneled() const
+	{
+		return (m_spell.attributes(0) & game::spell_attributes_ex_a::Channeled_1);
+	}
 	bool AuraSpellSlot::isPositive() const
 	{
 		return !isNegative();
