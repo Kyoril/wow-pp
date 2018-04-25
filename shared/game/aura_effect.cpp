@@ -37,7 +37,7 @@
 
 namespace wowpp
 {
-	AuraEffect::AuraEffect(AuraSpellSlot &slot, const proto::SpellEffect &effect, Int32 basePoints, GameUnit &caster, GameUnit &target, SpellTargetMap targetMap, bool isPersistent)
+	AuraEffect::AuraEffect(AuraSpellSlot &slot, const proto::SpellEffect &effect, Int32 basePoints, GameUnit *caster, GameUnit &target, SpellTargetMap targetMap, bool isPersistent)
 		: m_spellSlot(slot)
 		, m_effect(effect)
 		, m_target(target)
@@ -54,10 +54,13 @@ namespace wowpp
 	{
 		auto &spell = m_spellSlot.getSpell();
 
-		m_caster = std::static_pointer_cast<GameUnit>(caster.shared_from_this());
-		if (spell.duration() != spell.maxduration() && m_caster->isGameCharacter())
+		if (caster)
 		{
-			m_duration += static_cast<Int32>((spell.maxduration() - m_duration) * (std::static_pointer_cast<GameCharacter>(m_caster)->getComboPoints() / 5.0f));
+			m_caster = std::static_pointer_cast<GameUnit>(caster->shared_from_this());
+			if (spell.duration() != spell.maxduration() && m_caster->isGameCharacter())
+			{
+				m_duration += static_cast<Int32>((spell.maxduration() - m_duration) * (std::static_pointer_cast<GameCharacter>(m_caster)->getComboPoints() / 5.0f));
+			}
 		}
 
 		// Subscribe to caster despawn event so that we don't hold an invalid pointer
@@ -83,7 +86,7 @@ namespace wowpp
 					ASSERT(m_basePoints >= 0);
 					casterChar->applyHealingDoneBonus(
 						m_spellSlot.getSpell().spelllevel(),
-						caster.getLevel(),
+						m_caster->getLevel(),
 						(m_effect.amplitude() == 0 ? 0 : m_duration / m_effect.amplitude()),
 						reinterpret_cast<UInt32&>(m_basePoints));
 				}
@@ -126,7 +129,7 @@ namespace wowpp
 		        m_effect.aura() == game::aura_type::ProcTriggerSpellWithValue ||
 		        m_effect.aura() == game::aura_type::AddTargetTrigger)
 		{
-			auto *triggerSpell = m_caster->getProject().spells.getById(m_effect.triggerspell());
+			auto *triggerSpell = m_target.getProject().spells.getById(m_effect.triggerspell());
 			if (triggerSpell)
 			{
 				effectSchoolMask = triggerSpell->schoolmask();
@@ -389,7 +392,7 @@ namespace wowpp
 			procChance = spell.procchance();
 		}
 
-		if (spell.procpermin())
+		if (spell.procpermin() && m_caster)
 		{
 			procChance = m_caster->getAttackTime(attackType) * spell.procpermin() / 600.0f;
 		}
@@ -462,6 +465,7 @@ namespace wowpp
 
 		if (!m_caster)
 		{
+			WLOG(__FUNCTION__ ": no caster set");
 			return;
 		}
 
@@ -582,6 +586,7 @@ namespace wowpp
 
 		if (!m_caster)
 		{
+			WLOG(__FUNCTION__ ": no caster available");
 			return;
 		}
 
@@ -618,13 +623,16 @@ namespace wowpp
 	void AuraEffect::calculatePeriodicDamage(UInt32 & out_damage, UInt32 & out_absorbed, UInt32 & out_resisted)
 	{
 		out_damage = m_basePoints;
+		
+		if (!m_caster)
+			WLOG(__FUNCTION__ << ": no caster available!");
 
 		// Calculate absorption and resistance
-		out_resisted = out_damage * (m_target.getResiPercentage(m_spellSlot.getSpell(), *m_caster, false) / 100.0f);
+		out_resisted = m_caster ? out_damage * (m_target.getResiPercentage(m_spellSlot.getSpell(), *m_caster, false) / 100.0f) : 0;
 		out_absorbed = m_target.consumeAbsorb(out_damage - out_resisted, m_spellSlot.getSpell().schoolmask());
 
 		// Armor reduction for physical, non-bleeding spells
-		if (m_spellSlot.getSpell().schoolmask() & 1 && m_effect.mechanic() != 15)
+		if (m_spellSlot.getSpell().schoolmask() & 1 && m_effect.mechanic() != 15 && m_caster)
 			m_target.calculateArmorReducedDamage(m_caster->getLevel(), out_damage);
 	}
 
@@ -640,6 +648,9 @@ namespace wowpp
 
 		// Apply damage bonus
 		m_target.applyDamageTakenBonus(m_spellSlot.getSpell().schoolmask(), m_totalTicks, reinterpret_cast<UInt32&>(damage));
+
+		if (!m_caster)
+			WLOG(__FUNCTION__ << ": no caster available!");
 
 		// Apply damage done bonus
 		if (m_caster)
@@ -738,6 +749,9 @@ namespace wowpp
 
 		auto &spell = m_spellSlot.getSpell();
 
+		if (!m_caster)
+			WLOG(__FUNCTION__ << ": no caster available!");
+
 		namespace aura = game::aura_type;
 		switch (m_effect.aura())
 		{
@@ -794,7 +808,7 @@ namespace wowpp
 				const bool noThreat = ((spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 
 				float threat = noThreat ? 0.0f : damage - resisted - absorbed;
-				if (!noThreat && m_caster->isGameCharacter())
+				if (!noThreat && m_caster && m_caster->isGameCharacter())
 				{
 					std::static_pointer_cast<GameCharacter>(m_caster)->applySpellMod(spell_mod_op::Threat, spell.id(), threat);
 				}
@@ -807,7 +821,11 @@ namespace wowpp
 					procVictim |= game::spell_proc_flags::TakenDamage;
 				}
 
-				m_caster->procEvent(&m_target, procAttacker, procVictim, game::spell_proc_flags_ex::NormalHit, damage - resisted - absorbed, game::weapon_attack::BaseAttack, &spell, false /*check this*/);
+				if (m_caster)
+				{
+					m_caster->procEvent(&m_target, procAttacker, procVictim, game::spell_proc_flags_ex::NormalHit, damage - resisted - absorbed, game::weapon_attack::BaseAttack, &spell, false /*check this*/);
+				}				
+				
 				m_target.dealDamage(damage - resisted - absorbed, school, game::DamageType::Dot, m_caster.get(), threat);
 				break;
 			}
@@ -1166,60 +1184,63 @@ namespace wowpp
 			});
 		}
 
-		if (spell.procflags() != game::spell_proc_flags::None ||
-			spell.proccustomflags() != game::spell_proc_flags::None)
+		if (m_caster)
 		{
-			m_onProc = m_caster->spellProcEvent.connect(
-			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
-				if (checkProc(amount != 0, target, procFlag, procEx, procSpell, attackType, isVictim))
-				{
-					handleProcModifier(attackType, canRemove, amount, target);
-				}
-			});
-			
-			if ((spell.procflags() & game::spell_proc_flags::TakenDamage))
+			if (spell.procflags() != game::spell_proc_flags::None ||
+				spell.proccustomflags() != game::spell_proc_flags::None)
 			{
-				m_takenDamage = m_caster->takenDamage.connect(
-				[&](GameUnit * victim, UInt32 damage, game::DamageType type) {
-					handleTakenDamage(victim);
+				m_onProc = m_caster->spellProcEvent.connect(
+					[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
+					if (checkProc(amount != 0, target, procFlag, procEx, procSpell, attackType, isVictim))
+					{
+						handleProcModifier(attackType, canRemove, amount, target);
+					}
+				});
+
+				if ((spell.procflags() & game::spell_proc_flags::TakenDamage))
+				{
+					m_takenDamage = m_caster->takenDamage.connect(
+						[&](GameUnit * victim, UInt32 damage, game::DamageType type) {
+						handleTakenDamage(victim);
+					});
+				}
+
+				if ((spell.procflags() & game::spell_proc_flags::Killed))
+				{
+					m_procKilled = m_caster->killed.connect(
+						[&](GameUnit * killer) {
+						handleProcModifier(0, true, 0, killer);
+					});
+				}
+
+			}
+			else if (m_effect.aura() == game::aura_type::AddTargetTrigger)
+			{
+				m_onProc = m_caster->spellProcEvent.connect(
+					[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
+					if (procSpell && m_spellSlot.getSpell().family() == procSpell->family() && (m_effect.itemtype() ? m_effect.itemtype() : m_effect.affectmask()) & procSpell->familyflags())
+					{
+						handleProcModifier(attackType, canRemove, amount, target);
+					}
 				});
 			}
-			
-			if ((spell.procflags() & game::spell_proc_flags::Killed))
+
+			// If an aura of this spell may only be applied on one target at a time...
+			if (spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
 			{
-				m_procKilled = m_caster->killed.connect(
-				[&](GameUnit * killer) {
-					handleProcModifier(0, true, 0, killer);
-				});
-			}
-			
-		}
-		else if (m_effect.aura() == game::aura_type::AddTargetTrigger)
-		{
-			m_onProc = m_caster->spellProcEvent.connect(
-			[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
-				if (procSpell && m_spellSlot.getSpell().family() == procSpell->family() && (m_effect.itemtype() ? m_effect.itemtype() : m_effect.affectmask()) & procSpell->familyflags())
+				auto &trackedAuras = m_caster->getTrackedAuras();
+
+				auto it = trackedAuras.find(spell.mechanic());
+				if (it != trackedAuras.end())
 				{
-					handleProcModifier(attackType, canRemove, amount, target);
+					if (it->second != &m_target)
+					{
+						it->second->getAuras().removeAllAurasDueToMechanic(1 << spell.mechanic());
+					}
 				}
-			});
-		}
 
-		// If an aura of this spell may only be applied on one target at a time...
-		if (spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
-		{
-			auto &trackedAuras = m_caster->getTrackedAuras();
-
-			auto it = trackedAuras.find(spell.mechanic());
-			if (it != trackedAuras.end())
-			{
-				if (it->second != &m_target)
-				{
-					it->second->getAuras().removeAllAurasDueToMechanic(1 << spell.mechanic());
-				}
+				trackedAuras[spell.mechanic()] = &m_target;
 			}
-
-			trackedAuras[spell.mechanic()] = &m_target;
 		}
 
 		// Apply modifiers now
@@ -1249,17 +1270,20 @@ namespace wowpp
 
 		handleModifier(false);
 
-		auto &spell = m_spellSlot.getSpell();
-		if ((spell.attributes(0) & game::spell_attributes::DisabledWhileActive) != 0)
+		if (m_caster)
 		{
-			// Raise cooldown event
-			m_caster->setCooldown(spell.id(), spell.cooldown() ? spell.cooldown() : spell.categorycooldown());
-			m_caster->cooldownEvent(spell.id());
-		}
+			auto &spell = m_spellSlot.getSpell();
+			if ((spell.attributes(0) & game::spell_attributes::DisabledWhileActive) != 0)
+			{
+				// Raise cooldown event
+				m_caster->setCooldown(spell.id(), spell.cooldown() ? spell.cooldown() : spell.categorycooldown());
+				m_caster->cooldownEvent(spell.id());
+			}
 
-		if (spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
-		{
-			m_caster->getTrackedAuras().erase(spell.mechanic());
+			if (spell.attributes(5) & game::spell_attributes_ex_e::SingleTargetSpell)
+			{
+				m_caster->getTrackedAuras().erase(spell.mechanic());
+			}
 		}
 
 		misapplied();
@@ -1339,7 +1363,7 @@ namespace wowpp
 			return false;
 		}
 			
-		if (!isVictim && m_caster->isGameCharacter())
+		if (!isVictim && m_caster && m_caster->isGameCharacter())
 		{
 			auto casterChar = std::static_pointer_cast<GameCharacter>(m_caster);
 			if (spell.itemclass() == game::item_class::Weapon)

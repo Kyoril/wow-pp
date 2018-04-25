@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS `character_auras`;
+
 CREATE TABLE `character_auras` (
   `guid` int(20) unsigned NOT NULL,
   `caster_guid` bigint(20) unsigned NOT NULL,
@@ -14,6 +16,6 @@ CREATE TABLE `character_auras` (
   `max_duration` int(11) DEFAULT NULL,
   `remain_time` int(11) DEFAULT NULL,
   `eff_index_mask` int(10) unsigned DEFAULT NULL,
-  PRIMARY KEY (`guid`),
+  KEY `guid` (`guid`),
   CONSTRAINT `character_auras_ibfk_1` FOREIGN KEY (`guid`) REFERENCES `character` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german1_ci;

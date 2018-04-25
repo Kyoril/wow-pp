@@ -107,6 +107,10 @@ namespace wowpp
 		/// Determines if a specific aura type is added.
 		bool hasEffect(UInt32 auraType) const;
 
+		/// Sets the initial duration of this aura in milliseconds. This allows to override the remaining time.
+		/// This has no effect if called after applyEffects has been called, as applyEffects starts the countdown.
+		void setInitialDuration(Int32 initialDuration);
+
 		/// Gets the total duration of this aura in milliseconds.
 		UInt32 getTotalDuration() const { return m_totalDuration; }
 		/// Gets the remaining time of this aura in milliseconds.
@@ -119,6 +123,10 @@ namespace wowpp
 		inline UInt32 getStackCount() const { return m_stackCount; }
 		/// Gets the amount of remaining charges.
 		inline UInt32 getRemainingCharges() const { return m_procCharges; }
+		/// Sets the number of charges.
+		void setChargeCount(UInt8 charges);
+		void setStackCount(UInt32 stackCount);
+
 		/// Updates the aura's slot.
 		void setSlot(UInt8 slot);
 		/// Determines whether this aura should override another aura slot.
@@ -151,6 +159,7 @@ namespace wowpp
 		const proto::SpellEntry &m_spell;
 		UInt64 m_itemGuid;
 		Int32 m_totalDuration;
+		Int32 m_initialDuration;
 		UInt8 m_slot;
 		simple::scoped_connection m_onExpire;
 		Countdown m_expireCountdown;

@@ -48,7 +48,7 @@ namespace wowpp
 			AuraSpellSlot &slot, 
 			const proto::SpellEffect &effect,
 			Int32 basePoints, 
-			GameUnit &caster, 
+			GameUnit *caster, 
 			GameUnit &target, 
 			SpellTargetMap targetMap,
 			bool isPersistent);

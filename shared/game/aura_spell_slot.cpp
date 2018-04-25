@@ -34,6 +34,7 @@ namespace wowpp
 		, m_spell(spell)
 		, m_itemGuid(itemGuid)
 		, m_totalDuration(0)
+		, m_initialDuration(0)
 		, m_slot(0xFF)
 		, m_expireCountdown(timers)
 		, m_procCharges(spell.proccharges())
@@ -62,8 +63,15 @@ namespace wowpp
 		}
 
 		// Set expiration countdown (if any)
-		if (m_totalDuration > 0) {
-			m_expireCountdown.setEnd(getCurrentTime() + m_totalDuration);
+		if (m_totalDuration > 0) 
+		{
+			// Use the total duration if no initial duration has been set
+			if (m_initialDuration == 0)
+			{
+				m_initialDuration = m_totalDuration;
+			}
+
+			m_expireCountdown.setEnd(getCurrentTime() + m_initialDuration);
 		}
 
 		m_applied = true;
@@ -94,11 +102,11 @@ namespace wowpp
 			updateAuraApplication();
 
 			// Notify caster
-			m_owner->auraUpdated(m_slot, m_spell.id(), getTotalDuration(), getTotalDuration());
+			m_owner->auraUpdated(m_slot, m_spell.id(), m_initialDuration, m_totalDuration);
 			if (caster)
 			{
 				caster->targetAuraUpdated(m_owner->getGuid(), m_slot,
-					m_spell.id(), getTotalDuration(), getTotalDuration());
+					m_spell.id(), m_initialDuration, m_totalDuration);
 			}
 		}
 	}
@@ -234,6 +242,28 @@ namespace wowpp
 
 		return false;
 	}
+
+	void AuraSpellSlot::setInitialDuration(Int32 initialDuration)
+	{
+		if (m_expireCountdown.running)
+		{
+			WLOG("Tried to set initial duration of aura spell slot which has already been applied!");
+			return;
+		}
+
+		m_initialDuration = initialDuration;
+	}
+
+	void AuraSpellSlot::setChargeCount(UInt8 charges)
+	{
+		m_procCharges = charges;
+	}
+
+	void AuraSpellSlot::setStackCount(UInt32 stackCount)
+	{
+		m_stackCount = stackCount;
+	}
+
 	void AuraSpellSlot::setSlot(UInt8 slot)
 	{
 		ASSERT(!m_applied && "Slot may not be changed while the aura is applied");
@@ -346,13 +376,13 @@ namespace wowpp
 
 		if (hasValidSlot())
 		{
-			m_owner->auraUpdated(m_slot, m_spell.id(), getTotalDuration(), getTotalDuration());
+			m_owner->auraUpdated(m_slot, m_spell.id(), m_totalDuration, m_totalDuration);
 
 			auto *caster = getCaster();
 			if (caster)
 			{
 				caster->targetAuraUpdated(m_owner->getGuid(), m_slot,
-					m_spell.id(), getTotalDuration(), getTotalDuration());
+					m_spell.id(), m_totalDuration, m_totalDuration);
 			}
 		}
 	}

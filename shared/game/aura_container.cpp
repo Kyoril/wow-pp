@@ -455,26 +455,33 @@ namespace wowpp
 			// Restore aura
 			AuraPtr aura = std::make_shared<AuraSpellSlot>(m_owner.getTimers(), *spellEntry, auraData.itemGuid);
 			aura->setOwner(std::static_pointer_cast<GameUnit>(m_owner.shared_from_this()));
-			
+			aura->setInitialDuration(auraData.remainingTime);
+			aura->setStackCount(auraData.stackCount);
+			aura->setChargeCount(static_cast<UInt8>(auraData.remainingCharges));
+
 			// Try to find and restore caster information
+			GameUnit* caster = nullptr;
 			if (m_owner.getWorldInstance())
 			{
-				GameObject* caster = m_owner.getWorldInstance()->findObjectByGUID(auraData.casterGuid);
+				caster = dynamic_cast<GameUnit*>(m_owner.getWorldInstance()->findObjectByGUID(auraData.casterGuid));
 				if (caster)
 				{
 					aura->setCaster(std::static_pointer_cast<GameUnit>(caster->shared_from_this()));
 				}
 			}
 
+			// Prepare target map
+			SpellTargetMap targetMap;
+			targetMap.m_unitTarget = m_owner.getGuid();
+			targetMap.m_targetMap = game::spell_cast_target_flags::Unit;
+
 			// TODO: Add aura effects
-
-			/*
-			// Now, create an aura effect
-			auto auraEffect = std::make_shared<AuraEffect>(*slot, effect, totalPoints, caster, *targetUnit, m_target, false);
-
-			// Add to slot
-			aura->addAuraEffect(auraEffect);
-			*/
+			Int32 effectIndex = 0;
+			for (const auto& spellEffect : spellEntry->effects())
+			{
+				auto auraEffect = std::make_shared<AuraEffect>(*aura, spellEffect, auraData.basePoints[effectIndex++], caster, m_owner, targetMap, false);
+				aura->addAuraEffect(auraEffect);
+			}
 
 			// Apply aura
 			if (!addAura(aura))

@@ -393,7 +393,7 @@ namespace wowpp
 				ASSERT(slot);
 
 				// Now, create an aura effect
-				std::shared_ptr<AuraEffect> auraEffect = std::make_shared<AuraEffect>(*slot, effect, totalPoints, caster, *targetUnit, m_target, false);
+				std::shared_ptr<AuraEffect> auraEffect = std::make_shared<AuraEffect>(*slot, effect, totalPoints, &caster, *targetUnit, m_target, false);
 
 				const bool noThreat = ((m_spell.attributes(1) & game::spell_attributes_ex_a::NoThreat) != 0);
 				if (!noThreat)

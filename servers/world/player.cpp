@@ -467,7 +467,6 @@ namespace wowpp
 		m_character->getInventory().addSpawnBlocks(blocks);
 
 		// Apply auras from aura data
-		DLOG("TODO: Apply aura data (we got " << m_character->getAuraData().size() << " auras from realm to apply)");
 		m_character->getAuras().restoreAuraData(m_character->getAuraData());
 
 		// Write create object block (This block will be made the first block even though it is created
