@@ -374,6 +374,7 @@ namespace wowpp
 				AddonInfo					= 0x2EF,
 				PartyMemberStatsFull		= 0x2F2,
 				MoveTimeSkipped				= 0x319,
+				InvalidatePlayer			= 0x31C,
 				RaidTargetUpdate			= 0x321,
 				RaidReadyCheck				= 0x322,
 				SetDungeonDifficulty		= 0x329,

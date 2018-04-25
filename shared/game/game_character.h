@@ -1097,6 +1097,7 @@ namespace wowpp
 		std::array<UInt32, player_time_index::Count_> m_playedTime;
 		RestType m_restType;
 		const class proto::AreaTriggerEntry *m_restTrigger;
+		std::vector<AuraData> m_auraData;
 	};
 
 	/// Determines whether a given spell can exist with different ranks in the players

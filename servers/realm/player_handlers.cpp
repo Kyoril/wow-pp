@@ -1752,7 +1752,7 @@ namespace wowpp
 		{
 			return PacketParseResult::Disconnect;
 		}
-
+		
 		// Rename character
 		game::ResponseCode response = game::response_code::CharCreateError;
 		for (auto &entry : m_characters)
@@ -1777,6 +1777,17 @@ namespace wowpp
 		// Send response
 		sendPacket(
 			std::bind(game::server_write::charRename, std::placeholders::_1, response, characterId, std::cref(newName)));
+
+		if (response == game::response_code::Success)
+		{
+			// Update character name for all connected players
+			m_manager.foreachPlayer([characterId](Player& player) {
+				if (player.getCharacterId() != 0 && player.getCharacterId() != characterId) {
+					player.sendPacket(std::bind(game::server_write::invalidatePlayer, std::placeholders::_1, characterId));
+				}
+			});
+		}
+
 		return PacketParseResult::Pass;
 	}
 

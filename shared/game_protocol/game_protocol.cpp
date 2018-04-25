@@ -41,6 +41,14 @@ namespace wowpp
 	{
 		namespace server_write
 		{
+			void invalidatePlayer(game::OutgoingPacket & out_packet, UInt64 guid)
+			{
+				out_packet.start(game::server_packet::InvalidatePlayer);
+				out_packet
+					<< io::write<NetUInt64>(guid);
+				out_packet.finish();
+			}
+
 			void triggerCinematic(game::OutgoingPacket &out_packet, UInt32 cinematicId)
 			{
 				out_packet.start(game::server_packet::TriggerCinematic);

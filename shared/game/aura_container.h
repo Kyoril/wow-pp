@@ -29,6 +29,35 @@ namespace wowpp
 	class AuraEffect;
 	class AuraSpellSlot;
 
+	/// This structure is used to send and receive aura data between server nodes and the 
+	/// realm server.
+	struct AuraData final
+	{
+		UInt64 casterGuid;
+		UInt64 itemGuid;
+		UInt32 spell;
+		UInt32 stackCount;
+		UInt32 remainingCharges;
+		std::array<Int32, 3> basePoints;
+		std::array<Int32, 3> periodicTime;
+		UInt32 maxDuration;
+		UInt32 remainingTime;
+		UInt32 effectIndexMask;
+
+		AuraData()
+			: casterGuid(0)
+			, itemGuid(0)
+			, spell(0)
+			, stackCount(0)
+			, remainingCharges(0)
+			, maxDuration(0)
+			, remainingTime(0)
+			, effectIndexMask(0)
+		{
+		}
+	};
+
+
 	/// Holds and manages instances of auras for one unit.
 	class AuraContainer final
 	{
@@ -68,6 +97,10 @@ namespace wowpp
 		void removeAllAuras();
 		/// Outputs debug infos about all auras in this container.
 		void logAuraInfos();
+		/// Serializes all auras to the given aura data vector.
+		bool serializeAuraData(std::vector<AuraData>& out_data) const;
+		/// Restores the aura container from the given aura data.
+		bool restoreAuraData(const std::vector<AuraData>& data);
 
 		/// Gets a reference on the owning unit.
 		GameUnit &getOwner() {

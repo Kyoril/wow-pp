@@ -63,13 +63,17 @@ namespace wowpp
 
 		// Check if name is already in use
 		wowpp::MySQL::Select select(m_connection,
-			fmt::format("SELECT `id` FROM `character` WHERE `name`='{0}' LIMIT 1", safeName));
+			fmt::format("SELECT `id` FROM `character` WHERE `name`='{0}' AND (`at_login` & 1) LIMIT 1", safeName));
 		if (select.success())
 		{
 			wowpp::MySQL::Row row(select);
 			if (row)
 			{
 				return game::response_code::CharCreateNameInUse;
+			}
+			else
+			{
+				return game::response_code::CharNameFailure;
 			}
 		}
 		else

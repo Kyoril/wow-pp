@@ -1106,6 +1106,11 @@ namespace wowpp
 
 		namespace server_write
 		{
+			void invalidatePlayer(
+				game::OutgoingPacket &out_packet,
+				UInt64 guid
+			);
+
 			void triggerCinematic(
 			    game::OutgoingPacket &out_packet,
 			    UInt32 cinematicId

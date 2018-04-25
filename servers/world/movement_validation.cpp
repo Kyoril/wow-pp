@@ -238,6 +238,7 @@ namespace wowpp
 			if (-FallSpeed > ExpectedFallSpeed)
 			{
 				CLOG("Client fall speed higher than expected!");
+				return false;
 			}
 
 			// ... we check for removal of the FallingFar flag which shouldn't be possible without landing!
@@ -253,7 +254,7 @@ namespace wowpp
 		// set this flag by now
 		if (!(clientInfo.moveFlags & FallingFar) && (clientInfo.moveFlags & Falling))
 		{
-			if (clientInfo.z < clientInfo.jumpStartZ + clientInfo.jumpVelocity)
+			if (clientInfo.z < clientInfo.jumpStartZ + clientInfo.jumpVelocity && clientInfo.fallTime >= 500)
 			{
 				CLOG("Client didn't set FALLING_FAR flag after falling too far!");
 				return false;

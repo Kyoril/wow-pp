@@ -24,6 +24,7 @@
 #include "aura_spell_slot.h"
 #include "aura_effect.h"
 #include "game_unit.h"
+#include "world_instance.h"
 #include "log/default_log_levels.h"
 #include "common/linear_set.h"
 #include "common/macros.h"
@@ -401,6 +402,87 @@ namespace wowpp
 	void AuraContainer::logAuraInfos()
 	{
 		// TODO
+	}
+
+	bool AuraContainer::serializeAuraData(std::vector<AuraData>& out_data) const
+	{
+		auto it = m_auras.begin();
+		while (it != m_auras.end())
+		{
+			AuraData data;
+			data.spell = (*it)->getSpell().id();
+			if ((*it)->getCaster()) data.casterGuid = (*it)->getCaster()->getGuid();
+			data.itemGuid = (*it)->getItemGuid();
+			data.maxDuration = (*it)->getTotalDuration();
+			data.remainingTime = 0; //TODO
+			data.remainingCharges = 0; //TODO
+			data.stackCount = 0; // TODO
+
+			// Gather effect data
+			Int32 effectIndex = 0;
+			(*it)->forEachEffect([&effectIndex, &data](std::shared_ptr<AuraEffect> eff) -> bool {
+				data.basePoints[effectIndex] = eff->getBasePoints();
+
+				effectIndex++;
+				return true;
+			});
+
+			// Add data to the vector
+			out_data.push_back(std::move(data));
+			it++;
+		}
+
+		return true;
+	}
+
+	bool AuraContainer::restoreAuraData(const std::vector<AuraData>& data)
+	{
+		// Remove all auras first
+		removeAllAuras();
+
+		// Then apply every single aura from the container
+		for (const AuraData& auraData : data)
+		{
+			// Get spell entry
+			const auto* spellEntry = m_owner.getProject().spells.getById(auraData.spell);
+			if (!spellEntry)
+			{
+				WLOG("Unable to restore aura due to invalid spell id " << auraData.spell);
+				continue;
+			}
+
+			// Restore aura
+			AuraPtr aura = std::make_shared<AuraSpellSlot>(m_owner.getTimers(), *spellEntry, auraData.itemGuid);
+			aura->setOwner(std::static_pointer_cast<GameUnit>(m_owner.shared_from_this()));
+			
+			// Try to find and restore caster information
+			if (m_owner.getWorldInstance())
+			{
+				GameObject* caster = m_owner.getWorldInstance()->findObjectByGUID(auraData.casterGuid);
+				if (caster)
+				{
+					aura->setCaster(std::static_pointer_cast<GameUnit>(caster->shared_from_this()));
+				}
+			}
+
+			// TODO: Add aura effects
+
+			/*
+			// Now, create an aura effect
+			auto auraEffect = std::make_shared<AuraEffect>(*slot, effect, totalPoints, caster, *targetUnit, m_target, false);
+
+			// Add to slot
+			aura->addAuraEffect(auraEffect);
+			*/
+
+			// Apply aura
+			if (!addAura(aura))
+			{
+				WLOG("Failed to apply restored aura!");
+			}
+		}
+
+		return true;
 	}
 
 	void AuraContainer::removeAllAurasDueToSpell(UInt32 spellId)

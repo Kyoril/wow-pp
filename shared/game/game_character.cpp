@@ -3350,6 +3350,26 @@ namespace wowpp
 		// Write play-time
 		w << io::write_range(object.m_playedTime);
 
+		// Write aura data
+		std::vector<AuraData> auraData;
+		object.getAuras().serializeAuraData(auraData);
+		w << io::write<NetUInt16>(object.m_auraData.size());
+		for (const auto& auraData : object.m_auraData)
+		{
+			w
+				<< io::write<NetUInt64>(auraData.casterGuid)
+				<< io::write<NetUInt64>(auraData.itemGuid)
+				<< io::write<NetUInt32>(auraData.spell)
+				<< io::write<NetUInt32>(auraData.stackCount)
+				<< io::write<NetUInt32>(auraData.remainingCharges)
+				<< io::write_range(auraData.basePoints)
+				<< io::write_range(auraData.periodicTime)
+				<< io::write<NetUInt32>(auraData.maxDuration)
+				<< io::write<NetUInt32>(auraData.remainingTime)
+				<< io::write<NetUInt32>(auraData.effectIndexMask)
+				;
+		}
+
 		return w;
 	}
 

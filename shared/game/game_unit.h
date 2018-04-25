@@ -680,7 +680,10 @@ namespace wowpp
 		/// @param experience The amount of experience points to be added.
 		virtual void rewardExperience(GameUnit *victim, UInt32 experience);
 		/// Gets the aura container of this unit.
-		AuraContainer &getAuras() {
+		inline AuraContainer &getAuras() {
+			return m_auras;
+		}
+		inline const AuraContainer &getAuras() const {
 			return m_auras;
 		}
 		///
