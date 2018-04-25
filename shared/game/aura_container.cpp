@@ -479,8 +479,11 @@ namespace wowpp
 			Int32 effectIndex = 0;
 			for (const auto& spellEffect : spellEntry->effects())
 			{
-				auto auraEffect = std::make_shared<AuraEffect>(*aura, spellEffect, auraData.basePoints[effectIndex++], caster, m_owner, targetMap, false);
-				aura->addAuraEffect(auraEffect);
+				if (spellEffect.type() == game::spell_effects::ApplyAura && spellEffect.aura() != 0)
+				{
+					auto auraEffect = std::make_shared<AuraEffect>(*aura, spellEffect, auraData.basePoints[effectIndex++], caster, m_owner, targetMap, false);
+					aura->addAuraEffect(auraEffect);
+				}
 			}
 
 			// Apply aura
