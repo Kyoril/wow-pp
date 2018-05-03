@@ -21,6 +21,8 @@
 
 # This file, when included, does some config options for Microsoft Visual Studio.
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+
 # Make sure Visual Studio 2015 or newer is used
 if (MSVC_VERSION LESS 1900)
 	message(FATAL_ERROR "Visual Studio 2015 or newer is required in order to build WoW++! Please upgrade.")

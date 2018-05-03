@@ -50,3 +50,8 @@ shared/game_protocol/.#game_protocol.cpp
 tags
 *.h#
 realm/.#mysql_database.cpp
+
+# Ignore win/ directory as it is used by the setup tool to create the cmake directories
+win/
+# Ignore bin/ directory as this is where output files will be placed on windows
+bin/
