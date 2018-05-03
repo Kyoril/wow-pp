@@ -1,0 +1,3 @@
+[submodule "wow-pp-setup"]
+	path = wow-pp-setup
+	url = https://github.com/Kyoril/wow-pp-setup
