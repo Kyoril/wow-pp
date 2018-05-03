@@ -19,6 +19,8 @@
 # and lore are copyrighted by Blizzard Entertainment, Inc.
 # 
 
+# Add additional include directories as they are needed to make life easier
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Add the shared-directory to the list of local include directories
 include_directories(shared)

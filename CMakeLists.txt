@@ -28,6 +28,9 @@ project(WoW)
 	# Include additional cmake modules
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 	
+	# Add additional include directories as they are needed to make life easier
+	include_directories(${PROJECT_BINARY_DIR})
+	
 	# Add Project options
 	include(Options)
 	
@@ -43,15 +46,14 @@ project(WoW)
 	# Gather commit infos and make them available via header files
 	include(Version)
 	
-	# Add additional include directories as they are needed to make life easier
-	include_directories(${PROJECT_BINARY_DIR})
-	include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-	
 	# Detour should use 64 bit poly references
 	add_definitions("-DDT_POLYREF64")
 
 	# Add the shared-directory to the list of local include directories
 	include_directories(deps)
+	include_directories(src)
 	
 	# Include subdirectories which contain multiple subprojects
 	add_subdirectory(deps)
+	add_subdirectory(src)
+	
