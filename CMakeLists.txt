@@ -52,10 +52,6 @@ project(WoW)
 
 	# Add the shared-directory to the list of local include directories
 	include_directories(deps)
-	include_directories(shared)
 	
 	# Include subdirectories which contain multiple subprojects
 	add_subdirectory(deps)
-	add_subdirectory(shared)
-	add_subdirectory(servers)
-	add_subdirectory(tools)
