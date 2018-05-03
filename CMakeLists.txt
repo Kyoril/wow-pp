@@ -24,13 +24,14 @@ cmake_minimum_required(VERSION 3.10)
 
 # This is the main project which contains all subprojects
 project(WoW)
-
-	# Include additional cmake modules
-	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 	
 	# Add additional include directories as they are needed to make life easier
 	include_directories(${PROJECT_BINARY_DIR})
+	include_directories(${PROJECT_BINARY_DIR}/src)
 	
+	# Include additional cmake modules
+	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 	# Add Project options
 	include(Options)
 	
