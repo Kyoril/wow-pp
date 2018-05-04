@@ -28,6 +28,7 @@ project(WoW)
 	# Add additional include directories as they are needed to make life easier
 	include_directories(${PROJECT_BINARY_DIR})
 	include_directories(${PROJECT_BINARY_DIR}/src)
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 	
 	# Include additional cmake modules
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
