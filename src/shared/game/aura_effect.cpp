@@ -465,7 +465,7 @@ namespace wowpp
 
 		if (!m_caster)
 		{
-			WLOG(__FUNCTION__ ": no caster set");
+			WLOG(__FUNCTION__ << ": no caster set");
 			return;
 		}
 
@@ -586,7 +586,7 @@ namespace wowpp
 
 		if (!m_caster)
 		{
-			WLOG(__FUNCTION__ ": no caster available");
+			WLOG(__FUNCTION__ << ": no caster available");
 			return;
 		}
 

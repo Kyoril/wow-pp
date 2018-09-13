@@ -578,6 +578,7 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(MailGetBody, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(MailTakeMoney, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GetChannelMemberCount, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(GmTicketSystemStatus, game::session_status::LoggedIn)
 
 #undef WOWPP_HANDLE_PACKET
 #undef QUOTE

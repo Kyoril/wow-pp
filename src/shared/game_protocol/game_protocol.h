@@ -1111,6 +1111,11 @@ namespace wowpp
 				UInt64 guid
 			);
 
+			void gmTicketSystemStatus(
+				game::OutgoingPacket &out_packet,
+				bool enable
+			);
+
 			void triggerCinematic(
 			    game::OutgoingPacket &out_packet,
 			    UInt32 cinematicId

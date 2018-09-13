@@ -343,5 +343,6 @@ namespace wowpp
 		PacketParseResult handleMailTakeMoney(game::IncomingPacket &packet);
 		PacketParseResult handleMailDelete(game::IncomingPacket &packet);
 		PacketParseResult handleGetChannelMemberCount(game::IncomingPacket &packet);
+		PacketParseResult handleGmTicketSystemStatus(game::IncomingPacket &packet);
 	};
 }

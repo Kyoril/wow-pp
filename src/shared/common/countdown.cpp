@@ -117,6 +117,6 @@ namespace wowpp
 	{
 		const Int64 now = static_cast<Int64>(getCurrentTime());
 		const Int64 left = static_cast<Int64>(m_end) - now;
-		return std::max(left, 0LL);
+		return std::max<Int64>(left, 0);
 	}
 }

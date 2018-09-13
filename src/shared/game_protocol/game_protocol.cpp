@@ -49,6 +49,14 @@ namespace wowpp
 				out_packet.finish();
 			}
 
+			void gmTicketSystemStatus(game::OutgoingPacket & out_packet, bool enable)
+			{
+				out_packet.start(game::server_packet::GmTicketSystemStatus);
+				out_packet
+					<< io::write<NetUInt32>(enable);
+				out_packet.finish();
+			}
+
 			void triggerCinematic(game::OutgoingPacket &out_packet, UInt32 cinematicId)
 			{
 				out_packet.start(game::server_packet::TriggerCinematic);

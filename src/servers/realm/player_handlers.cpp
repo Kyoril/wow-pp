@@ -2032,4 +2032,11 @@ namespace wowpp
 			std::bind(game::server_write::itemNameQueryResponse, std::placeholders::_1, itemEntry, std::cref(name), entry->inventorytype()));
 		return PacketParseResult::Pass;
 	}
+
+	PacketParseResult Player::handleGmTicketSystemStatus(game::IncomingPacket &packet)
+	{
+		// TODO: Right now, the ticket system is always disabled
+		sendPacket(std::bind(game::server_write::gmTicketSystemStatus, std::placeholders::_1, false));
+		return PacketParseResult::Pass;
+	}
 }
