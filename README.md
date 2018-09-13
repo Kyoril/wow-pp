@@ -1,5 +1,5 @@
 # WoW++
-WoW++ is a whole new World of Warcraft core, built from the ground up. It features The Burning Crusade, but other expansions or classic support might be added later on.
+WoW++ is a whole new World of Warcraft core, built from the ground up. It features The Burning Crusade, but other expansions or classic support might be added later on. There is still a lot to do.
 
 
 # Get started
@@ -18,6 +18,3 @@ The **[promoted branch](https://github.com/Kyoril/wow-pp/tree/promoted)** is upd
 The **[master branch](https://github.com/Kyoril/wow-pp/tree/master)** tracks **[live changes](https://github.com/Kyoril/wow-pp/commits/master)** from the developers. This branch isn't garanmtueed to be stable or even compilable at all. You should use this branch only if you want to help developing the core actively.
 
 Other branches may appear, which will be created by developers for certain features or fixes and should be merged into the branches listed above.
-
-# Roadmap
-There is still A LOT to do on WoW++. You can always find our bugtracker at http://wow-pp.eu/bugtracker.
