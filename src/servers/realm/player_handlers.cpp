@@ -2039,4 +2039,57 @@ namespace wowpp
 		sendPacket(std::bind(game::server_write::gmTicketSystemStatus, std::placeholders::_1, false));
 		return PacketParseResult::Pass;
 	}
+
+	PacketParseResult Player::handleUpdateAccountData(game::IncomingPacket & packet)
+	{
+		// Read the first two integers
+		UInt32 dataType, uncompressedSize;
+		packet 
+			>> io::read<NetUInt32>(dataType)
+			>> io::read<NetUInt32>(uncompressedSize);
+
+		/*
+			Oberved Data Types:
+				0: WTF\Account\<accname>\cache.md5				(not observed yet)
+				1: WTF\Account\<accname>\config-cache.wtf		(not observed yet)
+				2: WTF\Account\<accname>\bindings-cache.wtf
+				3: WTF\Account\<accname>\macros-local.txt		(not observed yet)
+				4: WTF\Account\<accname>\macros-cache.txt
+				5: - unknown and not observed yet -
+				6: WTF\Account\<accname>\<realmname>\<charname>\layout-cache.txt
+				7: WTF\Account\<accname>\<realmname>\<charname>\chat-cache.txt
+		*/
+
+		// Get the remining size in bytes
+		const size_t remainingSize = packet.getSource()->size() - packet.getSource()->position();
+
+		// Create buffer for uncompression
+		String buffer;
+		buffer.resize(remainingSize);
+		packet.getSource()->read(&buffer[0], remainingSize);
+
+		// Buffer
+		std::istringstream inStrm(buffer);
+
+		// Uncompress using ZLib
+		boost::iostreams::filtering_streambuf<boost::iostreams::input> in;
+		in.push(boost::iostreams::zlib_decompressor());
+		in.push(inStrm);
+
+		std::stringstream outStrm;
+		boost::iostreams::copy(in, outStrm);
+		outStrm.seekg(0);
+
+		// TODO: Save the uncompressed addon data somewhere?
+		return PacketParseResult();
+	}
+	PacketParseResult Player::handleOptOutOfLoot(game::IncomingPacket & packet)
+	{
+		if (!(game::client_read::optOutOfLoot(packet, m_optOutOfLoot)))
+		{
+			return PacketParseResult::Disconnect;
+		}
+
+		return PacketParseResult::Pass;
+	}
 }

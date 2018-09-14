@@ -3324,6 +3324,11 @@ namespace wowpp
 				       >> io::read<NetUInt32>(out_latency);
 			}
 
+			bool optOutOfLoot(io::Reader & packet, bool & out_enable)
+			{
+				return packet >> io::read<NetUInt32>(out_enable);
+			}
+
 			bool authSession(io::Reader &packet, UInt32 &out_clientBuild, String &out_Account, UInt32 &out_clientSeed, SHA1Hash &out_digest, game::AddonEntries &out_addons)
 			{
 				UInt32 unknown;

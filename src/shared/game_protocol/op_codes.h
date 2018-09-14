@@ -604,7 +604,7 @@ namespace wowpp
 				GetMirrorImageData				= 0x400,		// UNHANDLED
 				IgnoreDimishingReturnsCheat		= 0x404,		// UNHANDLED
 				KeepAlive						= 0x406,		// UNHANDLED
-				OptOutOfLoot					= 0x408,		// UNHANDLED
+				OptOutOfLoot					= 0x408,
 				QueryGuildBankText				= 0x409,		// UNHANDLED
 				SetGuildBankText				= 0x40A,		// UNHANDLED
 				SetGrantableLevels				= 0x40B,		// UNHANDLED

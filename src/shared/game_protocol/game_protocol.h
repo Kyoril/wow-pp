@@ -463,6 +463,11 @@ namespace wowpp
 			    UInt32 &out_latency
 			);
 
+			bool optOutOfLoot(
+				io::Reader& packet,
+				bool &out_enable
+			);
+
 			bool authSession(
 			    io::Reader &packet,
 			    UInt32 &out_clientBuild,

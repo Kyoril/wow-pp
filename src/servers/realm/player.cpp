@@ -76,6 +76,7 @@ namespace wowpp
 		, m_nextWhoRequest(0)
 		, m_mailIdGenerator(1)
 		, m_unreadMails(0)
+		, m_optOutOfLoot(false)
 	{
 		// Randomize seed
 		std::uniform_int_distribution<UInt32> dist;
@@ -579,6 +580,8 @@ namespace wowpp
 			WOWPP_HANDLE_PACKET(MailTakeMoney, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GetChannelMemberCount, game::session_status::LoggedIn)
 			WOWPP_HANDLE_PACKET(GmTicketSystemStatus, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(UpdateAccountData, game::session_status::LoggedIn)
+			WOWPP_HANDLE_PACKET(OptOutOfLoot, game::session_status::Authentificated)
 
 #undef WOWPP_HANDLE_PACKET
 #undef QUOTE

@@ -574,7 +574,9 @@ namespace wowpp
 		target.m_unitTarget = m_character->getGuid();
 		for (const auto &spell : m_character->getSpells())
 		{
-			if (spell->attributes(0) & game::spell_attributes::Passive)
+			// If it is a passive ability, OR a shapeshift ability and the player has not been shape shifted after aura restoration...
+			if ((spell->attributes(0) & game::spell_attributes::Passive) ||
+				((spell->attributes(4) & game::spell_attributes_ex_d::Unknown_17) && !m_character->getAuras().hasAura(game::aura_type::ModShapeShift)))
 			{
 				m_character->castSpell(target, spell->id(), { 0, 0, 0 }, 0, true);
 			}

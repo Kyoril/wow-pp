@@ -261,6 +261,7 @@ namespace wowpp
 		std::list<Mail> m_mails;
 		IdGenerator<UInt32> m_mailIdGenerator;
 		UInt8 m_unreadMails;
+		bool m_optOutOfLoot;
 
 	private:
 
@@ -344,5 +345,7 @@ namespace wowpp
 		PacketParseResult handleMailDelete(game::IncomingPacket &packet);
 		PacketParseResult handleGetChannelMemberCount(game::IncomingPacket &packet);
 		PacketParseResult handleGmTicketSystemStatus(game::IncomingPacket &packet);
+		PacketParseResult handleUpdateAccountData(game::IncomingPacket &packet);
+		PacketParseResult handleOptOutOfLoot(game::IncomingPacket &packet);
 	};
 }
