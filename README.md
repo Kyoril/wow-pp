@@ -13,7 +13,7 @@ Source code should be published in three rolling branches:
 
 The **[release branch](https://github.com/Kyoril/wow-pp/tree/release)** is extensively tested and should provide you with the most stable and usable version of the core.
 
-The **[promoted branch](https://github.com/Kyoril/wow-pp/tree/promoted)** is updated with builds from the master branch, when the changes made their should be tested. This branch is used on the test server at **[nagrand.eu](http://www.nagrand.eu)**.
+The **[promoted branch](https://github.com/Kyoril/wow-pp/tree/promoted)** is updated with builds from the master branch, when the changes made their should be tested.
 
 The **[master branch](https://github.com/Kyoril/wow-pp/tree/master)** tracks **[live changes](https://github.com/Kyoril/wow-pp/commits/master)** from the developers. This branch isn't garanmtueed to be stable or even compilable at all. You should use this branch only if you want to help developing the core actively.
 
