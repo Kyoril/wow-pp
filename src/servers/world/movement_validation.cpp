@@ -132,7 +132,10 @@ namespace wowpp
 		}
 
 		// While moving, heart beats can't be sent with more than 500ms timestamp difference from the client
-		if (serverInfo.time != 0 && (serverInfo.moveFlags & Moving) && (clientInfo.time - serverInfo.time) > 500)
+		// TODO: With MoveSplineDone we receive much higher timestamps than 500 ms as we don't get any movement packets
+		// while spline-moving. This should be checked somehow too, I guess, but it breaks this check here if you were
+		// running before charging.
+		if (serverInfo.time != 0 && (serverInfo.moveFlags & Moving) && (opCode != MoveSplineDone) && (clientInfo.time - serverInfo.time) > 500)
 		{
 			CLOG("Client sent too large timestamp in movement packet.");
 			return false;

@@ -804,6 +804,7 @@ namespace wowpp
 			case game::client_packet::MoveStopAscend:
 			case game::client_packet::MoveChangeTransport:
 			case game::client_packet::MoveStartDescend:
+			case game::client_packet::MoveSplineDone:
 			{
 				sender->handleMovementCode(clientPacket, opCode);
 				break;

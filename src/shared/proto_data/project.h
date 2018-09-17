@@ -54,6 +54,7 @@
 #include "shared/proto_data/spell_categories.pb.h"
 #include "shared/proto_data/gtvalues.pb.h"
 #include "shared/proto_data/variables.pb.h"
+#include "shared/proto_data/gossip_menus.pb.h"
 
 namespace wowpp
 {
@@ -90,6 +91,8 @@ namespace wowpp
 		typedef TemplateManager<wowpp::proto::DodgeChance, wowpp::proto::DodgeChanceEntry> DodgeChanceManager;
 		typedef TemplateManager<wowpp::proto::ResistancePercentage, wowpp::proto::ResistancePercentageEntry> ResistancePercentageManager;
 		typedef TemplateManager<wowpp::proto::Variables, wowpp::proto::VariableEntry> VariableManager;
+		typedef TemplateManager<wowpp::proto::NpcTexts, wowpp::proto::NpcTextEntry> NpcTextManager;
+		typedef TemplateManager<wowpp::proto::GossipMenus, wowpp::proto::GossipMenuEntry> GossipMenuManager;
 
 		/// This class contains contains all the static game data like item templates.
 		class Project final
@@ -136,6 +139,8 @@ namespace wowpp
 			DodgeChanceManager dodgeChance;
 			ResistancePercentageManager resistancePcts;
 			VariableManager variables;
+			NpcTextManager npcTexts;
+			GossipMenuManager gossipMenus;
 
 		private:
 
@@ -210,6 +215,8 @@ namespace wowpp
 				managers.push_back(ManagerEntry("dodge_chance", dodgeChance));
 				managers.push_back(ManagerEntry("resistance_percentages", resistancePcts));
 				managers.push_back(ManagerEntry("variables", variables));
+				managers.push_back(ManagerEntry("npc_texts", npcTexts));
+				managers.push_back(ManagerEntry("gossip_menus", gossipMenus));
 
 				virtual_dir::FileSystemReader virtualDirectory(realmDataPath);
 				if (!RealmProjectLoader::load(
@@ -275,6 +282,8 @@ namespace wowpp
 				managers.push_back(ManagerEntry("dodge_chance", "dodge_chance", dodgeChance));
 				managers.push_back(ManagerEntry("resistance_percentages", "resistance_percentages", resistancePcts));
 				managers.push_back(ManagerEntry("variables", "variables", variables));
+				managers.push_back(ManagerEntry("npc_texts", "npc_texts", npcTexts));
+				managers.push_back(ManagerEntry("gossip_menus", "gossip_menus", gossipMenus));
 
 				if (!RealmProjectSaver::save(realmDataPath, managers))
 				{

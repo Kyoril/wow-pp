@@ -547,9 +547,9 @@ namespace wowpp
 	{
 		// Ignore movement packets from the client if the controlled unit is currently
 		// moved by the server.
-		if (m_character->getMover().isMoving())
+		if (m_character->getMover().isMoving() && opCode != game::client_packet::MoveSplineDone)
 		{
-			WLOG("Ignoring move packet because controlled unit is currently moving!");
+			WLOG("Ignoring move packet 0x" << std::hex << opCode << " because controlled unit is currently moving!");
 			return;
 		}
 
