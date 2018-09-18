@@ -237,10 +237,11 @@ namespace wowpp
 			const float ExpectedFallSpeed = std::min(60.149f, FallTimeSec * Acceleration);
 
 			// Calculate fall speed
-			const float FallSpeed = (clientInfo.z - serverInfo.z) / ((clientInfo.fallTime - serverInfo.fallTime) / 1000.0f);
+			const float FallTime = ((clientInfo.fallTime - serverInfo.fallTime) / 1000.0f);
+			const float FallSpeed = FallTime != 0.0f ? ((clientInfo.z - serverInfo.z) / FallTime) : 0.0f;
 			if (-FallSpeed > ExpectedFallSpeed)
 			{
-				CLOG("Client fall speed higher than expected!");
+				CLOG("Client fall speed higher than expected");
 				return false;
 			}
 

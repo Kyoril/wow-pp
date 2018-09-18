@@ -346,9 +346,12 @@ namespace wowpp
 			{
 				m_target.setPowerType(newPowerType);
 
-				// Reset rage and energy
-				m_target.setPower(game::power_type::Rage, 0);
-				m_target.setPower(game::power_type::Energy, 0);
+				// Reset rage and energy for non-warrior classes
+				if (m_target.getClass() != game::char_class::Warrior)
+				{
+					m_target.setPower(game::power_type::Rage, 0);
+					m_target.setPower(game::power_type::Energy, 0);
+				}
 			}
 
 			// Talent procs
@@ -404,8 +407,34 @@ namespace wowpp
 				case game::shapeshift_form::BattleStance:
 				case game::shapeshift_form::DefensiveStance:
 				case game::shapeshift_form::BerserkerStance:
-					m_target.setPower(game::power_type::Rage, 0);
+				{
+					UInt32 rage = 0;
+
+					// Iterate through the dummy aura effects and check if they belong to one of the two spells listed
+					// below (Stance Mastery / Tactical Mastery)
+					m_target.getAuras().forEachAuraOfType(game::aura_type::Dummy, [&rage](AuraEffect& effect) -> bool {
+						const auto& spellEntry = effect.getSlot().getSpell();
+
+						constexpr UInt32 StanceMastery_SpellId = 12678;
+						constexpr UInt32 TacticalMastery_SpellId = 12295;
+
+						// If it's one of these two spells (or their followup-ranks)...
+						if (spellEntry.baseid() == StanceMastery_SpellId ||
+							spellEntry.baseid() == TacticalMastery_SpellId)
+						{
+							rage += (effect.getBasePoints() * 10);
+						}
+
+						// Continue iteration
+						return true;
+					});
+
+					// Limit rage, but allow to keep a certain amount of rage
+					if (m_target.getPower(game::power_type::Rage) > rage)
+						m_target.setPower(game::power_type::Rage, rage);
+
 					break;
+				}
 			}
 		}
 		else

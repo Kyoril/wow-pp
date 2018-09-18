@@ -603,6 +603,11 @@ namespace wowpp
 		{
 			setByteValue(unit_fields::Bytes2, 3, static_cast<UInt8>(form));
 		}
+		/// Gets the respective power value.
+		UInt32 getPower(game::PowerType powerType) const
+		{
+			return getUInt32Value(unit_fields::Power1 + powerType);
+		}
 		/// Sets the current power value for the given power type.
 		void setPower(game::PowerType powerType, UInt32 value)
 		{

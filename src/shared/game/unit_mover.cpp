@@ -212,6 +212,10 @@ namespace wowpp
 
 		// Calculate time of arrival
 		m_moveEnd = moveTime;
+		
+		auto movementInfo = moved.getMovementInfo();
+		movementInfo.moveFlags = game::movement_flags::None;
+		moved.setMovementInfo(movementInfo);
 
 		// Send movement packet
 		TileIndex2D tile;

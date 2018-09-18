@@ -545,12 +545,11 @@ namespace wowpp
 
 	void Player::handleMovementCode(game::Protocol::IncomingPacket &packet, UInt16 opCode)
 	{
-		// Ignore movement packets from the client if the controlled unit is currently
-		// moved by the server.
-		if (m_character->getMover().isMoving() && opCode != game::client_packet::MoveSplineDone)
+		// NOTE: This seems to be possible when warrior-charging (spell 100) while in the air from a jump.
+		if (m_character->getMover().isMoving()/* && opCode != game::client_packet::MoveSplineDone*/)
 		{
-			WLOG("Ignoring move packet 0x" << std::hex << opCode << " because controlled unit is currently moving!");
-			return;
+			WLOG("Received movement packet 0x" << std::hex << opCode << " while spline movement is active - investigate!");
+			//return;
 		}
 
 		// Read the movement info from the movement packet
@@ -606,12 +605,28 @@ namespace wowpp
 		}
 
 		// Validate movement speed
-		float expectedSpeed = m_character->getExpectedSpeed(m_character->getMovementInfo(), (info.moveFlags & game::movement_flags::FallingFar) != 0);
-		if (!validateMovementSpeed(expectedSpeed, info, m_character->getMovementInfo()/*, !m_movementInitialized*/))
+		if (opCode == game::client_packet::MoveSplineDone)
 		{
-			WLOG("Invalid movement speed for packet 0x" << std::hex << opCode);
-			kick();
-			return;
+			// TODO: This happens because of bad nav mesh in terms of correct z position which can result in
+			// a much higher height after charging
+			const auto& target = m_character->getMover().getTarget();
+			if (::fabs(info.x - target.x) > FLT_EPSILON || 
+				::fabs(info.y - target.y) > FLT_EPSILON || 
+				::fabs(info.z - target.z) > 1.1f)	
+			{
+				CLOG("Invalid target location after move spline:");
+				CLOG("\tdelta z: " << ::fabs(info.z - target.z));
+			}
+		}
+		else
+		{
+			float expectedSpeed = m_character->getExpectedSpeed(m_character->getMovementInfo(), (info.moveFlags & game::movement_flags::FallingFar) != 0);
+			if (!validateMovementSpeed(expectedSpeed, info, m_character->getMovementInfo()/*, !m_movementInitialized*/))
+			{
+				WLOG("Invalid movement speed for packet 0x" << std::hex << opCode);
+				kick();
+				return;
+			}
 		}
 		
 		// Sender guid
