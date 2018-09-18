@@ -375,7 +375,7 @@ namespace wowpp
 		}
 	}
 
-	void AuraEffect::handleProcModifier(UInt8 attackType, bool canRemove, UInt32 amount, GameUnit *target/* = nullptr*/)
+	void AuraEffect::handleProcModifier(UInt8 attackType, bool canRemove, UInt32 amount, const proto::SpellEntry* procSpell/* = nullptr*/, GameUnit *target/* = nullptr*/)
 	{
 		namespace aura = game::aura_type;
 
@@ -416,7 +416,7 @@ namespace wowpp
 		{
 		case aura::Dummy:
 			{
-				handleDummyProc(target, amount);
+				handleDummyProc(target, amount, procSpell);
 				break;
 			}
 		case aura::DamageShield:
@@ -456,7 +456,7 @@ namespace wowpp
 
 	}
 
-	void AuraEffect::handleDummyProc(GameUnit *victim, UInt32 amount)
+	void AuraEffect::handleDummyProc(GameUnit *victim, UInt32 amount, const proto::SpellEntry* procSpell/* = nullptr*/)
 	{
 		if (!victim)
 		{
@@ -514,6 +514,29 @@ namespace wowpp
 				{
 					basePoints[0] = static_cast<Int32>(0.20 * amount);
 				}
+			}
+		}
+		else if (spell.family() == game::spell_family::Warrior)
+		{
+			switch (spell.baseid())
+			{
+				// Second wind
+				case 29834:
+					// Don't do anything if this didn't proc by a spell (for example, auto attack)
+					if (!procSpell)
+						return;
+
+					// No mechanic = irrelevant
+					const auto mechanic = static_cast<game::SpellMechanic>(procSpell->mechanic());
+					if (mechanic == game::SpellMechanic::None)
+						return;
+
+					// The triggering spell has to apply a root and/or stun effect
+					if (mechanic != game::SpellMechanic::Stun &&
+						mechanic != game::SpellMechanic::Root)
+						return;
+
+					break;
 			}
 		}
 
@@ -1193,7 +1216,7 @@ namespace wowpp
 					[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
 					if (checkProc(amount != 0, target, procFlag, procEx, procSpell, attackType, isVictim))
 					{
-						handleProcModifier(attackType, canRemove, amount, target);
+						handleProcModifier(attackType, canRemove, amount, procSpell, target);
 					}
 				});
 
@@ -1209,7 +1232,7 @@ namespace wowpp
 				{
 					m_procKilled = m_caster->killed.connect(
 						[&](GameUnit * killer) {
-						handleProcModifier(0, true, 0, killer);
+						handleProcModifier(0, true, 0, nullptr/*TODO: What if killed by spell is required?*/, killer);
 					});
 				}
 
@@ -1220,7 +1243,7 @@ namespace wowpp
 					[this](bool isVictim, GameUnit *target, UInt32 procFlag, UInt32 procEx, const proto::SpellEntry *procSpell, UInt32 amount, UInt8 attackType, bool canRemove) {
 					if (procSpell && m_spellSlot.getSpell().family() == procSpell->family() && (m_effect.itemtype() ? m_effect.itemtype() : m_effect.affectmask()) & procSpell->familyflags())
 					{
-						handleProcModifier(attackType, canRemove, amount, target);
+						handleProcModifier(attackType, canRemove, amount, procSpell, target);
 					}
 				});
 			}

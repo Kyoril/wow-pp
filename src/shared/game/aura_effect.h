@@ -72,7 +72,7 @@ namespace wowpp
 		/// Executes the aura modifier and applies or removes the aura effects to/from the target.
 		void handleModifier(bool apply, bool restoration = false);
 		///
-		void handleProcModifier(UInt8 attackType, bool canRemove, UInt32 amount, GameUnit *attacker = nullptr);
+		void handleProcModifier(UInt8 attackType, bool canRemove, UInt32 amount, const proto::SpellEntry* procSpell = nullptr, GameUnit *attacker = nullptr);
 
 		AuraSpellSlot &getSlot() {
 			return m_spellSlot;
@@ -250,7 +250,7 @@ namespace wowpp
 		/// general
 		void handleTakenDamage(GameUnit *attacker);
 		/// 4
-		void handleDummyProc(GameUnit *victim, UInt32 amount);
+		void handleDummyProc(GameUnit *victim, UInt32 amount, const proto::SpellEntry* procSpell = nullptr);
 		/// 15
 		void handleDamageShieldProc(GameUnit *attacker);
 		/// 42
