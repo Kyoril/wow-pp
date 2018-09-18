@@ -64,13 +64,13 @@ namespace wowpp
 		/// Gets the caster guid (or 0 if no caster was set).
 		UInt64 getCasterGuid() const;
 		/// Applies this aura and initializes everything.
-		void applyAura();
+		void applyAura(bool restoration = false);
 		/// This method is the counterpart of applyAura(). It exists so that
 		/// handleModifier(false) is not called in the destructor of the aura, since this causes crashes if
 		/// somehow the AuraContainer is accessed.
 		void misapplyAura();
 		/// Executes the aura modifier and applies or removes the aura effects to/from the target.
-		void handleModifier(bool apply);
+		void handleModifier(bool apply, bool restoration = false);
 		///
 		void handleProcModifier(UInt8 attackType, bool canRemove, UInt32 amount, GameUnit *attacker = nullptr);
 
@@ -155,13 +155,13 @@ namespace wowpp
 		/// 29
 		void handleModStat(bool apply);
 		/// 31, 33, 129, 171
-		void handleRunSpeedModifier(bool apply);
+		void handleRunSpeedModifier(bool apply, bool restoration);
 		/// 33, 58, 171
-		void handleSwimSpeedModifier(bool apply);
+		void handleSwimSpeedModifier(bool apply, bool restoration);
 		/// 33, 171, 206, 208, 210
-		void handleFlySpeedModifier(bool apply);
+		void handleFlySpeedModifier(bool apply, bool restoration);
 		/// 
-		void handleModFlightSpeedMounted(bool apply);
+		void handleModFlightSpeedMounted(bool apply, bool restoration);
 		/// 36
 		void handleModShapeShift(bool apply);
 		/// 44

@@ -65,7 +65,7 @@ namespace wowpp
 
 		/// Applies all aura effects. After calling this method, aura effects may not
 		/// be modified before misapplyEffects is called!
-		void applyEffects();
+		void applyEffects(bool restoration = false);
 		/// Misapplies all aura effects. After calling this method, aura effects may 
 		/// be modified again.
 		void misapplyEffects();

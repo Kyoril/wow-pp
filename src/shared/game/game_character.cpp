@@ -3520,7 +3520,7 @@ namespace wowpp
 		}
 
 		// Reset mount
-		object.setUInt32Value(unit_fields::MountDisplayId, 0);
+		//object.setUInt32Value(unit_fields::MountDisplayId, 0);
 
 		// Remove "InCombat" flag
 		object.removeFlag(unit_fields::UnitFlags, game::unit_flags::InCombat);

@@ -588,6 +588,7 @@ namespace wowpp
 		// Make sure that there is no timed out pending movement change (lag tolerance)
 		if (m_character->hasTimedOutPendingMovementChange())
 		{
+			CLOG("Player probably tried to skip or delay an ack packet");
 			kick();
 			return;
 		}

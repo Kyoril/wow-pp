@@ -2675,7 +2675,11 @@ namespace wowpp
 		if (m_victim)
 		{
 			m_lastMainHand = m_lastOffHand = getCurrentTime();
-			triggerNextAutoAttack();
+
+			if (!m_attackSwingCountdown.running)
+			{
+				triggerNextAutoAttack();
+			}
 		}
 	}
 
@@ -3192,7 +3196,7 @@ namespace wowpp
 		}
 	}
 
-	void GameUnit::notifySpeedChanged(MovementType type)
+	void GameUnit::notifySpeedChanged(MovementType type, bool initial/* = false*/)
 	{
 		float speed = 1.0f;
 		bool mounted = isMounted();
@@ -3260,16 +3264,19 @@ namespace wowpp
 		float oldBonus = m_speedBonus[type];
 
 		// If there is a pending movement change...
-		if (!m_pendingMoveChanges.empty())
+		if (!initial)
 		{
-			// Iterate backwards until we find a pending movement change for this move type
-			for (auto it = m_pendingMoveChanges.cend(); it != m_pendingMoveChanges.cbegin(); it--)
+			if (!m_pendingMoveChanges.empty())
 			{
-				if (it->changeType == changeType)
+				// Iterate backwards until we find a pending movement change for this move type
+				for (auto it = m_pendingMoveChanges.cend(); it != m_pendingMoveChanges.cbegin(); it--)
 				{
-					DLOG("Found pending move change for type " << type << ": using this as old value");
-					oldBonus = it->speed / getBaseSpeed(type);
-					break;
+					if (it->changeType == changeType)
+					{
+						DLOG("Found pending move change for type " << type << ": using this as old value");
+						oldBonus = it->speed / getBaseSpeed(type);
+						break;
+					}
 				}
 			}
 		}
@@ -3280,7 +3287,7 @@ namespace wowpp
 			// to send an ack packet before we finally apply the speed change. If there is no
 			// watcher, we simply apply the speed change as this is most likely a creature which isn't
 			// controlled by a player (however, mind-controlled creatures will have a m_netWatcher).
-			if (m_netWatcher)
+			if (m_netWatcher != nullptr && !initial)
 			{
 				const UInt32 ackId = generateAckId();
 
@@ -3305,33 +3312,36 @@ namespace wowpp
 		}
 	}
 
-	void GameUnit::applySpeedChange(MovementType type, float speed)
+	void GameUnit::applySpeedChange(MovementType type, float speed, bool initial/* = false*/)
 	{
 		// Now store the speed bonus value
 		m_speedBonus[type] = speed;
 
 		// Notify all tile subscribers about this event
-		TileIndex2D tileIndex;
-		if (getTileIndex(tileIndex))
+		if (!initial)
 		{
-			// Send packets to all listeners around except ourself
-			std::vector<char> buffer;
-			io::VectorSink sink(buffer);
-			game::Protocol::OutgoingPacket packet(sink);
-			game::server_write::sendSpeedChange(packet, type, getGuid(), getMovementInfo(), speed * getBaseSpeed(type));
-
-			const GameUnit* me = this;
-
-			forEachSubscriberInSight(
-				m_worldInstance->getGrid(),
-				tileIndex,
-				[&packet, &buffer, me](ITileSubscriber & subscriber)
+			TileIndex2D tileIndex;
+			if (getTileIndex(tileIndex))
 			{
-				if (subscriber.getControlledObject() != me)
-					subscriber.sendPacket(packet, buffer);
-			});
-		}
+				// Send packets to all listeners around except ourself
+				std::vector<char> buffer;
+				io::VectorSink sink(buffer);
+				game::Protocol::OutgoingPacket packet(sink);
+				game::server_write::sendSpeedChange(packet, type, getGuid(), getMovementInfo(), speed * getBaseSpeed(type));
 
+				const GameUnit* me = this;
+
+				forEachSubscriberInSight(
+					m_worldInstance->getGrid(),
+					tileIndex,
+					[&packet, &buffer, me](ITileSubscriber & subscriber)
+				{
+					if (subscriber.getControlledObject() != me)
+						subscriber.sendPacket(packet, buffer);
+				});
+			}
+		}
+		
 		// Notify the unit mover about this change
 		m_mover->onMoveSpeedChanged(type);
 

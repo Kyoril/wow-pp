@@ -841,10 +841,10 @@ namespace wowpp
 		/// If this unit is player controlled, a client notification is sent and the speed is
 		/// only changed after the client has ackknowledged this change. Otherwise, the speed
 		/// is immediatly applied using applySpeedChange.
-		void notifySpeedChanged(MovementType type);
+		void notifySpeedChanged(MovementType type, bool initial = false);
 		/// Immediatly applies a speed change for this unit. Never call this method directly
 		/// unless you know what you're doing.
-		void applySpeedChange(MovementType type, float speed);
+		void applySpeedChange(MovementType type, float speed, bool initial = false);
 		/// Gets the current (applied) movement speed in units per second.
 		float getSpeed(MovementType type) const;
 		/// Gets the current expected speed value based on movement informations. Mainly

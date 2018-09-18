@@ -48,7 +48,7 @@ namespace wowpp
 		ASSERT(!m_applied && "AuraSpellSlot instance destroyed without being misapplied before");
 	}
 
-	void AuraSpellSlot::applyEffects()
+	void AuraSpellSlot::applyEffects(bool restoration/* = false*/)
 	{
 		ASSERT(!m_applied && "Aura effects already applied");
 		ASSERT(m_owner && "Valid owner required");
@@ -57,7 +57,7 @@ namespace wowpp
 		for (auto effect : m_effects)
 		{
 			if (effect)
-				effect->applyAura();
+				effect->applyAura(restoration);
 			else
 				break;
 		}

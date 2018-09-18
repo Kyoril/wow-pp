@@ -158,7 +158,7 @@ namespace wowpp
 		onTick();
 	}
 
-	void AuraEffect::handleModifier(bool apply)
+	void AuraEffect::handleModifier(bool apply, bool restoration/* = false*/)
 	{
 		namespace aura = game::aura_type;
 
@@ -213,24 +213,24 @@ namespace wowpp
 		case aura::ModSpeedAlways:
 		//mounted speed
 		case aura::ModIncreaseMountedSpeed:
-			handleRunSpeedModifier(apply);
+			handleRunSpeedModifier(apply, restoration);
 			break;
 		case aura::ModFlightSpeed:
 		case aura::ModFlightSpeedStacking:
 		case aura::ModFlightSpeedNotStacking:
-			handleFlySpeedModifier(apply);
+			handleFlySpeedModifier(apply, restoration);
 			break;
 		case aura::ModFlightSpeedMounted:
-			handleModFlightSpeedMounted(apply);
+			handleModFlightSpeedMounted(apply, restoration);
 			break;
 		case aura::ModIncreaseSwimSpeed:
-			handleSwimSpeedModifier(apply);
+			handleSwimSpeedModifier(apply, restoration);
 			break;
 		case aura::ModDecreaseSpeed:
 		case aura::ModSpeedNotStack:
-			handleRunSpeedModifier(apply);
-			handleSwimSpeedModifier(apply);
-			handleFlySpeedModifier(apply);
+			handleRunSpeedModifier(apply, restoration);
+			handleSwimSpeedModifier(apply, restoration);
+			handleFlySpeedModifier(apply, restoration);
 			break;
 		case aura::MechanicImmunity:
 			handleMechanicImmunity(apply);
@@ -1060,7 +1060,7 @@ namespace wowpp
 		return (m_caster.get() ? m_caster->getGuid() : 0);
 	}
 
-	void AuraEffect::applyAura()
+	void AuraEffect::applyAura(bool restoration/* = false*/)
 	{
 		auto *world = m_target.getWorldInstance();
 		if (!world)
@@ -1244,7 +1244,7 @@ namespace wowpp
 		}
 
 		// Apply modifiers now
-		handleModifier(true);
+		handleModifier(true, restoration);
 	}
 
 	void AuraEffect::misapplyAura()

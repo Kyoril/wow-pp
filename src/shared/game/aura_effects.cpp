@@ -247,24 +247,24 @@ namespace wowpp
 		}
 	}
 
-	void AuraEffect::handleRunSpeedModifier(bool apply)
+	void AuraEffect::handleRunSpeedModifier(bool apply, bool restoration)
 	{
-		m_target.notifySpeedChanged(movement_type::Run);
+		m_target.notifySpeedChanged(movement_type::Run, restoration);
 	}
 
-	void AuraEffect::handleSwimSpeedModifier(bool apply)
+	void AuraEffect::handleSwimSpeedModifier(bool apply, bool restoration)
 	{
-		m_target.notifySpeedChanged(movement_type::Swim);
+		m_target.notifySpeedChanged(movement_type::Swim, restoration);
 	}
 
-	void AuraEffect::handleFlySpeedModifier(bool apply)
+	void AuraEffect::handleFlySpeedModifier(bool apply, bool restoration)
 	{
-		m_target.notifySpeedChanged(movement_type::Flight);
+		m_target.notifySpeedChanged(movement_type::Flight, restoration);
 	}
 
-	void AuraEffect::handleModFlightSpeedMounted(bool apply)
+	void AuraEffect::handleModFlightSpeedMounted(bool apply, bool restoration)
 	{
-		m_target.notifySpeedChanged(movement_type::Flight);
+		m_target.notifySpeedChanged(movement_type::Flight, restoration);
 
 		// Determined to prevent falling when one aura is still left
 		const bool hasFlyAura = m_target.getAuras().hasAura(game::aura_type::Fly) | m_target.getAuras().hasAura(game::aura_type::ModFlightSpeedMounted);

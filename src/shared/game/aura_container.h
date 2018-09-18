@@ -72,7 +72,7 @@ namespace wowpp
 		explicit AuraContainer(GameUnit &owner);
 
 		/// Adds a new aura to the list of active auras.
-		bool addAura(AuraPtr aura);
+		bool addAura(AuraPtr aura, bool restoration = false);
 		/// Removes a specific auras.
 		void removeAura(AuraList::iterator &it);
 		/// Removes a specific aura slot instance.

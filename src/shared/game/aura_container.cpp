@@ -36,7 +36,7 @@ namespace wowpp
 	{
 	}
 
-	bool AuraContainer::addAura(AuraPtr aura)
+	bool AuraContainer::addAura(AuraPtr aura, bool restoration/* = false*/)
 	{
 		// If aura shouldn't be hidden on the client side...
 		if (!aura->isPassive() && (aura->getSpell().attributes(0) & game::spell_attributes::HiddenClientSide) == 0)
@@ -136,7 +136,7 @@ namespace wowpp
 		});
 
 		// Apply aura effects
-		aura->applyEffects();
+		aura->applyEffects(restoration);
 		return true;
 	}
 
@@ -487,7 +487,7 @@ namespace wowpp
 			}
 
 			// Apply aura
-			if (!addAura(aura))
+			if (!addAura(aura, true))
 			{
 				WLOG("Failed to apply restored aura!");
 			}
