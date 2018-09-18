@@ -74,9 +74,12 @@ namespace wowpp
 			ChannelObject				= 0x0E + object_fields::ObjectFieldCount,
 			Health						= 0x10 + object_fields::ObjectFieldCount,
 			Power1						= 0x11 + object_fields::ObjectFieldCount,
+			PowerMana					= Power1,
 			Power2						= 0x12 + object_fields::ObjectFieldCount,
+			PowerRage					= Power2,
 			Power3						= 0x13 + object_fields::ObjectFieldCount,
 			Power4						= 0x14 + object_fields::ObjectFieldCount,
+			PowerEnergy					= Power4,
 			Power5						= 0x15 + object_fields::ObjectFieldCount,
 			MaxHealth					= 0x16 + object_fields::ObjectFieldCount,
 			MaxPower1					= 0x17 + object_fields::ObjectFieldCount,
@@ -91,7 +94,7 @@ namespace wowpp
 			VirtualItemInfo				= 0x22 + object_fields::ObjectFieldCount,
 			UnitFlags					= 0x28 + object_fields::ObjectFieldCount,
 			UnitFlags2					= 0x29 + object_fields::ObjectFieldCount,
-			AuraEffect						= 0x2A + object_fields::ObjectFieldCount,
+			AuraEffect					= 0x2A + object_fields::ObjectFieldCount,
 			AuraList					= 0x58 + object_fields::ObjectFieldCount,
 			AuraFlags					= 0x62 + object_fields::ObjectFieldCount,
 			AuraLevels					= 0x70 + object_fields::ObjectFieldCount,
@@ -561,24 +564,50 @@ namespace wowpp
 		/// Updates the level and will also update all stats based on the new level.
 		void setLevel(UInt8 level);
 		/// Gets the current race index.
-		UInt8 getRace() const {
+		UInt8 getRace() const 
+		{
 			return getByteValue(unit_fields::Bytes0, 0);
 		}
 		/// Gets the current class index.
-		UInt8 getClass() const {
+		UInt8 getClass() const 
+		{
 			return getByteValue(unit_fields::Bytes0, 1);
 		}
 		/// Gets the current gender.
-		UInt8 getGender() const {
+		UInt8 getGender() const 
+		{
 			return getByteValue(unit_fields::Bytes0, 2);
 		}
 		/// Gets the current level.
-		UInt32 getLevel() const {
+		UInt32 getLevel() const 
+		{
 			return getUInt32Value(unit_fields::Level);
 		}
 		/// Gets Power Type
-		UInt8 getPowerType() const {
-			return getByteValue(unit_fields::Bytes0, 3);
+		game::PowerType getPowerType() const 
+		{
+			return static_cast<game::PowerType>(getByteValue(unit_fields::Bytes0, 3));
+		}
+		/// Sets the current power type of the unit.
+		void setPowerType(game::PowerType powerType) 
+		{
+			setByteValue(unit_fields::Bytes0, 3, static_cast<UInt8>(powerType));
+		}
+		/// Gets the current shapeshift form.
+		game::ShapeshiftForm getShapeShiftForm() const
+		{
+			return static_cast<game::ShapeshiftForm>(getByteValue(unit_fields::Bytes2, 3));
+		}
+		/// Sets the current shapeshift form.
+		void setShapeShiftForm(game::ShapeshiftForm form)
+		{
+			setByteValue(unit_fields::Bytes2, 3, static_cast<UInt8>(form));
+		}
+		/// Sets the current power value for the given power type.
+		void setPower(game::PowerType powerType, UInt32 value)
+		{
+			const UInt32 maxValue = getUInt32Value(unit_fields::MaxPower1 + powerType);
+			setUInt32Value(unit_fields::Power1 + powerType, value > maxValue ? maxValue : value);
 		}
 		
 		/// Gets this units faction template.

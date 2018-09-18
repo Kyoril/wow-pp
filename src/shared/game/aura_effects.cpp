@@ -276,104 +276,79 @@ namespace wowpp
 
 	void AuraEffect::handleModShapeShift(bool apply)
 	{
-		UInt8 form = m_effect.miscvaluea();
+		game::ShapeshiftForm form = static_cast<game::ShapeshiftForm>(m_effect.miscvaluea());
 		if (apply)
 		{
 			const bool isAlliance = m_target.getRace() == 0 ? true :
 				((game::race::Alliance & (1 << (m_target.getRace() - 1))) == (1 << (m_target.getRace() - 1)));
 
 			UInt32 modelId = 0;
-			UInt32 powerType = m_target.getByteValue(unit_fields::Bytes0, 3);
+			game::PowerType newPowerType = m_target.getPowerType();
 			switch (form)
 			{
 				case game::shapeshift_form::Cat:
-				{
 					modelId = (isAlliance ? 892 : 8571);
-					powerType = game::power_type::Energy;
+					newPowerType = game::power_type::Energy;
 					break;
-				}
 				case game::shapeshift_form::Tree:
-				{
 					modelId = 864;
 					break;
-				}
 				case game::shapeshift_form::Travel:
-				{
 					modelId = 632;
 					break;
-				}
 				case game::shapeshift_form::Aqua:
-				{
 					modelId = 2428;
 					break;
-				}
 				case game::shapeshift_form::Bear:
 				case game::shapeshift_form::DireBear:
-				{
 					modelId = (isAlliance ? 2281 : 2289);
-					powerType = game::power_type::Rage;
+					newPowerType = game::power_type::Rage;
 					break;
-				}
 				case game::shapeshift_form::Ghoul:
-				{
-					if (isAlliance) {
+					if (isAlliance)
 						modelId = 10045;
-					}
 					break;
-				}
 				case game::shapeshift_form::CreatureBear:
-				{
 					modelId = 902;
 					break;
-				}
 				case game::shapeshift_form::GhostWolf:
-				{
 					modelId = 4613;
 					break;
-				}
 				case game::shapeshift_form::BattleStance:
 				case game::shapeshift_form::DefensiveStance:
 				case game::shapeshift_form::BerserkerStance:
-				{
-					powerType = game::power_type::Rage;
+					newPowerType = game::power_type::Rage;
 					break;
-				}
 				case game::shapeshift_form::FlightEpic:
-				{
 					modelId = (isAlliance ? 21243 : 21244);
 					break;
-				}
 				case game::shapeshift_form::Flight:
-				{
 					modelId = (isAlliance ? 20857 : 20872);
 					break;
-				}
 				case game::shapeshift_form::Stealth:
-				{
-					powerType = game::power_type::Energy;
+					newPowerType = game::power_type::Energy;
 					break;
-				}
 				case game::shapeshift_form::Moonkin:
-				{
 					modelId = (isAlliance ? 15374 : 15375);
 					break;
-				}
 			}
 
+			// We need to update the player model eventually
 			if (modelId != 0)
-			{
 				m_target.setUInt32Value(unit_fields::DisplayId, modelId);
-			}
 
-			m_target.setByteValue(unit_fields::Bytes2, 3, form);
+			// Set the shapeshift form value
+			m_target.setShapeShiftForm(form);
 
 			// Reset rage and energy if power type changed. This also prevents rogues from loosing their
 			// energy when entering or leaving stealth mode
-			if (m_target.getByteValue(unit_fields::Bytes0, 3) != powerType)
+			if (m_target.getPowerType() != newPowerType)
 			{
-				m_target.setByteValue(unit_fields::Bytes0, 3, powerType);
-				m_target.setUInt32Value(unit_fields::Power2, 0);
-				m_target.setUInt32Value(unit_fields::Power4, 0);
+				m_target.setPowerType(newPowerType);
+
+				// Reset rage and energy
+				m_target.setPower(game::power_type::Rage, 0);
+				m_target.setPower(game::power_type::Energy, 0);
 			}
 
 			// Talent procs
@@ -429,20 +404,21 @@ namespace wowpp
 				case game::shapeshift_form::BattleStance:
 				case game::shapeshift_form::DefensiveStance:
 				case game::shapeshift_form::BerserkerStance:
-					m_target.setUInt32Value(unit_fields::Power2, 0);
+					m_target.setPower(game::power_type::Rage, 0);
 					break;
 			}
 		}
 		else
 		{
 			m_target.setUInt32Value(unit_fields::DisplayId, m_target.getUInt32Value(unit_fields::NativeDisplayId));
-			if (m_target.getByteValue(unit_fields::Bytes0, 3) != m_target.getClassEntry()->powertype())
+			if (m_target.getPowerType() != m_target.getClassEntry()->powertype())
 			{
-				m_target.setByteValue(unit_fields::Bytes0, 3, m_target.getClassEntry()->powertype());
+				m_target.setPowerType(static_cast<game::PowerType>(m_target.getClassEntry()->powertype()));
 				m_target.setUInt32Value(unit_fields::Power2, 0);
 				m_target.setUInt32Value(unit_fields::Power4, 0);
 			}
-			m_target.setByteValue(unit_fields::Bytes2, 3, 0);
+
+			m_target.setShapeShiftForm(game::shapeshift_form::None);
 		}
 
 		m_target.updateAllStats();
