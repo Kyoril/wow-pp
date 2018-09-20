@@ -95,6 +95,7 @@ namespace wowpp
 
 		setUInt32Value(object_fields::Type, 25);					//OBJECT_FIELD_TYPE				(TODO: Flags)
 		setUInt32Value(character_fields::CharacterFlags, 0x40000);
+		setUInt32Value(character_fields::MaxLevel, 70);	// TODO: Base this on expansion level
 
 		setFloatValue(unit_fields::BoundingRadius, 0.388999998569489f);
 		setFloatValue(unit_fields::CombatReach, 1.5f);

@@ -2505,31 +2505,33 @@ namespace wowpp
 				        << io::write<NetUInt32>(quest.method())
 				        << io::write<NetInt32>(quest.questlevel())
 				        << io::write<NetUInt32>(quest.zone())
+
 				        << io::write<NetUInt32>(quest.type())
 				        << io::write<NetUInt32>(quest.suggestedplayers())
+
 				        << io::write<NetUInt32>(0)	// TODO: RepObjectiveFaction
 				        << io::write<NetUInt32>(0)	// TODO: RepObjectiveValue
+
 				        << io::write<NetUInt32>(0)	// TODO
 				        << io::write<NetUInt32>(0)	// TODO
+
 				        << io::write<NetUInt32>(quest.nextchainquestid());
+
 				if (quest.flags() & game::quest_flags::HiddenRewards)
-				{
-					out_packet
-					        << io::write<NetUInt32>(0);	// Money reward hidden
-				}
+					out_packet << io::write<NetUInt32>(0);	// Money reward hidden
 				else
-				{
-					out_packet
-					        << io::write<NetUInt32>(quest.rewardmoney());
-				}
+					out_packet << io::write<NetUInt32>(quest.rewardmoney());
+
 				out_packet
 				        << io::write<NetUInt32>(quest.rewardmoneymaxlevel())
 				        << io::write<NetUInt32>(quest.rewardspell())
 				        << io::write<NetUInt32>(quest.rewardspellcast())
+
 				        << io::write<NetUInt32>(quest.rewardhonorkills())
 				        << io::write<NetUInt32>(quest.srcitemid())
-				        << io::write<NetUInt32>(quest.flags() & 0xFFFF)
+				        << io::write<NetUInt32>(quest.flags())
 				        << io::write<NetUInt32>(quest.rewtitleid());
+
 				if (quest.flags() & game::quest_flags::HiddenRewards)
 				{
 					for (int i = 0; i < 4; ++i)
