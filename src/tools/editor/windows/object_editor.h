@@ -66,6 +66,17 @@ namespace wowpp
 			void on_objectFilter_editingFinished();
 			void on_unitAddTriggerBtn_clicked();
 			void on_unitRemoveTriggerBtn_clicked();
+
+			//questAcceptTriggerBox
+			void on_questAcceptAddTriggerBtn_clicked();
+			void on_questAcceptRemoveTriggerBtn_clicked();
+			//questFailureTriggerBox
+			void on_questFailureAddTriggerBtn_clicked();
+			void on_questFailureRemoveTriggerBtn_clicked();
+			//questRewardTriggerBox
+			void on_questRewardAddTriggerBtn_clicked();
+			void on_questRewardRemoveTriggerBtn_clicked();
+
 			void on_objectAddTriggerBtn_clicked();
 			void on_objectRemoveTriggerBtn_clicked();
 			void onUnitSelectionChanged(const QItemSelection& selection, const QItemSelection& old);

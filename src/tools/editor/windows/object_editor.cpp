@@ -1331,6 +1331,39 @@ namespace wowpp
 
 				m_ui->questRequirementWidget->addTopLevelItem(treeitem);
 			}
+
+			m_ui->questAcceptTriggerBox->clear();
+			for (const auto &triggerId : quest->starttriggers())
+			{
+				const auto *triggerEntry = m_application.getProject().triggers.getById(triggerId);
+				if (triggerEntry)
+				{
+					m_ui->questAcceptTriggerBox->addItem(
+						QString(triggerEntry->name().c_str()));
+				}
+			}
+
+			m_ui->questFailureTriggerBox->clear();
+			for (const auto &triggerId : quest->failtriggers())
+			{
+				const auto *triggerEntry = m_application.getProject().triggers.getById(triggerId);
+				if (triggerEntry)
+				{
+					m_ui->questFailureTriggerBox->addItem(
+						QString(triggerEntry->name().c_str()));
+				}
+			}
+
+			m_ui->questRewardTriggerBox->clear();
+			for (const auto &triggerId : quest->rewardtriggers())
+			{
+				const auto *triggerEntry = m_application.getProject().triggers.getById(triggerId);
+				if (triggerEntry)
+				{
+					m_ui->questRewardTriggerBox->addItem(
+						QString(triggerEntry->name().c_str()));
+				}
+			}
 		}
 
 		void ObjectEditor::onObjectSelectionChanged(const QItemSelection & selection, const QItemSelection & old)
@@ -1530,6 +1563,99 @@ namespace wowpp
 				auto *taken = m_ui->unitTriggerWidget->takeItem(row);
 				delete taken;
 			}
+		}
+
+		void ObjectEditor::on_questAcceptAddTriggerBtn_clicked()
+		{
+			if (!m_selectedQuest)
+				return;
+
+			ChooseTriggerDialog dialog(m_application);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+				const auto *newTrigger = dialog.getSelectedTrigger();
+				if (newTrigger)
+				{
+					auto it = std::find_if(m_selectedQuest->starttriggers().begin(), m_selectedQuest->starttriggers().end(), [&newTrigger](const UInt32 &trigger) -> bool
+					{
+						return (trigger == newTrigger->id());
+					});
+
+					if (it == m_selectedQuest->starttriggers().end())
+					{
+						m_selectedQuest->mutable_starttriggers()->Add(newTrigger->id());
+						m_ui->questAcceptTriggerBox->addItem(
+							QString(newTrigger->name().c_str()));
+					}
+				}
+			}
+		}
+
+		void ObjectEditor::on_questAcceptRemoveTriggerBtn_clicked()
+		{
+		}
+
+		void ObjectEditor::on_questFailureAddTriggerBtn_clicked()
+		{
+			if (!m_selectedQuest)
+				return;
+
+			ChooseTriggerDialog dialog(m_application);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+				const auto *newTrigger = dialog.getSelectedTrigger();
+				if (newTrigger)
+				{
+					auto it = std::find_if(m_selectedQuest->failtriggers().begin(), m_selectedQuest->failtriggers().end(), [&newTrigger](const UInt32 &trigger) -> bool
+					{
+						return (trigger == newTrigger->id());
+					});
+
+					if (it == m_selectedQuest->failtriggers().end())
+					{
+						m_selectedQuest->mutable_failtriggers()->Add(newTrigger->id());
+						m_ui->questFailureTriggerBox->addItem(
+							QString(newTrigger->name().c_str()));
+					}
+				}
+			}
+		}
+
+		void ObjectEditor::on_questFailureRemoveTriggerBtn_clicked()
+		{
+		}
+
+		void ObjectEditor::on_questRewardAddTriggerBtn_clicked()
+		{
+			if (!m_selectedQuest)
+				return;
+
+			ChooseTriggerDialog dialog(m_application);
+			auto result = dialog.exec();
+			if (result == QDialog::Accepted)
+			{
+				const auto *newTrigger = dialog.getSelectedTrigger();
+				if (newTrigger)
+				{
+					auto it = std::find_if(m_selectedQuest->rewardtriggers().begin(), m_selectedQuest->rewardtriggers().end(), [&newTrigger](const UInt32 &trigger) -> bool
+					{
+						return (trigger == newTrigger->id());
+					});
+
+					if (it == m_selectedQuest->rewardtriggers().end())
+					{
+						m_selectedQuest->mutable_rewardtriggers()->Add(newTrigger->id());
+						m_ui->questRewardTriggerBox->addItem(
+							QString(newTrigger->name().c_str()));
+					}
+				}
+			}
+		}
+
+		void ObjectEditor::on_questRewardRemoveTriggerBtn_clicked()
+		{
 		}
 
 		void ObjectEditor::on_objectAddTriggerBtn_clicked()

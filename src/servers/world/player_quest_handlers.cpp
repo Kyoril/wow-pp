@@ -219,7 +219,16 @@ namespace wowpp
 			return;
 		}
 
+		// Check if the quest exists
+		const proto::QuestEntry* quest = m_project.quests.getById(questId);
+		if (!quest)
+		{
+			WLOG("Tried to accept unknown quest id");
+			return;
+		}
+
 		UInt16 itemSlot = 0;
+		GameObject* questGiver = nullptr;
 		std::shared_ptr<GameItem> itemQuestgiver;
 		if (isItemGUID(guid))
 		{
@@ -238,13 +247,15 @@ namespace wowpp
 			{
 				return;
 			}
+
+			questGiver = itemQuestgiver.get();
 		}
 		else
 		{
 			// Check if that object exists and provides the requested quest
-			GameObject *object = m_character->getWorldInstance()->findObjectByGUID(guid);
-			if (!object ||
-				!object->providesQuest(questId))
+			questGiver = m_character->getWorldInstance()->findObjectByGUID(guid);
+			if (!questGiver ||
+				!questGiver->providesQuest(questId))
 			{
 				return;
 			}
@@ -286,6 +297,31 @@ namespace wowpp
 			}
 
 			return;
+		}
+
+		// Quest accepted, so we will execute all quest triggers
+		for (const UInt32 triggerId : quest->starttriggers())
+		{
+			// Find that trigger entry
+			const proto::TriggerEntry* trigger = m_project.triggers.getById(triggerId);
+			if (!trigger)
+			{
+				WLOG("Unknown trigger id " << triggerId << " in start trigger list for quest " << questId);
+				continue;
+			}
+
+			// Execute the trigger
+			if (questGiver)
+			{
+				if (questGiver->isCreature())
+				{
+					reinterpret_cast<GameUnit*>(questGiver)->unitTrigger(*trigger, *reinterpret_cast<GameUnit*>(questGiver), m_character.get());
+				}
+				else if (questGiver->isWorldObject())
+				{
+					reinterpret_cast<WorldObject*>(questGiver)->objectTrigger(*trigger, *reinterpret_cast<WorldObject*>(questGiver));
+				}
+			}
 		}
 
 		sendProxyPacket(

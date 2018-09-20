@@ -542,9 +542,7 @@ namespace wowpp
 
 		// Cast the triggered spell with custom basepoints value
 		if (m_effect.triggerspell() != 0)
-		{
 			m_caster->castSpell(std::move(target), m_effect.triggerspell(), std::move(basePoints), 0, true);
-		}
 
 		/*
 		if (m_effect.triggerspell() != 0)

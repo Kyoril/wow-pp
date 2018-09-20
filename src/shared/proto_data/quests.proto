@@ -108,6 +108,9 @@ message QuestEntry {
 	optional uint32 requiredclasses = 41;
 	optional uint32 requiredskill = 42;
 	optional uint32 requiredskillval = 43;
+	repeated uint32 starttriggers = 50;
+	repeated uint32 failtriggers = 51;
+	repeated uint32 rewardtriggers = 52;
 }
 
 message Quests {
