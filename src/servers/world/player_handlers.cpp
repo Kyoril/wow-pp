@@ -569,6 +569,10 @@ namespace wowpp
 			serverInfo.time = info.time;
 			serverInfo.jumpStartZ = info.z;
 
+			// Player started falling
+			if (info.moveFlags & game::movement_flags::Falling)
+				info.jumpStartZ = info.z;
+
 			// Detect wrong fall time values
 			if (info.fallTime > 500)
 			{
